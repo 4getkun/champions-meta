@@ -1,0 +1,285 @@
+|html|<div class="broadcast-blue"><strong>[Gen 9 Champions] OU is currently suspecting Mega Raichu Y! For information on how to participate check out the <a href="https://www.smogon.com/tools/suspects/view/258">suspect thread</a>.</strong></div>
+|j|☆void1323
+|j|☆viscus_55
+|t:|1790281371
+|gametype|singles
+|player|p1|void1323|170|1077
+|player|p2|viscus_55|101|1123
+|gen|9
+|tier|[Gen 9 Champions] OU
+|rated|
+|rule|Endless Battle Clause: Forcing endless battles is banned
+|rule|Species Clause: Limit one of each Pokémon
+|rule|Item Clause: Limit 1 of each item
+|rule|Sleep Moves Clause: Sleep-inducing moves are banned
+|rule|OHKO Clause: OHKO moves are banned
+|rule|Evasion Clause: Evasion abilities, items, and moves are banned
+|rule|Evasion Abilities Clause: Evasion abilities are banned
+|rule|Evasion Items Clause: Evasion items are banned
+|rule|Evasion Moves Clause: Evasion moves are banned
+|clearpoke
+|poke|p1|Hydreigon, L50, M|
+|poke|p1|Mimikyu, L50, F|
+|poke|p1|Garchomp, L50, M|
+|poke|p1|Salazzle, L50, F|
+|poke|p1|Azumarill, L50, M|
+|poke|p1|Metagross, L50|
+|poke|p2|Gogoat, L50, F|
+|poke|p2|Talonflame, L50, M|
+|poke|p2|Annihilape, L50, F|
+|poke|p2|Thievul, L50, M|
+|poke|p2|Floette-Eternal, L50, F|
+|poke|p2|Araquanid, L50, M|
+|teampreview
+|inactive|Battle timer is ON: inactive players will automatically lose when time's up. (requested by viscus_55)
+|
+|t:|1790281399
+|teamsize|p1|6
+|teamsize|p2|6
+|start
+|switch|p1a: Metagross|Metagross, L50|100/100
+|switch|p2a: Gogoat|Gogoat, L50, F|100/100
+|turn|1
+|
+|t:|1790281404
+|detailschange|p1a: Metagross|Metagross-Mega, L50
+|-mega|p1a: Metagross|Metagross|Metagrossite
+|move|p1a: Metagross|Ice Punch|p2a: Gogoat
+|-supereffective|p2a: Gogoat|1
+|-damage|p2a: Gogoat|4/100
+|move|p2a: Gogoat|Bulk Up|p2a: Gogoat
+|-boost|p2a: Gogoat|atk|1
+|-boost|p2a: Gogoat|def|1
+|
+|upkeep
+|turn|2
+|
+|t:|1790281412
+|move|p1a: Metagross|Bullet Punch|p2a: Gogoat
+|-damage|p2a: Gogoat|0 fnt
+|faint|p2a: Gogoat
+|
+|upkeep
+|
+|t:|1790281420
+|switch|p2a: Thievul|Thievul, L50, M|100/100
+|turn|3
+|
+|t:|1790281429
+|move|p1a: Metagross|Bullet Punch|p2a: Thievul
+|-damage|p2a: Thievul|48/100
+|-enditem|p2a: Thievul|Sitrus Berry|[eat]
+|-heal|p2a: Thievul|73/100|[from] item: Sitrus Berry
+|move|p2a: Thievul|Nasty Plot|p2a: Thievul
+|-boost|p2a: Thievul|spa|2
+|
+|upkeep
+|turn|4
+|
+|t:|1790281437
+|move|p1a: Metagross|Bullet Punch|p2a: Thievul
+|-damage|p2a: Thievul|23/100
+|move|p2a: Thievul|Dark Pulse|p1a: Metagross
+|-supereffective|p1a: Metagross|1
+|-damage|p1a: Metagross|0 fnt
+|faint|p1a: Metagross
+|
+|upkeep
+|
+|t:|1790281447
+|switch|p1a: Mimikyu|Mimikyu, L50, F|100/100
+|turn|5
+|
+|t:|1790281451
+|move|p2a: Thievul|Dark Pulse|p1a: Mimikyu
+|-activate|p1a: Mimikyu|ability: Disguise
+|-damage|p1a: Mimikyu|100/100
+|detailschange|p1a: Mimikyu|Mimikyu-Busted, L50, F
+|-damage|p1a: Mimikyu|87/100|[from] pokemon: Mimikyu-Busted
+|cant|p1a: Mimikyu|flinch
+|
+|upkeep
+|turn|6
+|
+|t:|1790281458
+|move|p2a: Thievul|Dark Pulse|p1a: Mimikyu
+|-damage|p1a: Mimikyu|3/100
+|move|p1a: Mimikyu|Play Rough|p2a: Thievul
+|-supereffective|p2a: Thievul|1
+|-damage|p2a: Thievul|0 fnt
+|faint|p2a: Thievul
+|-damage|p1a: Mimikyu|0 fnt|[from] item: Life Orb
+|faint|p1a: Mimikyu
+|
+|upkeep
+|
+|t:|1790281480
+|switch|p1a: Salazzle|Salazzle, L50, F|100/100
+|switch|p2a: Araquanid|Araquanid, L50, M|100/100
+|turn|7
+|
+|t:|1790281486
+|move|p1a: Salazzle|Nasty Plot|p1a: Salazzle
+|-boost|p1a: Salazzle|spa|2
+|move|p2a: Araquanid|Sticky Web|p1a: Salazzle
+|-sidestart|p1: void1323|move: Sticky Web
+|
+|upkeep
+|turn|8
+|
+|t:|1790281492
+|move|p1a: Salazzle|Sludge Wave|p2a: Araquanid
+|-damage|p2a: Araquanid|24/100
+|-status|p2a: Araquanid|psn
+|move|p2a: Araquanid|Mirror Coat|p1a: Salazzle
+|-enditem|p1a: Salazzle|Focus Sash
+|-damage|p1a: Salazzle|1/100
+|
+|-damage|p2a: Araquanid|12/100 psn|[from] psn
+|upkeep
+|turn|9
+|
+|t:|1790281501
+|move|p1a: Salazzle|Sludge Wave|p2a: Araquanid
+|-damage|p2a: Araquanid|0 fnt
+|faint|p2a: Araquanid
+|
+|upkeep
+|
+|t:|1790281505
+|switch|p2a: Talonflame|Talonflame, L50, M|100/100
+|turn|10
+|
+|t:|1790281512
+|move|p2a: Talonflame|Brave Bird|p1a: Salazzle
+|-damage|p1a: Salazzle|0 fnt
+|faint|p1a: Salazzle
+|-damage|p2a: Talonflame|99/100|[from] Recoil
+|
+|upkeep
+|
+|t:|1790281522
+|switch|p1a: Hydreigon|Hydreigon, L50, M|100/100
+|turn|11
+|
+|t:|1790281527
+|move|p1a: Hydreigon|Dark Pulse|p2a: Talonflame
+|-damage|p2a: Talonflame|27/100
+|move|p2a: Talonflame|Brave Bird|p1a: Hydreigon
+|-damage|p1a: Hydreigon|48/100
+|-damage|p2a: Talonflame|9/100|[from] Recoil
+|
+|upkeep
+|turn|12
+|
+|t:|1790281535
+|move|p1a: Hydreigon|Dark Pulse|p2a: Talonflame
+|-damage|p2a: Talonflame|0 fnt
+|faint|p2a: Talonflame
+|
+|upkeep
+|
+|t:|1790281536
+|switch|p2a: Floette|Floette-Eternal, L50, F|100/100
+|turn|13
+|
+|t:|1790281542
+|detailschange|p2a: Floette|Floette-Mega, L50, F
+|-mega|p2a: Floette|Floette|Floettite
+|-ability|p2a: Floette|Fairy Aura
+|move|p1a: Hydreigon|Dark Pulse|p2a: Floette
+|-resisted|p2a: Floette|1
+|-damage|p2a: Floette|80/100
+|cant|p2a: Floette|flinch
+|
+|upkeep
+|turn|14
+|
+|t:|1790281549
+|move|p1a: Hydreigon|Dark Pulse|p2a: Floette
+|-resisted|p2a: Floette|1
+|-damage|p2a: Floette|62/100
+|move|p2a: Floette|Calm Mind|p2a: Floette
+|-boost|p2a: Floette|spa|1
+|-boost|p2a: Floette|spd|1
+|
+|upkeep
+|turn|15
+|
+|t:|1790281556
+|switch|p1a: Azumarill|Azumarill, L50, M|100/100
+|-activate|p1a: Azumarill|move: Sticky Web
+|-unboost|p1a: Azumarill|spe|1
+|move|p2a: Floette|Substitute|p2a: Floette
+|-start|p2a: Floette|Substitute
+|-damage|p2a: Floette|38/100
+|
+|upkeep
+|turn|16
+|
+|t:|1790281564
+|move|p2a: Floette|Draining Kiss|p1a: Azumarill
+|-crit|p1a: Azumarill
+|-damage|p1a: Azumarill|33/100
+|-heal|p2a: Floette|100/100|[from] drain|[of] p1a: Azumarill
+|-enditem|p1a: Azumarill|Sitrus Berry|[eat]
+|-heal|p1a: Azumarill|57/100|[from] item: Sitrus Berry
+|move|p1a: Azumarill|Perish Song|p1a: Azumarill
+|-start|p1a: Azumarill|perish3|[silent]
+|-start|p2a: Floette|perish3|[silent]
+|-fieldactivate|move: Perish Song
+|
+|-start|p2a: Floette|perish3
+|-start|p1a: Azumarill|perish3
+|upkeep
+|turn|17
+|
+|t:|1790281575
+|move|p1a: Azumarill|Protect|p1a: Azumarill
+|-singleturn|p1a: Azumarill|Protect
+|move|p2a: Floette|Draining Kiss|p1a: Azumarill
+|-activate|p1a: Azumarill|move: Protect
+|
+|-start|p2a: Floette|perish2
+|-start|p1a: Azumarill|perish2
+|upkeep
+|turn|18
+|
+|t:|1790281582
+|move|p1a: Azumarill|Protect||[still]
+|-fail|p1a: Azumarill
+|move|p2a: Floette|Draining Kiss|p1a: Azumarill
+|-damage|p1a: Azumarill|10/100
+|
+|-start|p2a: Floette|perish1
+|-start|p1a: Azumarill|perish1
+|upkeep
+|turn|19
+|
+|t:|1790281593
+|switch|p2a: Annihilape|Annihilape, L50, F|100/100
+|switch|p1a: Hydreigon|Hydreigon, L50, M|48/100
+|
+|upkeep
+|turn|20
+|
+|t:|1790281600
+|move|p1a: Hydreigon|Dark Pulse|p2a: Annihilape
+|-damage|p2a: Annihilape|63/100
+|move|p2a: Annihilape|Drain Punch|p1a: Hydreigon
+|-supereffective|p1a: Hydreigon|1
+|-damage|p1a: Hydreigon|0 fnt
+|-heal|p2a: Annihilape|82/100|[from] drain|[of] p1a: Hydreigon
+|faint|p1a: Hydreigon
+|
+|-heal|p2a: Annihilape|88/100|[from] item: Leftovers
+|upkeep
+|-message|void1323 forfeited.
+|
+|win|viscus_55
+|raw|void1323's rating: 1077 &rarr; <strong>1058</strong><br />(-19 for losing)
+|raw|viscus_55's rating: 1123 &rarr; <strong>1145</strong><br />(+22 for winning)
+|l|☆void1323
+|player|p1|
+|l|☆viscus_55
+|player|p2|

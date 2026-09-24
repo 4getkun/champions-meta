@@ -1,0 +1,40 @@
+name: update data
+
+on:
+  schedule:
+    - cron: "0 19 * * *"   # 毎日 JST 04:00: リプレイの取得と再計算
+    - cron: "30 20 3 * *"  # 毎月 3 日 JST 05:30: Smogon の前月分（1〜2 日に出る）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest -q
+      # Smogon は毎回見に行くが、持っている月は取らない（新しい月が出たときだけ増える）
+      - run: python -m cmeta all
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data out
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "chore: update data $(TZ=Asia/Tokyo date +%F)"
+            git push
+          fi

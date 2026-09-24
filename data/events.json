@@ -1,0 +1,4 @@
+{
+  "_comment": "手で書く出来事。日付が確かなものだけ書く（推測で書かない）。date は YYYY-MM-DD、format は対象のルール名（全体なら null）。",
+  "events": []
+}
