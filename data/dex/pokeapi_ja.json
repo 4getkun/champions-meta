@@ -3175,6 +3175,10 @@
   "slug": "sableye-mega",
   "species_ja": "ヤミラミ"
  },
+ "species:salamence": {
+  "ja": "ボーマンダ",
+  "slug": "salamence"
+ },
  "species:salazzle": {
   "ja": "エンニュート",
   "slug": "salazzle"
@@ -3261,6 +3265,7 @@
   "ja": "ヤバソチャ",
   "slug": "sinistcha"
  },
+ "species:sinistchamasterpiece": null,
  "species:sirfetchd": {
   "ja": "ネギガナイト",
   "slug": "sirfetchd"
