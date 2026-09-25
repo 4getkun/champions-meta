@@ -64,3 +64,19 @@ def test_japanese_names():
     assert compose_ja("イダイトウ", None) == "イダイトウ"
     assert slug_candidates("Meowstic-F-Mega") == ["meowstic-f-mega", "meowstic-female-mega"]
     assert slug_candidates("Kommo-o") == ["kommo-o"]
+
+
+def test_revealed_and_faints():
+    rec = parse_log((FIX / "vgc_bo3.log").read_text("utf-8"))
+    mine, theirs = rec["revealed"]
+    assert mine["Aerodactyl"]["i"] == "aerodactylite"  # メガストーン
+    assert "trickroom" in theirs["Sinistcha"]["m"] and theirs["Sinistcha"]["i"] == "sitrusberry"
+    assert all(set(r) <= set(t) for r, t in zip(rec["revealed"], rec["teams"]))
+    assert rec["faints"][0] == [1, "Talonflame"] and len(rec["faints"]) == 6
+
+
+def test_bot_names():
+    from cmeta.replays import is_bot
+
+    assert is_bot(["someone", "ChampNashBot94154"]) and is_bot(["PokeChamp v2", "x"])
+    assert not is_bot(["alice", "carol"])

@@ -125,3 +125,68 @@ def test_cores_graph():
     res = cores.analyze({"2026-04": md, "2026-05": md})
     c4, c5 = res["months"]["2026-04"]["cores"], res["months"]["2026-05"]["cores"]
     assert c4[0]["members"] == ["a", "b"] and c5[0]["id"] == c4[0]["id"] and c5[0]["continued"]
+
+
+class _FakeDex:
+    def types(self, k):
+        return {"a": ["Fire"], "u": ["Grass"]}.get(k, ["Normal"])
+
+    def effectiveness(self, atk, defs):
+        return 2.0 if (atk, tuple(defs)) == ("Fire", ("Grass",)) else 1.0
+
+    def species(self, k):
+        return None
+
+
+def _joint_samples(n=100):
+    team = ["a", "b", "c", "d", "e", "f"]
+    opp = ["u", "v", "w", "x", "y", "z"]
+    # a と b はいつも選出・先発、f は一度も選出しない
+    return [{"t": i, "team": team, "opp": opp, "brought": {"a", "b", "c" if i % 2 else "d", "e"},
+             "leads": {"a", "b"}, "megas": set()} for i in range(n)]
+
+
+def test_joint_probabilities_and_marginals():
+    from cmeta.analysis import joint
+
+    xs = _joint_samples()
+    feat = joint._featurizer(xs, {"a": {"stone": 1.0}, "c": {"stone": 1.0}}, _FakeDex(), 4)
+    opts = joint.options(xs[0]["team"], 4, 2)
+    assert len(opts) == 15 * 6
+    X = feat.matrix(xs[0]["team"], xs[0]["opp"], opts)
+    p = joint.probs(X, joint.baseline_w())
+    assert math.isclose(p.sum(), 1.0, abs_tol=1e-9)
+    bring, lead = joint.marginals(p, opts, xs[0]["team"])
+    assert math.isclose(sum(bring.values()), 4.0, abs_tol=1e-9) and math.isclose(sum(lead.values()), 2.0, abs_tol=1e-9)
+    assert bring["a"] > bring["c"] > bring["f"]
+    assert set(sorted(lead, key=lambda k: -lead[k])[:2]) == {"a", "b"}
+    # メガ要員 2 匹（a と c）を同時に選ぶ組だけ stone_pair が 1
+    i = joint.FEATURES.index(("stone_pair", "メガ"))
+    assert {tuple(sorted(s)) for (s, _), row in zip(opts, X) if row[i] == 1.0} ==         {tuple(sorted(s)) for s, _ in opts if {"a", "c"} <= s}
+    # a（ほのお）は相手の u（くさ）に抜群を取れる
+    assert feat.per_member("a", xs[0]["team"], xs[0]["opp"])["hit"] == 1 / 6
+
+
+def test_joint_evaluate_and_average_opponent():
+    from cmeta.analysis import joint
+
+    xs = _joint_samples()
+    feat = joint._featurizer(xs, {}, _FakeDex(), 4)
+    data = joint._dataset(xs[:20], feat, 4, 2)
+    ev = joint.evaluate(data, joint.baseline_w(), 4, 2)
+    assert ev["n"] == 20 and ev["lead_top"] == 1.0 and 0 <= ev["back_top"] <= 1
+    assert ev["bring_top"] >= 0.75  # a・b・e は必ず当たる
+    avg = joint.avg_opponent(xs)
+    assert math.isclose(sum(w for _, w in avg), 6.0) and {k for k, _ in avg} == set(xs[0]["opp"])
+    # 平均的な相手でも、名前の相手と同じ形で計算できる
+    assert feat.matrix(xs[0]["team"], avg, joint.options(xs[0]["team"], 4, 2)).shape == (90, len(joint.FEATURES))
+
+
+def test_split_holdout_extends_to_min_test():
+    from cmeta.analysis import joint
+
+    xs = [{"t": i * 86400} for i in range(1000)]  # 1 日 1 件
+    train, test, _ = joint.split_holdout(xs)
+    assert len(test) == joint.MIN_TEST and len(train) + len(test) == 1000
+    train, test, _ = joint.split_holdout(xs[:500])
+    assert len(test) == 200  # 4 割まで

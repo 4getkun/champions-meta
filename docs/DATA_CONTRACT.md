@@ -11,6 +11,8 @@
 - **「まとめた名前」**（`group`）は、メガ・ゲンシ・戦闘中だけの姿を元に戻したもの（`Charizard-Mega-Y` → `Charizard`、
   `Floette-Mega` → `Floette-Eternal`）。リージョンフォーム（`Ninetales-Alola`）は別のまま。
 - 系列（配列）は `months` などの見出しの配列と同じ長さ。値が無い月は `null`。
+- リプレイから作るもの（weekly・select・induce・diag・matchup）は、**ボットの試合を除く**
+  （どちらかのプレイヤー名が bot・pokechamp・metamon・pokellmon・agent を含む試合）。
 - 使用率 `usage` は **チームにそのポケモンが入っていた割合**。1 チーム 6 匹なので、全ポケモンの合計は約 6 になる
   （1 匹ぶんは 0〜1 の範囲）。割合の円グラフのように「合計 100%」として描かない。
 
@@ -27,6 +29,7 @@
     "bo3": false,
     "game_type": "doubles",       // "doubles" | "singles"
     "track": "vgc2026",           // tracks/<track>.json の名前
+    "team_select": true,          // 見せ合いから選出するルールか（BSS・VGC・4v4）。false なら select/ と induce/ は予想を出さない
     "months": ["2026-06", "2026-07", "2026-08"],   // monthly/ にある月（無ければ []）
     "replay_days": 12             // リプレイがある日数（0 なら weekly/ は無い）
   }],
@@ -42,13 +45,19 @@
 {
   "pokemon":   { "Charizard-Mega-Y": { "ja": "メガリザードンＹ", "group": "Charizard", "mega": true,
                                        "types": ["Fire", "Flying"], "num": 6,
-                                       "base_stats": { "hp": 78, "atk": 104, "def": 78, "spa": 159, "spd": 115, "spe": 100 } } },
+                                       "base_stats": { "hp": 78, "atk": 104, "def": 78, "spa": 159, "spd": 115, "spe": 100 },
+                                       "sprite": { "front": "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/10035.png",
+                                                   "home":  "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/home/10035.png" } } },
   "items":     { "sitrusberry": { "en": "Sitrus Berry", "ja": "オボンのみ" } },
   "moves":     { "fakeout":     { "en": "Fake Out", "ja": "ねこだまし" } },
   "abilities": { "intimidate":  { "en": "Intimidate", "ja": "いかく" } }
 }
 ```
-- 画像（スプライト）は出さない決まり（docs/PLAN.md 1.2）。タイプの色などはデザイン部で決める。
+- `sprite` は PokeAPI の画像（CDN 経由。こちらには複製しない）。
+  - `front`: 96px のドット絵（約 1.4KB）。**一覧・表・グラフの横など、並べる所はこちら**。`image-rendering: pixelated` で拡大してよい。
+  - `home`: HOME の立体画像（約 110KB）。大きく 1 匹だけ見せる所だけ。`null` のときは `front` を使う。
+  - `sprite` 自体が `null` のこともある（画像が見つからない姿）。名前だけで表示する。
+  - 画像には `loading="lazy"` と `width`/`height` を付ける。ページのどこかに「画像: PokeAPI / © Nintendo・Creatures・GAME FREAK」を出す。
 
 ## monthly/&lt;format&gt;.json — 月次（Smogon）
 ```jsonc
@@ -81,6 +90,21 @@
   "mega_split": { "2026-08": { "Charizard": { "Charizard-Mega-Y": 0.97, "Charizard-Mega-X": 0.03, "Charizard": 0.002 } } }
 }
 ```
+
+## pokemon/&lt;format&gt;.json — ポケモン詳細（最新の月・標準の足切り）
+```jsonc
+{
+  "format": "…", "month": "2026-08", "cutoff": 1630, "battles": 1269250,
+  "pokemon": { "Kingambit": {                  // 姿ごと。チームあたり 0.5% 以上のものだけ
+      "usage": 0.40, "rank": 1, "raw": 12345,   // rank は姿ごとの順位
+      "moves": { "suckerpunch": 0.998 },         // その技を入れている割合（合計は約 4）。12 位まで
+      "items": { "chopleberry": 0.36 }, "abilities": { "defiant": 0.99 },
+      "spreads": { "Adamant:32/32/0/0/2/0": 0.12 },   // 性格:H/A/B/C/D/S の能力ポイント
+      "teammates": [["Basculegion", 0.376]]      // このポケモンのチームに相手もいた割合。12 匹まで
+  } }
+}
+```
+- 一覧の「まとめた名前」から詳細を開くときは、`names.json` の `group` が同じ姿を集める（例: Charizard → Charizard-Mega-Y / -X / Charizard）。
 
 ## tracks/&lt;track&gt;.json — レギュレーションをつないだ系列
 ```jsonc
@@ -157,3 +181,90 @@
 ```
 - 並びの名前は `cores/<format>.json` の同じ月（無ければ直近の過去の月）の `cores[].members` から作る。
 - **「強さ」と書かない**（腕前が混ざる）。「このリプレイ群では」と書く。
+
+## select/&lt;format&gt;.json — P1 選出・先発の予想（組の予想）
+見せ合いから選出するルール（`meta.json` の `team_select` が true）だけ。ボットの試合は使わない。
+```jsonc
+{
+  "format": "…",
+  "available": true,             // false のときは "reason" だけ
+  "model": "joint",
+  "usable": true,                // 答え合わせで確率の当てはまり（対数尤度）が「全体の率だけ」よりはっきり良かったか（95% 範囲の下端 > 0）
+  "k_bring": 4, "k_lead": 2,     // 選出数・先発の数（シングルは 3 と 1）
+  "m": 10,                       // 縮めの強さ
+  "features": ["base", "lead_base", "cobring", "vs", "hit", "hurt", "speed", "stone", "stone_pair", …],
+  "weights": [20 個],            // features と同じ順
+  "g_bring": 0.66, "g_lead": 0.33,
+  "base": { "Kingambit": [n, 選出, n先発, 先発] },             // まとめた名前
+  "vs":   { "Kingambit": { "Incineroar": [n, 選出, n先発, 先発] } },   // 相手の見せ合いにいたとき
+  "cobring": { "Incineroar|Kingambit": 0.21 },                 // 名前を並べた順（a < b）。同時に選出されやすさ（logit のずれ）
+  "roles": { "Pelipper": { "redirect": 0.1, "stone": 0.0, "tr": 0.01, "set": { "rain": 1.0 }, "abuse": {…}, "speed": 65,
+                           "types": ["Water", "Flying"] } },     // 無いキーは 0。types はメガストーンを持つ確率 0.5 以上のときのメガの姿のタイプ
+  "avg_opp": [["Incineroar", 0.52], …],   // 自分のチームが分からないときの「平均的な相手」（重みの合計 6）
+  "trained": { "samples": 2060, "from": 1788000000, "to": 1789900000 },   // UNIX 秒
+  "eval": {
+    "train": 1264, "test": 796, "test_from": 1789300000,   // 答え合わせ = test_from 以降（直近 7 日。足りなければ 300 件・全体の 4 割まで広げる）
+    "bring": { "model": 0.683, "baseline": 0.674, "diff": 0.009, "ci": [-0.004, 0.022], "random": 0.667, "unknown_opp": 0.671 },
+    "lead":  { … },              // 予想の上位 k 匹のうち実際に選出・先発した割合。ci は差の 95% 範囲（試合を引き直す）
+    "back":  { … },              // 実際の先発を見たあと、残りの選出の予想の当たり
+    "loglik": { "model": -4.45, "baseline": -4.52, "diff": 0.07, "ci": [0.03, 0.11] },
+    "bring_set_top1": { "model": 0.09, "baseline": 0.08 }, "lead_set_top3": { … },
+    "calibration": [[予想の平均, 実際の割合, 件数], …]
+  },
+  "examples": [{ "team": [...], "opp": [...] | "avg", "bring": { "名前": 確率 }, "lead": { … } }]   // 画面側の計算の確認用
+}
+```
+**予想の計算**（`src/cmeta/analysis/joint.py` の `Featurizer.matrix()` と `probs()` と同じ。画面側はこれを実装する）:
+1. 率 `rate(e, which, prior) = (当たり + m·prior) / (数 + m)`（e が無ければ prior）。which が bring なら `e[0], e[1]`、lead なら `e[2], e[3]`。
+2. 予想される側のチーム T の各 k について（相手 = 自分の 6 匹。分からなければ avg_opp を重み付きで使う。名前だけなら重み 1）:
+   - `pb = rate(base[k], bring, g_bring)`、`base = logit(pb)`、`lead_base = logit(rate(base[k], lead, g_lead))`
+   - vs = Σ_{u, vs[k][u] がある} w_u · (logit(rate(vs[k][u], bring, pb)) − base)
+   - タイプは `roles[k].types` があればそれ、無ければ `names.json` の types。
+     hit = Σ w_u [k のタイプのどれかで u に倍率 ≥ 2] / 6、hurt = Σ w_u [u のタイプのどれかで k に倍率 ≥ 2] / 6
+   - speed = (spe(k) − Σ w_u spe(u) / Σ w_u) / 50。spe は `roles[x].speed`、無ければ 80
+3. 選択肢 = T から選ぶ k_bring 匹の組 S × その中の先発 k_lead 匹 L（ダブル 90 通り、シングル 60 通り）。特徴は:
+   - S の和: base, vs, hit, hurt, stone, tr_bring(=tr)。S の 2 匹ずつ: stone_pair(= stone·stone), cobring
+   - L の和: lead_base, speed, fakeout_lead, intimidate_lead, redirect_lead, tailwind_lead, tr_lead, hazard_lead, sash_lead
+   - 天候 w ごとに: weather_bring += max_S set[w]、weather_pair += max_S set[w] × Σ_S abuse[w]、weather_lead += max_L set[w]
+4. `P(S, L) = softmax(weights · 特徴)`。選出率・先発率は、その k を含む選択肢の確率の合計。
+   先発を見たあとの残りは、L が見た先発の選択肢だけで割り戻す。
+- logit は `p` を 1e-4〜1−1e-4 に収めてから計算する。タイプ相性は `dex.json` を使う。
+- **usable が false のときは** weights の代わりに base と lead_base だけ 1（他は 0）で計算する（全体の率だけ）。
+
+## induce/&lt;format&gt;.json — 選出誘導
+見せ合いから選出するルールだけ。ポケモン u を見せ合いに入れたとき、相手の選出・先発がどう変わるか。
+```jsonc
+{
+  "format": "…", "available": true, "samples": 2060, "min_u": 60, "min_k": 15,
+  "game_type": "doubles", "k_bring": 4,
+  "pokemon": { "Floette-Eternal": {
+    "n": 243,                                   // u を見せ合いに入れた回数（同じ見せ合いの繰り返しは 1 回）
+    "strength": { "bring": 0.012, "lead": 0.0 }, // 誘導の強さ（率の変化の 2 乗平均から偶然の揺れを引いた平方根。0 は揺れと区別できない）
+    "strength_logit": { … },                     // ルールをまたいで比べるときの物差し（対数オッズ）
+    "stone": 0.98,
+    "up":   [{ "name": "Metagross", "n": 21, "bring": [全体, uがいたとき], "ci": 0.12, "lead": [全体, uがいたとき],
+               "clear": false, "type": "up" | "down" | null, "type_ok": true | false | null }],   // 増える順
+    "down": [ … ],                                                                                  // 減る順
+    "lead_pairs": [{ "pair": ["A", "B"], "n": 7, "share": [全体, uがいたとき] }]                    // ダブルだけ
+  } },
+  "mega_test": { "bring": { "available": true, "mega_mean": …, "other_mean": …, "diff": …, "p": 0.18 }, "lead": { … } },
+  "type_check": { "agree": 40, "disagree": 15, "rate": 0.73 }
+}
+```
+
+## diag/&lt;format&gt;.json — P2 チーム診断の材料
+```jsonc
+{
+  "format": "…",
+  "attack_types": { "Dark": 0.14, "Fire": 0.11 },     // 環境の攻撃技のタイプの割合（使用率 × 技の採用率、変化技は除く）
+  "top": [["Garchomp", 0.445], …],                    // 使用率の上位 40（まとめた名前、標準の足切り）
+  "pairs": { "Garchomp": { "Kingambit": [試合数, 勝ち数] } },   // A を出した側が B を出した側に勝った数（リプレイ、ミラーは除く）
+  "min_games": 15                                     // これ未満の組は入っていない
+}
+```
+- 勝率は 50% に向けて縮めて出す（例: `(勝ち + 5) / (試合 + 10)`）。腕前の差が混ざるので「このリプレイ群では」と書く。
+
+## dex.json
+```jsonc
+{ "typechart": { "Steel": { "Fire": 2, "Normal": 0.5, "Poison": 0 } } }   // {守るタイプ: {攻めるタイプ: 倍率}}
+```

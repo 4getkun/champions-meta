@@ -17,8 +17,9 @@
 pip install -e ".[dev]"
 python -m cmeta fetch-smogon        # まだ持っていない月の Smogon 統計
 python -m cmeta fetch-replays       # 新しい公開リプレイ（1 ルール 1,500 件まで）
+python -m cmeta fetch-ladder        # 上位 500 人を記録し、上位 200 人のリプレイを狙って取る（シングル・ダブル）
 python -m cmeta build               # out/ を作り直す（--no-names で PokeAPI に問い合わせない）
-python -m cmeta all                 # 上の三つ
+python -m cmeta all                 # 上の四つ
 python -m pytest -q
 ```
 定期実行は `.github/workflows/update.yml`（毎日と毎月 3 日）。
@@ -27,6 +28,7 @@ python -m pytest -q
 - `data/name_overrides.json`: 名前の対応が取れないとき。キーは次のとおり。
   - `"species:<showdown id>": "日本語名"`
   - `"slug:<showdown id>": "<PokeAPI の slug>"`
+  - `"sprite:<showdown id>": "<画像のファイル名>"`（見た目だけの姿。例: `1013-masterpiece`）
   - `"item:<id>"` / `"move:<id>"` / `"ability:<id>"`: `"日本語名"`
   `out/meta.json` の `warnings` に日本語名の無いものが出る。
 - `data/events.json`: レギュレーションの開始日などの出来事。日付が確かなものだけ書く。
@@ -35,4 +37,4 @@ python -m pytest -q
 - Smogon usage statistics — https://www.smogon.com/stats/
 - Pokémon Showdown（データとリプレイ、コードは MIT）— https://github.com/smogon/pokemon-showdown
 - PokeAPI（BSD-3-Clause）— https://pokeapi.co/ 。取ったものは `data/dex/` に控え、同じものを取りに行かない。
-- ポケモンの画像は使わない。
+- ポケモンの画像は PokeAPI の画像（PokeAPI/sprites）を CDN（jsDelivr）から表示する。ファイルはこのリポジトリに複製しない。画像の権利は任天堂などにある。

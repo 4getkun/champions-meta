@@ -1,0 +1,388 @@
+/* チャンピオンズ メタ — A 案（ガラスのベントー）。色はすべて :root の変数。
+   ダークは 2 か所に同じ値を書く（端末の設定に従う @media と、手動で選んだときの [data-theme="dark"]）。 */
+
+:root {
+  color-scheme: light;
+  --bg: #f6f4fb;
+  --glow1: #e6dcff;
+  --glow2: #e9ffd0;
+  --card: rgba(255, 255, 255, .74);
+  --edge: rgba(255, 255, 255, .95);
+  --ink: #1d1a2e;
+  --on-ink: #ffffff;
+  --sub: #57536b;
+  --muted: #7d7995;
+  --line: #ece9f5;
+  --accent: #6d4df2;
+  --accent-soft: #f1edff;
+  --context: #cfc9e4;
+  --up: #2a78d6;
+  --down: #eb6834;
+  --lime: #e9ffd0;
+  --lime-ink: #3d6b12;
+  --warn-bg: #fff1d6;
+  --warn-ink: #8a5a00;
+  --shadow: 0 1px 0 #fff inset, 0 20px 50px rgba(70, 50, 150, .08);
+  --tab-bg: rgba(255, 255, 255, .86);
+  --tile-ink-bg: #1d1a2e;
+  --tile-ink-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #100e1d;
+    --glow1: #2b2058;
+    --glow2: #1d3312;
+    --card: rgba(35, 31, 60, .76);
+    --edge: rgba(255, 255, 255, .08);
+    --ink: #f1eeff;
+    --on-ink: #100e1d;
+    --sub: #c6c0e6;
+    --muted: #a39dc4;
+    --line: #2e2a48;
+    --accent: #b9a6ff;
+    --accent-soft: #2c2650;
+    --context: #463f6b;
+    --up: #3987e5;
+    --down: #d95926;
+    --lime: #2a3d17;
+    --lime-ink: #c9f58f;
+    --warn-bg: #3d2f12;
+    --warn-ink: #ffd48a;
+    --shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 20px 50px rgba(0, 0, 0, .35);
+    --tab-bg: rgba(35, 31, 60, .9);
+    --tile-ink-bg: var(--card);
+    --tile-ink-fg: var(--ink);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #100e1d;
+  --glow1: #2b2058;
+  --glow2: #1d3312;
+  --card: rgba(35, 31, 60, .76);
+  --edge: rgba(255, 255, 255, .08);
+  --ink: #f1eeff;
+  --on-ink: #100e1d;
+  --sub: #c6c0e6;
+  --muted: #a39dc4;
+  --line: #2e2a48;
+  --accent: #b9a6ff;
+  --accent-soft: #2c2650;
+  --context: #463f6b;
+  --up: #3987e5;
+  --down: #d95926;
+  --lime: #2a3d17;
+  --lime-ink: #c9f58f;
+  --warn-bg: #3d2f12;
+  --warn-ink: #ffd48a;
+  --shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 20px 50px rgba(0, 0, 0, .35);
+  --tab-bg: rgba(35, 31, 60, .9);
+  --tile-ink-bg: var(--card);
+  --tile-ink-fg: var(--ink);
+}
+
+* { box-sizing: border-box; margin: 0; }
+/* 日本語の改行: 文節で折り返す（Chrome・Edge）。効かないブラウザでは app.js が BudouX で同じことをする */
+body { word-break: auto-phrase; line-break: strict; }
+h1, h2, .h1, .big, .nm, .k { text-wrap: balance; }
+p, li, .note, .lead { text-wrap: pretty; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+body {
+  font-family: 'Zen Kaku Gothic New', system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 600px at 8% -10%, var(--glow1) 0, transparent 60%),
+    radial-gradient(800px 500px at 100% 8%, var(--glow2) 0, transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: inherit; }
+.page { max-width: 1440px; margin: 0 auto; padding: 36px 48px 56px; }
+
+/* 上の帯 */
+.top { display: flex; align-items: center; gap: 10px 18px; margin-bottom: 28px; flex-wrap: wrap; }
+.logo { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -.02em; text-decoration: none; }
+.logo b { font-weight: 800; color: var(--accent); margin-left: 2px; }
+.views { display: flex; gap: 4px; margin-right: auto; }
+.views a { text-decoration: none; font-size: 14px; font-weight: 700; padding: 8px 12px; border-radius: 12px; color: var(--sub); }
+.views a[aria-current="page"] { color: var(--ink); background: var(--accent-soft); }
+.formats { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.pill {
+  padding: 8px 16px; border-radius: 999px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer;
+  background: var(--card); border: 1px solid var(--edge); box-shadow: var(--shadow); text-decoration: none;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme { width: 40px; padding: 8px 0; }
+
+/* 見出し */
+.k { font-size: 12px; color: var(--muted); letter-spacing: .08em; }
+.hero h1 {
+  font-family: 'Inter Tight', 'Zen Kaku Gothic New', sans-serif;
+  font-size: clamp(48px, 6vw, 84px); line-height: .98; letter-spacing: -.04em; font-weight: 900; margin: 8px 0 12px;
+}
+.lead { font-size: 17px; color: var(--sub); max-width: 640px; line-height: 1.7; }
+
+/* ベントー */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; margin-top: 30px; }
+.c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; }
+.c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+.card {
+  background: var(--card); border: 1px solid var(--edge); border-radius: 28px; padding: 24px; box-shadow: var(--shadow);
+  min-width: 0;
+}
+/* ぼかしは大きなカードだけに付けない（多数のぼかしは重い）。上の帯とタブだけガラスにする */
+h2 { font-size: 18px; margin-bottom: 12px; }
+h2.sub { margin-top: 22px; }
+.chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--lime); color: var(--lime-ink);
+  font-size: 12px; font-weight: 700; margin-left: 6px; vertical-align: middle;
+}
+.chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+
+/* 数字のカード */
+.tile { position: relative; overflow: hidden; min-height: 150px; }
+.tile .big {
+  font-family: 'Inter Tight', 'Zen Kaku Gothic New', sans-serif; font-size: 60px; font-weight: 800;
+  letter-spacing: -.04em; line-height: 1; margin-top: 6px; position: relative;
+}
+.tile .big.name { font-size: 38px; letter-spacing: -.02em; }
+.tile .note { position: relative; }
+.tile.ink { background: var(--tile-ink-bg); color: var(--tile-ink-fg); }
+.tile.ink .k, .tile.ink .note { color: inherit; opacity: .72; }
+.tile-top img { position: absolute; right: -16px; bottom: -26px; width: 140px; height: 140px; }
+
+/* グラフ */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: 'Zen Kaku Gothic New', system-ui, sans-serif; }
+.empty { font-size: 14px; color: var(--muted); padding: 40px 0; text-align: center; }
+details.table { margin-top: 10px; font-size: 13px; }
+details.table summary { cursor: pointer; color: var(--muted); }
+details.table table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+details.table th, details.table td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+details.table th:first-child, details.table td:first-child { text-align: left; }
+
+/* 並び */
+.core { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.core span {
+  display: inline-flex; align-items: center; gap: 2px; padding: 4px 10px 4px 4px; border-radius: 12px;
+  background: var(--accent-soft); font-size: 13px;
+}
+.core span:first-child { background: var(--accent); color: var(--on-ink); }
+.spr { image-rendering: pixelated; flex: none; }
+.gap { list-style: none; padding: 0; }
+.gap li { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.gap li span { display: inline-flex; align-items: center; gap: 4px; }
+.gap b { color: var(--accent); font-family: 'Inter Tight', sans-serif; }
+
+/* スマホの総評（A5）。PC では隠す */
+.summary { display: none; position: relative; overflow: hidden; }
+.summary h1 { font-size: 30px; line-height: 1.3; font-weight: 900; margin-top: 6px; position: relative; max-width: 72%; }
+.summary h1 span { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--accent) 35%, transparent) 62%); }
+.summary p { font-size: 14px; line-height: 1.9; color: var(--sub); margin-top: 8px; max-width: 72%; position: relative; }
+.summary img { position: absolute; right: -14px; top: -6px; width: 140px; height: 140px; }
+
+/* 読み方 */
+.foot { margin-top: 36px; padding: 28px 4px 0; border-top: 1px solid var(--line); color: var(--sub); font-size: 14px; line-height: 1.9; }
+.foot ul { padding-left: 1.2em; margin-bottom: 14px; }
+.foot .src { font-size: 12px; color: var(--muted); }
+
+/* ツールチップ */
+.tip {
+  position: fixed; z-index: 10; pointer-events: none; padding: 10px 12px; border-radius: 14px; font-size: 12px; line-height: 1.6;
+  background: var(--ink); color: var(--on-ink); box-shadow: 0 10px 30px rgba(0, 0, 0, .2); max-width: 240px;
+  font-variant-numeric: tabular-nums;
+}
+.tip b { font-weight: 700; }
+
+/* スマホの下のタブ（A5）。PC では隠す */
+.tabbar { display: none; }
+
+@media (max-width: 1100px) {
+  .c3 { grid-column: span 6; }
+  .c4, .c5, .c7, .c8 { grid-column: span 12; }
+}
+@media (max-width: 720px) {
+  .page { padding: 18px 16px 110px; }
+  .top { margin-bottom: 14px; gap: 8px; }
+  .logo { font-size: 14px; }
+  .logo span { display: none; }
+  .formats { order: 3; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .formats .pill { white-space: nowrap; font-size: 12px; padding: 7px 12px; }
+  .hero { display: none; }
+  .summary { display: block; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
+  .grid { gap: 12px; margin-top: 0; }
+  .card { border-radius: 22px; padding: 18px; }
+  #t-top, #t-battles { display: none; }
+  .tile { min-height: 0; }
+  .tile .big { font-size: 40px; }
+  .tabbar {
+    display: flex; justify-content: space-around; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 5;
+    padding: 10px 6px; border-radius: 22px; background: var(--tab-bg); border: 1px solid var(--edge);
+    box-shadow: 0 10px 30px rgba(60, 40, 140, .18); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .tabbar a { text-decoration: none; font-size: 11px; text-align: center; color: var(--sub); min-width: 60px; }
+  .tabbar b { display: block; font-size: 18px; color: var(--ink); }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* ── 追加: 見出しの横の切り替え・ランキング・ポケモン詳細（pokedb の構成に学んだもの） ── */
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.head h2 { margin: 0; }
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--accent-soft); }
+.seg button { font: inherit; font-size: 12px; font-weight: 700; border: 0; background: none; color: var(--sub); padding: 5px 12px; border-radius: 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .1); }
+a.tile { text-decoration: none; color: inherit; display: block; transition: transform .15s; }
+a.tile:hover { transform: translateY(-2px); }
+
+/* タイプの色（カードの斜めの地・タイプの札に使う） */
+.t-normal { --type: #9fa19f; } .t-fire { --type: #e62829; } .t-water { --type: #2980ef; } .t-electric { --type: #f5b800; }
+.t-grass { --type: #3fa129; } .t-ice { --type: #3dc7ef; } .t-fighting { --type: #ff8000; } .t-poison { --type: #9141cb; }
+.t-ground { --type: #915121; } .t-flying { --type: #81b9ef; } .t-psychic { --type: #ef4179; } .t-bug { --type: #91a119; }
+.t-rock { --type: #afa981; } .t-ghost { --type: #704170; } .t-dragon { --type: #5060e1; } .t-dark { --type: #624d4e; }
+.t-steel { --type: #60a1b8; } .t-fairy { --type: #ef70ef; }
+.type { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--type); padding: 2px 8px; border-radius: 6px; }
+
+/* ランキング */
+.rank-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.h1 { font-family: 'Inter Tight', 'Zen Kaku Gothic New', sans-serif; font-size: clamp(36px, 5vw, 60px); font-weight: 900; letter-spacing: -.04em; margin-top: 4px; }
+.search { display: flex; align-items: center; gap: 8px; min-width: min(360px, 100%); padding: 10px 16px; border-radius: 999px; background: var(--card); border: 1px solid var(--edge); box-shadow: var(--shadow); color: var(--muted); }
+.search input { flex: 1; border: 0; background: none; font: inherit; font-size: 15px; color: var(--ink); outline: none; min-width: 0; }
+.rank-grid { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.rank-grid a {
+  display: grid; grid-template-columns: 38px 76px 1fr auto; align-items: center; gap: 10px; height: 64px; padding-right: 14px;
+  border-radius: 18px; background: var(--card); border: 1px solid var(--edge); box-shadow: var(--shadow); text-decoration: none; color: inherit;
+  overflow: hidden; transition: transform .15s;
+}
+.rank-grid a:hover { transform: translateY(-2px); }
+.rank-grid .no { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 20px; text-align: right; }
+.rank-grid .pic { position: relative; height: 64px; }
+.rank-grid .pic::before { content: ""; position: absolute; inset: 0 0 0 6px; background: var(--type, var(--context)); clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%); opacity: .9; }
+.rank-grid .pic img { position: relative; width: 64px; height: 64px; margin-left: 8px; image-rendering: pixelated; }
+.rank-grid .nm { font-weight: 700; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-grid .v { text-align: right; font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 14px; line-height: 1.2; }
+.rank-grid .v small { display: block; font-size: 11px; font-weight: 700; }
+.up-t { color: var(--up); } .dn-t { color: var(--down); } .eq-t { color: var(--muted); }
+.rank-grid .none { color: var(--muted); padding: 40px 0; text-align: center; grid-column: 1 / -1; }
+
+/* ポケモン詳細 */
+.poke-bar {
+  position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 14px; margin: 0 -8px 18px; padding: 12px 16px;
+  border-radius: 22px; background: var(--tab-bg); border: 1px solid var(--edge); box-shadow: var(--shadow);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.poke-bar img.home { width: 84px; height: 84px; margin: -18px 0 -18px -6px; }
+.poke-bar .nm { font-size: 28px; font-weight: 900; line-height: 1.1; }
+.poke-bar .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--sub); }
+.poke-bar .nav { margin-left: auto; display: flex; gap: 8px; }
+.poke-bar .nav a { text-decoration: none; font-size: 13px; padding: 8px 12px; border-radius: 12px; background: var(--accent-soft); white-space: nowrap; }
+.forms { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.bl { list-style: none; padding: 0; }
+.bl li { display: grid; grid-template-columns: minmax(0, 1fr) 90px 46px; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; }
+.bl .b { height: 10px; border-radius: 5px; background: var(--accent-soft); position: relative; }
+.bl .b i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); }
+.bl .p { font-family: 'Inter Tight', sans-serif; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.bl .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mates { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.mates a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 14px; background: var(--accent-soft); text-decoration: none; font-size: 12px; text-align: center; }
+.mates b { font-family: 'Inter Tight', sans-serif; font-size: 13px; }
+.stat { display: grid; grid-template-columns: 58px 36px 1fr; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; }
+.stat .b { height: 10px; border-radius: 5px; background: var(--accent-soft); position: relative; }
+.stat .b i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); }
+.stat b { font-family: 'Inter Tight', sans-serif; text-align: right; }
+.kv { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.kv div { padding: 12px 14px; border-radius: 16px; background: var(--accent-soft); }
+.kv b { display: block; font-family: 'Inter Tight', sans-serif; font-size: clamp(20px, 5.2vw, 28px); letter-spacing: -.02em; white-space: nowrap; }
+.maker { margin-top: 18px; opacity: .8; }
+.maker a { text-decoration: none; }
+
+@media (max-width: 720px) {
+  .logo { font-size: 18px; }
+  .views a { padding: 6px 8px; font-size: 13px; }
+  .formats { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .rank-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rank-grid a { grid-template-columns: 1fr; grid-template-rows: 58px auto auto; height: auto; padding: 0 0 10px; text-align: center; position: relative; }
+  .rank-grid .no { position: absolute; left: 8px; top: 4px; font-size: 16px; z-index: 1; text-align: left; }
+  .rank-grid .pic { height: 58px; }
+  .rank-grid .pic img { width: 58px; height: 58px; margin: 0 auto; display: block; }
+  .rank-grid .nm { padding: 0 6px; font-size: 13px; }
+  .rank-grid .v { text-align: center; }
+  .poke-bar { margin: 0 -4px 12px; gap: 10px; padding: 10px 12px; }
+  .poke-bar img.home { width: 64px; height: 64px; margin: -10px 0 -10px -4px; }
+  .poke-bar .nm { font-size: 20px; }
+  .poke-bar .nav a { padding: 6px 8px; font-size: 12px; }
+  .poke-bar .nav .lbl { display: none; }
+}
+.plain { text-decoration: none; }
+
+/* 「A · B」の固まり（app.js の dots）。区切りは前の項目の末尾に付き、項目の途中では折り返さない */
+.dots > span { display: inline-block; white-space: nowrap; }
+.dots > span:not(:last-child)::after { content: " · "; }
+.rank-grid .nm small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.pill { white-space: nowrap; }
+
+/* ── 選出予想・チーム診断 ── */
+.c6 { grid-column: span 6; }
+.sub-grid { margin-top: 0; }
+.team-in .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.team-in .slot { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 4px; border-radius: 14px; background: var(--accent-soft); min-width: 0; }
+.team-in .slot img, .team-in .slot .ph { width: 40px; height: 40px; flex: none; image-rendering: pixelated; }
+.team-in .slot .ph { border-radius: 10px; background: color-mix(in srgb, var(--context) 40%, transparent); }
+.team-in .slot input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 14px; color: var(--ink); outline: none; padding: 8px 0; }
+.team-in .slot.bad { outline: 2px solid var(--down); }
+.team-in .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.team-in .tools button { font: inherit; font-size: 12px; font-weight: 700; border: 0; border-radius: 10px; padding: 7px 12px; background: var(--accent-soft); color: var(--ink); cursor: pointer; }
+.team-in textarea { width: 100%; min-height: 120px; margin-top: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: 12px/1.6 ui-monospace, monospace; padding: 10px; }
+.pred { list-style: none; padding: 0; display: grid; gap: 8px; }
+.pred li { display: grid; grid-template-columns: 48px minmax(0, 1fr) 150px; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 16px; background: var(--accent-soft); }
+.pred li.fix { background: color-mix(in srgb, var(--accent) 22%, var(--card)); }
+.pred li.bench { opacity: .72; }
+.pred li.seen { outline: 2px solid var(--up); outline-offset: -2px; }
+.pred .slot { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; vertical-align: 2px; background: var(--card); color: var(--muted); }
+.pred .slot.fix { background: var(--accent); color: var(--on-accent, #fff); }
+.pred .slot.flex { background: var(--warn-bg); color: var(--warn-ink); }
+.pred .seen-btn { margin-top: 4px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
+.pred .seen-btn[aria-pressed="true"] { background: var(--up); border-color: var(--up); color: #fff; }
+.pred .bars .b i.bk { background: var(--warn-ink); }
+.sets { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
+.sets li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 10px; border-radius: 12px; background: var(--accent-soft); font-size: 13px; }
+.sets .icons { display: flex; }
+.sets .icons img { margin-right: -6px; }
+.mu .clear { color: var(--accent); font-size: 10px; vertical-align: 1px; }
+.sets b { font-family: 'Inter Tight', sans-serif; }
+.pred li img { width: 48px; height: 48px; image-rendering: pixelated; }
+.pred .nm { font-weight: 700; }
+.pred .nm small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.pred .bars { display: grid; gap: 4px; font-size: 12px; }
+.pred .bars div { display: grid; grid-template-columns: 34px 1fr 40px; gap: 6px; align-items: center; }
+.pred .bars .b { height: 8px; border-radius: 4px; background: var(--card); position: relative; }
+.pred .bars .b i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
+.pred .bars .b i.ld { background: var(--up); }
+.pred .bars b { font-family: 'Inter Tight', sans-serif; text-align: right; }
+.evalbox { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; line-height: 1.7; }
+.tt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tt th, .tt td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+.tt th:first-child, .tt td:first-child { text-align: left; }
+.tt .hole { color: var(--down); font-weight: 700; }
+.tt .ok { color: var(--up); font-weight: 700; }
+.tt .share { display: inline-block; height: 8px; border-radius: 4px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
+.mu { list-style: none; padding: 0; display: grid; gap: 6px; }
+.mu li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px; }
+.mu li img { width: 36px; height: 36px; image-rendering: pixelated; }
+.mu b { font-family: 'Inter Tight', sans-serif; }
+@media (max-width: 1100px) { .c6 { grid-column: span 12; } }
+@media (max-width: 720px) {
+  .team-in .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pred li { grid-template-columns: 40px minmax(0, 1fr); }
+  .pred li img { width: 40px; height: 40px; }
+  .pred .bars { grid-column: 1 / -1; }
+  .sets li { font-size: 12px; }
+  .sets li > span:nth-child(2) { word-break: normal; overflow-wrap: anywhere; }
+}

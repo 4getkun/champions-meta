@@ -17,6 +17,7 @@ SMOGON_BASE = "https://www.smogon.com/stats"
 SHOWDOWN_DATA = "https://play.pokemonshowdown.com/data"
 REPLAY_BASE = "https://replay.pokemonshowdown.com"
 POKEAPI = "https://pokeapi.co/api/v2"
+SPRITE_BASE = "https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites"  # 画像は複製せず CDN から
 
 FORMAT_PREFIX = "gen9champions"
 FIRST_MONTH = "2026-04"  # Smogon にチャンピオンズが出た最初の月

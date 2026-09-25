@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>チャンピオンズ メタ — ポケモンチャンピオンズの使用率・並び・選出率の推移</title>
+<meta name="description" content="ポケモンチャンピオンズ（Pokémon Showdown）の使用率ランキングと推移、ポケモンごとの技・持ち物・特性・能力ポイント、よく一緒に使われる並び、選出率を、Smogon の月次統計と公開リプレイから毎日更新。非公式ファンツール。">
+<meta property="og:title" content="チャンピオンズ メタ — 使用率・並び・選出率の推移">
+<meta property="og:description" content="ポケモンチャンピオンズの環境を、Smogon の月次統計と公開リプレイからひと目で。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#f6f4fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#100e1d" media="(prefers-color-scheme: dark)">
+<script>
+  // 描画の前にテーマを当てる（hub と同じ localStorage の "theme"）。?theme=dark / light はその場だけ（確認用）
+  try { var t = new URLSearchParams(location.search).get('theme') || localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <a class="logo" href="#" data-view="env">Champions<b>Meta</b></a>
+    <nav class="views" aria-label="画面">
+      <a href="#" data-view="env">環境</a>
+      <a href="#" data-view="rank">ランキング</a>
+      <a href="#" data-view="select">選出予想</a>
+      <a href="#" data-view="diag">チーム診断</a>
+    </nav>
+    <button class="pill theme" id="theme" type="button" aria-label="明るさを切り替える">◐</button>
+    <nav class="formats" id="formats" aria-label="ルール"></nav>
+  </header>
+
+  <!-- ═══ 環境 ═══ -->
+  <main id="view-env" data-view-panel="env">
+    <section class="hero" id="sec-env">
+      <div class="k" id="asof"></div>
+      <h1>いまの環境、<br>ひと目で。</h1>
+      <p class="lead">ポケモンチャンピオンズの使用率・並び・選出率を、Smogon の月次統計と公開リプレイから毎日更新。</p>
+    </section>
+
+    <!-- スマホ: 今月の総評（A5） -->
+    <section class="card summary" id="summary" aria-label="今月の総評"></section>
+
+    <div class="grid">
+      <div class="card c3 tile ink" id="t-div"></div>
+      <div class="card c3 tile" id="t-turn"></div>
+      <a class="card c3 tile tile-top" id="t-top" href="#"></a>
+      <div class="card c3 tile" id="t-battles"></div>
+
+      <section class="card c8" id="sec-trend">
+        <div class="head">
+          <h2>使用率の推移 <span class="chip">上位</span></h2>
+          <div class="seg" role="group" aria-label="表し方">
+            <button type="button" data-trend="usage" aria-pressed="true">使用率</button>
+            <button type="button" data-trend="rank" aria-pressed="false">順位</button>
+          </div>
+        </div>
+        <div class="chart" id="trend"></div>
+        <details class="table"><summary>表で見る</summary><div id="trend-table"></div></details>
+      </section>
+      <section class="card c4" id="sec-movers">
+        <h2>先月から伸びた・落ちた</h2>
+        <div class="chart" id="movers"></div>
+      </section>
+
+      <section class="card c5" id="sec-cores">
+        <h2>いまの並び（コア）</h2>
+        <div id="cores"></div>
+        <h2 class="sub">上位ほど使われる <span class="chip" id="gap-chip"></span></h2>
+        <ul class="gap" id="gap"></ul>
+      </section>
+      <section class="card c7" id="sec-bring">
+        <h2>選出率 × 使用率 <span class="chip warn">参考値</span></h2>
+        <div class="chart" id="scatter"></div>
+        <p class="note" id="bring-note"></p>
+      </section>
+    </div>
+  </main>
+
+  <!-- ═══ ランキング ═══ -->
+  <main id="view-rank" data-view-panel="rank" hidden>
+    <div class="rank-head">
+      <div>
+        <div class="k" id="rank-asof"></div>
+        <h1 class="h1">使用率ランキング</h1>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="ポケモンの名前で絞り込み" autocomplete="off"></label>
+    </div>
+    <ol class="rank-grid" id="rank-grid"></ol>
+  </main>
+
+  <!-- ═══ 選出予想 ═══ -->
+  <main id="view-select" data-view-panel="select" hidden>
+    <div class="rank-head"><div>
+      <div class="k" id="select-asof"></div>
+      <h1 class="h1">選出予想</h1>
+      <p class="lead">見せ合いで相手の 6 匹を入れると、どれを出してきそうかを、Showdown のリプレイの実績から出します。自分のチームも入れると、相手があなたのチームを見て選ぶ傾向も考えます。</p>
+    </div></div>
+    <div class="grid">
+      <section class="card c6"><h2>相手の 6 匹</h2><div class="team-in" data-team="opp"></div></section>
+      <section class="card c6"><h2>自分の 6 匹 <span class="chip">任意</span></h2><div class="team-in" data-team="mine"></div></section>
+      <section class="card c12" id="select-out"></section>
+    </div>
+  </main>
+
+  <!-- ═══ チーム診断 ═══ -->
+  <main id="view-diag" data-view-panel="diag" hidden>
+    <div class="rank-head"><div>
+      <div class="k" id="diag-asof"></div>
+      <h1 class="h1">チーム診断</h1>
+      <p class="lead">自分の 6 匹を入れると、環境でよく使われる攻撃への弱点、上位のポケモンとの相性（リプレイの勝敗）、すばやさ、よく一緒に使われる並びとの重なりを出します。</p>
+    </div></div>
+    <div class="grid">
+      <section class="card c12"><h2>自分の 6 匹</h2><div class="team-in" data-team="mine"></div></section>
+      <div class="c12 grid sub-grid" id="diag-out"></div>
+    </div>
+  </main>
+
+  <!-- ═══ ポケモン詳細 ═══ -->
+  <main id="view-poke" data-view-panel="poke" hidden>
+    <div class="poke-bar" id="poke-bar"></div>
+    <div class="grid" id="poke-body"></div>
+  </main>
+
+  <footer class="foot" id="sec-about">
+    <h2>読み方</h2>
+    <ul>
+      <li><b>使用率</b>: チームにそのポケモンが入っていた割合（Smogon の月次統計、レート <span class="cut"></span> 以上）。一覧と推移はメガシンカを元の姿にまとめています。</li>
+      <li><b>実効的なポケモン数</b>: 使われ方の偏りを考えた「実質何匹で回っているか」（ヒル数 q=1）。多いほど多様です。</li>
+      <li><b>入れ替わり</b>: 前月と比べて、使用率の分布がどれだけ変わったか（0% なら同じ）。</li>
+      <li><b>並び</b>: 同じチームに入りやすい組み合わせのまとまり。</li>
+      <li><b>選出率</b>: 見せ合いに出したうち、実際に場に出した割合。Showdown に公開されたリプレイだけの集計なので<b>参考値</b>です。</li>
+      <li>点線はレギュレーションの切り替わり。別の環境なので線をつなげていません。</li>
+      <li>ゲーム内のランクバトルではなく、<b>Pokémon Showdown</b> 上の対戦の集計です。</li>
+    </ul>
+    <p class="src" id="sources"></p>
+    <p class="src">非公式ファンツールです。任天堂・クリーチャーズ・ゲームフリーク・The Pokémon Company とは関係ありません。
+      画像: <a href="https://github.com/PokeAPI/sprites">PokeAPI</a> / © Nintendo・Creatures・GAME FREAK</p>
+    <p class="src" id="generated"></p>
+    <p class="src maker"><a href="https://fourgetkun.com/">fourgetkun 工房</a></p>
+  </footer>
+</div>
+
+<nav class="tabbar" aria-label="画面の切り替え">
+  <a href="#" data-view="env"><b>◎</b>環境</a>
+  <a href="#" data-view="rank"><b>≡</b>ランキング</a>
+  <a href="#" data-view="select"><b>⇄</b>選出予想</a>
+  <a href="#" data-view="diag"><b>✓</b>診断</a>
+</nav>
+<datalist id="poke-names"></datalist>
+<div class="tip" id="tip" role="status" hidden></div>
+<script src="app.js" defer></script>
+</body>
+</html>

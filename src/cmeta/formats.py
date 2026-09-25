@@ -34,6 +34,8 @@ def parse_format(fid: str) -> dict | None:
         "regulation": regulation,  # 'M-B' など。無い系統は None
         "bo3": bo3,
         "game_type": "doubles" if doubles else "singles",
+        # 見せ合いから選出するルールか（BSS は 6→3、VGC と 4v4 は 6→4）。OU・UU などは 6 匹すべてで戦うので選出の予想をしない
+        "team_select": family.startswith(("vgc", "bss", "4v4")),
         # 同じ系統・同じ Bo3 区分の中で、レギュレーションをまたいで並べるための鍵
         "track": f"{family}{'-bo3' if bo3 else ''}",
     }

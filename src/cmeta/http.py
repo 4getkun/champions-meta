@@ -1,6 +1,7 @@
 """取得の土台: 同じホストへの間隔を空け、失敗したら少し待って取り直す。"""
 
 import json
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -10,6 +11,7 @@ from pathlib import Path
 from .config import MIN_INTERVAL_SEC, USER_AGENT
 
 _last_hit: dict[str, float] = {}
+_lock = threading.Lock()  # 複数の取得を同時に待たせても、始める間隔は 1 ホストあたり MIN_INTERVAL_SEC 以上
 
 
 class NotFound(Exception):
@@ -17,12 +19,13 @@ class NotFound(Exception):
 
 
 def _wait(host: str) -> None:
-    last = _last_hit.get(host)
-    if last is not None:
-        gap = time.monotonic() - last
-        if gap < MIN_INTERVAL_SEC:
-            time.sleep(MIN_INTERVAL_SEC - gap)
-    _last_hit[host] = time.monotonic()
+    with _lock:
+        last = _last_hit.get(host)
+        if last is not None:
+            gap = time.monotonic() - last
+            if gap < MIN_INTERVAL_SEC:
+                time.sleep(MIN_INTERVAL_SEC - gap)
+        _last_hit[host] = time.monotonic()
 
 
 def get_bytes(url: str, retries: int = 3, timeout: float = 60) -> bytes:

@@ -9,7 +9,7 @@ import re
 import unicodedata
 
 from . import http
-from .config import CACHE, DATA, POKEAPI, SHOWDOWN_DATA
+from .config import CACHE, DATA, POKEAPI, SHOWDOWN_DATA, SPRITE_BASE
 
 JA_PATH = DATA / "dex" / "pokeapi_ja.json"
 OVERRIDES_PATH = DATA / "name_overrides.json"
@@ -74,16 +74,52 @@ def _js_object_names(src: str) -> dict[str, str]:
     return out
 
 
+def parse_typechart(src: str) -> dict[str, dict[str, float]]:
+    """Showdown の typechart.js を {守るタイプ: {攻めるタイプ: 倍率}} に。0=等倍, 1=抜群, 2=いまひとつ, 3=無効。"""
+    code = {0: 1.0, 1: 2.0, 2: 0.5, 3: 0.0}
+    out = {}
+    for name, body in re.findall(r"(\w+):\{damageTaken:\{([^}]*)\}", src):
+        row = {}
+        for k, v in re.findall(r"(\w+):(\d)", body):
+            if k[0].isupper() and k != "Stellar":  # 小文字は天気など、タイプではない
+                row[k] = code[int(v)]
+        out[name.capitalize()] = row
+    return out
+
+
 class Showdown:
     def __init__(self, refresh: bool = False):
         d = CACHE / "showdown"
         self.pokedex = json.loads(http.cached_bytes(f"{SHOWDOWN_DATA}/pokedex.json", d / "pokedex.json", refresh))
         moves = json.loads(http.cached_bytes(f"{SHOWDOWN_DATA}/moves.json", d / "moves.json", refresh))
         self.move_names = {k: v["name"] for k, v in moves.items() if "name" in v}
+        self.move_info = {k: {"type": v.get("type"), "category": v.get("category"), "power": v.get("basePower", 0)}
+                          for k, v in moves.items() if "type" in v}
         items_js = http.cached_bytes(f"{SHOWDOWN_DATA}/items.js", d / "items.js", refresh).decode("utf-8")
         abil_js = http.cached_bytes(f"{SHOWDOWN_DATA}/abilities.js", d / "abilities.js", refresh).decode("utf-8")
         self.item_names = _js_object_names(items_js)
         self.ability_names = _js_object_names(abil_js)
+        tc_js = http.cached_bytes(f"{SHOWDOWN_DATA}/typechart.js", d / "typechart.js", refresh).decode("utf-8")
+        self.typechart = parse_typechart(tc_js)
+        # メガの元の姿（「まとめた名前」と同じ規則。Floette-Mega の元は Floette-Eternal）
+        self.mega_bases = {self.group_name(e["name"]) for e in self.pokedex.values()
+                           if (e.get("forme") or "").startswith("Mega") and e.get("isNonstandard") != "CAP"}
+
+    def types(self, name: str) -> list[str]:
+        e = self.species(name)
+        if e and not e.get("types") and e.get("baseSpecies"):
+            e = self.species(e["baseSpecies"])  # 見た目だけの姿はタイプを書いていないことがある
+        return list(e.get("types", [])) if e else []
+
+    def has_mega(self, name: str) -> bool:
+        """メガシンカの姿があるか（見せ合いの時点ではメガストーンを持っているかは分からないので、目安）。"""
+        return self.group_name(name) in self.mega_bases
+
+    def effectiveness(self, atk_type: str, def_types: list[str]) -> float:
+        m = 1.0
+        for t in def_types:
+            m *= self.typechart.get(t, {}).get(atk_type, 1.0)
+        return m
 
     def species(self, name: str) -> dict | None:
         return self.pokedex.get(to_id(name.replace("-*", "")))
@@ -92,6 +128,10 @@ class Showdown:
         """「元の姿にまとめた」ときの名前。メガ・ゲンシ・戦闘中だけの姿は元に戻し、リージョンフォームなどは残す。"""
         e = self.species(name)
         if not e:
+            # 図鑑に項目の無い見た目違い（ビビヨンの模様、マホイップのクリームなど）は元の姿にまとめる
+            base = self.species(name.split("-")[0])
+            if base and name in (base.get("cosmeticFormes") or []):
+                return base["name"]
             return name.replace("-*", "")
         # battleOnly を先に見る（Floette-Mega の元は Floette ではなく Floette-Eternal。見せ合いにもこの名前で出る）
         bo = e.get("battleOnly")
@@ -100,6 +140,12 @@ class Showdown:
         forme = e.get("forme") or ""
         if forme.startswith(("Mega", "Primal")):
             return e["baseSpecies"]
+        # タイプ・種族値・特性が元の姿と同じ別の姿（ビビヨンのモンスターボール模様、ヤバソチャのケッサクなど）も、性能が同じなのでまとめる
+        bs = e.get("baseSpecies")
+        if bs and bs != e["name"]:
+            be = self.species(bs)
+            if be and all(e.get(f, be.get(f)) == be.get(f) for f in ("types", "baseStats", "abilities")):
+                return be["name"]
         return e["name"]
 
     def is_mega(self, name: str) -> bool:
@@ -107,7 +153,19 @@ class Showdown:
         return bool(e and (e.get("forme") or "").startswith("Mega"))
 
 
-# ── PokeAPI の日本語名 ─────────────────────────────────────────
+# ── PokeAPI の日本語名と画像 ───────────────────────────────────
+
+
+def sprite_urls(pid: int | str | None) -> dict | None:
+    """PokeAPI の画像（PokeAPI/sprites リポジトリ）を CDN 経由で。ファイルはこちらに複製しない。
+
+    front: 96px のドット絵（約 1.4KB。一覧向け）、home: HOME の立体画像（約 110KB。大きく見せる所だけ）。
+    """
+    if not pid:
+        return None
+    # 見た目だけの姿（'1013-masterpiece' など）は HOME の画像が無い
+    home = None if isinstance(pid, str) else f"{SPRITE_BASE}/pokemon/other/home/{pid}.png"
+    return {"front": f"{SPRITE_BASE}/pokemon/{pid}.png", "home": home}
 
 
 def compose_ja(species: str | None, form: str | None) -> str | None:
@@ -172,6 +230,37 @@ class JaNames:
         self.dirty = True
         v = self.cache[key]
         return v and v["ja"]
+
+    def pokemon_id(self, name: str) -> int | str | None:
+        """PokeAPI の pokemon の番号（画像のファイル名）。控えに無ければ pokemon/<slug> を 1 回だけ引く。
+
+        見た目だけの姿（例: 1013-masterpiece）は data/name_overrides.json の "sprite:<id>" で直接指定する。
+        """
+        e = self.sd.species(name)
+        sid = e["name"] if e else name
+        if f"sprite:{to_id(sid)}" in self.overrides:
+            return self.overrides[f"sprite:{to_id(sid)}"]
+        key = f"species:{to_id(sid)}"
+        if key not in self.cache:
+            # 日本語名を手書きで指定したポケモンは species() が控えを作らないので、ここで取る
+            self.cache[key] = self._fetch_species(sid, e)
+            self.dirty = True
+        v = self.cache.get(key)
+        if not v or not v.get("slug"):
+            return None
+        if "pid" not in v:
+            try:
+                poke = self._get(f"pokemon/{v['slug']}")
+            except http.NotFound:
+                try:  # slug が種の名前だけのとき（例: basculegion）は既定の姿
+                    spc = self._get(f"pokemon-species/{v['slug']}")
+                    default = next(x for x in spc["varieties"] if x["is_default"])
+                    poke = self._get(f"pokemon/{default['pokemon']['name']}")
+                except (http.NotFound, StopIteration):
+                    poke = None
+            v["pid"] = poke["id"] if poke else None
+            self.dirty = True
+        return v["pid"]
 
     def _fetch_species(self, name: str, e: dict | None) -> dict | None:
         override = self.overrides.get(f"slug:{to_id(name)}")

@@ -126,6 +126,34 @@ def analyze_format(data: dict, fid: str, group_of) -> dict | None:
     return out
 
 
+DETAIL_MIN_USAGE = 0.005  # ポケモン詳細を出す下限（チームあたり 0.5%）
+DETAIL_TOP = 12  # 技・持ち物などを何位まで
+TEAMMATES_TOP = 12
+
+
+def pokemon_detail(data: dict, fid: str, month: str, cutoff: int) -> dict | None:
+    """その月・その足切りの、ポケモンごとの型と「一緒に使われる相手」（姿ごと）。ポケモン詳細ページ用。
+
+    teammates の share は「a のチームに b もいた割合」= Teammates[a][b] / w_a。
+    """
+    d = data.get((month, fid, cutoff))
+    if not d:
+        return None
+    pk = d["pokemon"]
+    ranks = _ranks({k: p["usage"] for k, p in pk.items()})
+    out = {}
+    for k, p in pk.items():
+        if p["usage"] < DETAIL_MIN_USAGE or "items" not in p:
+            continue
+        tm = sorted(((b, w / p["weight"]) for b, w in p.get("teammates", {}).items()), key=lambda t: (-t[1], t[0]))
+        out[k] = {
+            "usage": p["usage"], "rank": ranks[k], "raw": p["raw"],
+            **{f: dict(list(p[f].items())[:DETAIL_TOP]) for f in ("moves", "items", "abilities", "spreads")},
+            "teammates": [[b, round(s, 4)] for b, s in tm[:TEAMMATES_TOP]],
+        }
+    return {"format": fid, "month": month, "cutoff": cutoff, "battles": d["battles"], "pokemon": out}
+
+
 def join_track(per_format: dict[str, dict], formats: list[dict]) -> dict[str, dict]:
     """同じ系統（例: vgc2026）のレギュレーションを月順につなぐ。ある月に二つあれば、対戦数の多いほうを採る。"""
     tracks: dict[str, list[dict]] = defaultdict(list)

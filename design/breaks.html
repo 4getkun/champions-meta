@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>breaks</title>
+<!-- 改行位置の確認用: 代表的な幅で並べる。?budoux=1 は Safari と同じ処理（BudouX） -->
+<style>
+body{margin:0;background:#e9e9ee;font-family:'Yu Gothic UI',system-ui,sans-serif;padding:24px;width:max-content}
+.row{display:flex;gap:24px;align-items:flex-start}
+figure{margin:0}figcaption{font-size:20px;font-weight:700;margin-bottom:8px}
+iframe{border:0;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+</style></head><body>
+<div class="row" id="row"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const hash = q.get('h') || '';
+  const sizes = [[375, 'スマホ 375'], [375, 'スマホ 375（BudouX）', 1], [768, 'タブレット 768'], [1024, '小さめの PC 1024']];
+  document.getElementById('row').innerHTML = sizes.map(([w, t, bx]) =>
+    `<figure><figcaption>${t}</figcaption><iframe width="${w}" height="${q.get('ht') || 1500}" src="../site/?data=../out/&theme=light${bx ? '&budoux=1' : ''}#${hash}"></iframe></figure>`).join('');
+</script>
+</body></html>

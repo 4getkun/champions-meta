@@ -3,9 +3,17 @@
   "ja": "てきおうりょく",
   "slug": "adaptability"
  },
+ "ability:aerilate": {
+  "ja": "スカイスキン",
+  "slug": "aerilate"
+ },
  "ability:analytic": {
   "ja": "アナライズ",
   "slug": "analytic"
+ },
+ "ability:angerpoint": {
+  "ja": "いかりのつぼ",
+  "slug": "anger-point"
  },
  "ability:anticipation": {
   "ja": "きけんよち",
@@ -14,6 +22,10 @@
  "ability:armortail": {
   "ja": "テイルアーマー",
   "slug": "armor-tail"
+ },
+ "ability:berserk": {
+  "ja": "ぎゃくじょう",
+  "slug": "berserk"
  },
  "ability:blaze": {
   "ja": "もうか",
@@ -34,6 +46,10 @@
  "ability:clearbody": {
   "ja": "クリアボディ",
   "slug": "clear-body"
+ },
+ "ability:cloudnine": {
+  "ja": "ノーてんき",
+  "slug": "cloud-nine"
  },
  "ability:competitive": {
   "ja": "かちき",
@@ -99,6 +115,18 @@
   "ja": "はやおき",
   "slug": "early-bird"
  },
+ "ability:eartheater": {
+  "ja": "どしょく",
+  "slug": "earth-eater"
+ },
+ "ability:eelevate": {
+  "ja": null,
+  "slug": "eelevate"
+ },
+ "ability:electricsurge": {
+  "ja": "エレキメイカー",
+  "slug": "electric-surge"
+ },
  "ability:electromorphosis": {
   "ja": "でんきにかえる",
   "slug": "electromorphosis"
@@ -106,6 +134,10 @@
  "ability:fairyaura": {
   "ja": "フェアリーオーラ",
   "slug": "fairy-aura"
+ },
+ "ability:filter": {
+  "ja": "フィルター",
+  "slug": "filter"
  },
  "ability:firemane": {
   "ja": null,
@@ -123,6 +155,10 @@
   "ja": "フラワーベール",
   "slug": "flower-veil"
  },
+ "ability:fluffy": {
+  "ja": "もふもふ",
+  "slug": "fluffy"
+ },
  "ability:friendguard": {
   "ja": "フレンドガード",
   "slug": "friend-guard"
@@ -134,6 +170,10 @@
  "ability:galewings": {
   "ja": "はやてのつばさ",
   "slug": "gale-wings"
+ },
+ "ability:gluttony": {
+  "ja": "くいしんぼう",
+  "slug": "gluttony"
  },
  "ability:goodasgold": {
   "ja": "おうごんのからだ",
@@ -163,9 +203,25 @@
   "ja": "ちからもち",
   "slug": "huge-power"
  },
+ "ability:hungerswitch": {
+  "ja": "はらぺこスイッチ",
+  "slug": "hunger-switch"
+ },
+ "ability:hustle": {
+  "ja": "はりきり",
+  "slug": "hustle"
+ },
+ "ability:hydration": {
+  "ja": "うるおいボディ",
+  "slug": "hydration"
+ },
  "ability:hypercutter": {
   "ja": "かいりきバサミ",
   "slug": "hyper-cutter"
+ },
+ "ability:icebody": {
+  "ja": "アイスボディ",
+  "slug": "ice-body"
  },
  "ability:illuminate": {
   "ja": "はっこう",
@@ -174,6 +230,10 @@
  "ability:illusion": {
   "ja": "イリュージョン",
   "slug": "illusion"
+ },
+ "ability:immunity": {
+  "ja": "めんえき",
+  "slug": "immunity"
  },
  "ability:imposter": {
   "ja": "かわりもの",
@@ -191,6 +251,10 @@
   "ja": "せいしんりょく",
   "slug": "inner-focus"
  },
+ "ability:insomnia": {
+  "ja": "ふみん",
+  "slug": "insomnia"
+ },
  "ability:intimidate": {
   "ja": "いかく",
   "slug": "intimidate"
@@ -199,9 +263,21 @@
   "ja": "てつのこぶし",
   "slug": "iron-fist"
  },
+ "ability:justified": {
+  "ja": "せいぎのこころ",
+  "slug": "justified"
+ },
  "ability:keeneye": {
   "ja": "するどいめ",
   "slug": "keen-eye"
+ },
+ "ability:klutz": {
+  "ja": "ぶきよう",
+  "slug": "klutz"
+ },
+ "ability:leafguard": {
+  "ja": "リーフガード",
+  "slug": "leaf-guard"
  },
  "ability:levitate": {
   "ja": "ふゆう",
@@ -222,6 +298,10 @@
  "ability:liquidvoice": {
   "ja": "うるおいボイス",
   "slug": "liquid-voice"
+ },
+ "ability:longreach": {
+  "ja": "えんかく",
+  "slug": "long-reach"
  },
  "ability:magicbounce": {
   "ja": "マジックミラー",
@@ -247,6 +327,10 @@
   "ja": "ひとでなし",
   "slug": "merciless"
  },
+ "ability:mimicry": {
+  "ja": "ぎたい",
+  "slug": "mimicry"
+ },
  "ability:mirrorarmor": {
   "ja": "ミラーアーマー",
   "slug": "mirror-armor"
@@ -262,6 +346,10 @@
  "ability:multiscale": {
   "ja": "マルチスケイル",
   "slug": "multiscale"
+ },
+ "ability:mummy": {
+  "ja": "ミイラ",
+  "slug": "mummy"
  },
  "ability:naturalcure": {
   "ja": "しぜんかいふく",
@@ -300,6 +388,14 @@
   "ja": "わるいてぐせ",
   "slug": "pickpocket"
  },
+ "ability:pickup": {
+  "ja": "ものひろい",
+  "slug": "pickup"
+ },
+ "ability:piercingdrill": {
+  "ja": "かんつうドリル",
+  "slug": "piercing-drill"
+ },
  "ability:pixilate": {
   "ja": "フェアリースキン",
   "slug": "pixilate"
@@ -332,9 +428,21 @@
   "ja": "ヨガパワー",
   "slug": "pure-power"
  },
+ "ability:purifyingsalt": {
+  "ja": "きよめのしお",
+  "slug": "purifying-salt"
+ },
  "ability:queenlymajesty": {
   "ja": "じょおうのいげん",
   "slug": "queenly-majesty"
+ },
+ "ability:quickdraw": {
+  "ja": "クイックドロウ",
+  "slug": "quick-draw"
+ },
+ "ability:quickfeet": {
+  "ja": "はやあし",
+  "slug": "quick-feet"
  },
  "ability:raindish": {
   "ja": "あめうけざら",
@@ -343,6 +451,10 @@
  "ability:reckless": {
   "ja": "すてみ",
   "slug": "reckless"
+ },
+ "ability:refrigerate": {
+  "ja": "フリーズスキン",
+  "slug": "refrigerate"
  },
  "ability:regenerator": {
   "ja": "さいせいりょく",
@@ -363,6 +475,10 @@
  "ability:sandrush": {
   "ja": "すなかき",
   "slug": "sand-rush"
+ },
+ "ability:sandspit": {
+  "ja": "すなはき",
+  "slug": "sand-spit"
  },
  "ability:sandstream": {
   "ja": "すなおこし",
@@ -388,6 +504,10 @@
   "ja": "きれあじ",
   "slug": "sharpness"
  },
+ "ability:shedskin": {
+  "ja": "だっぴ",
+  "slug": "shed-skin"
+ },
  "ability:sheerforce": {
   "ja": "ちからずく",
   "slug": "sheer-force"
@@ -400,6 +520,14 @@
   "ja": "りんぷん",
   "slug": "shield-dust"
  },
+ "ability:skilllink": {
+  "ja": "スキルリンク",
+  "slug": "skill-link"
+ },
+ "ability:slushrush": {
+  "ja": "ゆきかき",
+  "slug": "slush-rush"
+ },
  "ability:snowcloak": {
   "ja": "ゆきがくれ",
   "slug": "snow-cloak"
@@ -407,6 +535,10 @@
  "ability:snowwarning": {
   "ja": "ゆきふらし",
   "slug": "snow-warning"
+ },
+ "ability:solarpower": {
+  "ja": "サンパワー",
+  "slug": "solar-power"
  },
  "ability:solidrock": {
   "ja": "ハードロック",
@@ -444,6 +576,14 @@
   "ja": "せいでんき",
   "slug": "static"
  },
+ "ability:steadfast": {
+  "ja": "ふくつのこころ",
+  "slug": "steadfast"
+ },
+ "ability:stickyhold": {
+  "ja": "ねんちゃく",
+  "slug": "sticky-hold"
+ },
  "ability:strongjaw": {
   "ja": "がんじょうあご",
   "slug": "strong-jaw"
@@ -451,6 +591,10 @@
  "ability:sturdy": {
   "ja": "がんじょう",
   "slug": "sturdy"
+ },
+ "ability:superluck": {
+  "ja": "きょううん",
+  "slug": "super-luck"
  },
  "ability:supersweetsyrup": {
   "ja": "かんろなミツ",
@@ -463,6 +607,10 @@
  "ability:swarm": {
   "ja": "むしのしらせ",
   "slug": "swarm"
+ },
+ "ability:sweetveil": {
+  "ja": "スイートベール",
+  "slug": "sweet-veil"
  },
  "ability:swiftswim": {
   "ja": "すいすい",
@@ -479,6 +627,10 @@
  "ability:technician": {
   "ja": "テクニシャン",
   "slug": "technician"
+ },
+ "ability:telepathy": {
+  "ja": "テレパシー",
+  "slug": "telepathy"
  },
  "ability:thickfat": {
   "ja": "あついしぼう",
@@ -512,9 +664,21 @@
   "ja": "きんちょうかん",
   "slug": "unnerve"
  },
+ "ability:unseenfist": {
+  "ja": "ふかしのこぶし",
+  "slug": "unseen-fist"
+ },
  "ability:vitalspirit": {
   "ja": "やるき",
   "slug": "vital-spirit"
+ },
+ "ability:voltabsorb": {
+  "ja": "ちくでん",
+  "slug": "volt-absorb"
+ },
+ "ability:wanderingspirit": {
+  "ja": "さまようたましい",
+  "slug": "wandering-spirit"
  },
  "ability:waterabsorb": {
   "ja": "ちょすい",
@@ -536,13 +700,37 @@
   "ja": "マイティチェンジ",
   "slug": "zero-to-hero"
  },
+ "item:absolite": {
+  "ja": "アブソルナイト",
+  "slug": "absolite"
+ },
  "item:aerodactylite": {
   "ja": "プテラナイト",
   "slug": "aerodactylite"
  },
+ "item:aggronite": {
+  "ja": "ボスゴドラナイト",
+  "slug": "aggronite"
+ },
+ "item:altarianite": {
+  "ja": "チルタリスナイト",
+  "slug": "altarianite"
+ },
  "item:babiriberry": {
   "ja": "リリバのみ",
   "slug": "babiri-berry"
+ },
+ "item:banettite": {
+  "ja": "ジュペッタナイト",
+  "slug": "banettite"
+ },
+ "item:barbaracite": {
+  "ja": null,
+  "slug": "barbaracite"
+ },
+ "item:beedrillite": {
+  "ja": "スピアナイト",
+  "slug": "beedrillite"
  },
  "item:bigroot": {
   "ja": "おおきなねっこ",
@@ -567,6 +755,14 @@
  "item:brightpowder": {
   "ja": "ひかりのこな",
   "slug": "bright-powder"
+ },
+ "item:cameruptite": {
+  "ja": "バクーダナイト",
+  "slug": "cameruptite"
+ },
+ "item:chandelurite": {
+  "ja": null,
+  "slug": "chandelurite"
  },
  "item:charcoal": {
   "ja": "もくたん",
@@ -595,6 +791,10 @@
  "item:chestoberry": {
   "ja": "カゴのみ",
   "slug": "chesto-berry"
+ },
+ "item:chilanberry": {
+  "ja": "ホズのみ",
+  "slug": "chilan-berry"
  },
  "item:chimechite": {
   "ja": null,
@@ -644,6 +844,22 @@
   "ja": null,
   "slug": "dragoninite"
  },
+ "item:drampanite": {
+  "ja": null,
+  "slug": "drampanite"
+ },
+ "item:eelektrossite": {
+  "ja": null,
+  "slug": "eelektrossite"
+ },
+ "item:emboarite": {
+  "ja": null,
+  "slug": "emboarite"
+ },
+ "item:excadrite": {
+  "ja": null,
+  "slug": "excadrite"
+ },
  "item:expertbelt": {
   "ja": "たつじんのおび",
   "slug": "expert-belt"
@@ -651,6 +867,10 @@
  "item:fairyfeather": {
   "ja": "ようせいのハネ",
   "slug": "fairy-feather"
+ },
+ "item:falinksite": {
+  "ja": null,
+  "slug": "falinksite"
  },
  "item:feraligite": {
   "ja": null,
@@ -672,6 +892,14 @@
   "ja": null,
   "slug": "froslassite"
  },
+ "item:galladite": {
+  "ja": "エルレイドナイト",
+  "slug": "galladite"
+ },
+ "item:garchompite": {
+  "ja": "ガブリアスナイト",
+  "slug": "garchompite"
+ },
  "item:gardevoirite": {
   "ja": "サーナイトナイト",
   "slug": "gardevoirite"
@@ -683,6 +911,10 @@
  "item:glimmoranite": {
   "ja": null,
   "slug": "glimmoranite"
+ },
+ "item:golurkite": {
+  "ja": null,
+  "slug": "golurkite"
  },
  "item:greninjite": {
   "ja": null,
@@ -707,6 +939,10 @@
  "item:heatrock": {
   "ja": "あついいわ",
   "slug": "heat-rock"
+ },
+ "item:heracronite": {
+  "ja": "ヘラクロスナイト",
+  "slug": "heracronite"
  },
  "item:icyrock": {
   "ja": "つめたいいわ",
@@ -767,6 +1003,10 @@
  "item:magnet": {
   "ja": "じしゃく",
   "slug": "magnet"
+ },
+ "item:malamarite": {
+  "ja": null,
+  "slug": "malamarite"
  },
  "item:manectite": {
   "ja": "ライボルトナイト",
@@ -832,9 +1072,17 @@
   "ja": "ウタンのみ",
   "slug": "payapa-berry"
  },
+ "item:persimberry": {
+  "ja": "キーのみ",
+  "slug": "persim-berry"
+ },
  "item:pidgeotite": {
   "ja": "ピジョットナイト",
   "slug": "pidgeotite"
+ },
+ "item:pinsirite": {
+  "ja": "カイロスナイト",
+  "slug": "pinsirite"
  },
  "item:poisonbarb": {
   "ja": "どくバリ",
@@ -848,9 +1096,17 @@
   "ja": "せんせいのツメ",
   "slug": "quick-claw"
  },
+ "item:raichunitex": {
+  "ja": null,
+  "slug": "raichunite-x"
+ },
  "item:raichunitey": {
   "ja": null,
   "slug": "raichunite-y"
+ },
+ "item:rawstberry": {
+  "ja": "チーゴのみ",
+  "slug": "rawst-berry"
  },
  "item:rindoberry": {
   "ja": "リンドのみ",
@@ -863,6 +1119,10 @@
  "item:sablenite": {
   "ja": "ヤミラミナイト",
   "slug": "sablenite"
+ },
+ "item:sceptilite": {
+  "ja": "ジュカインナイト",
+  "slug": "sceptilite"
  },
  "item:scizorite": {
   "ja": "ハッサムナイト",
@@ -920,6 +1180,10 @@
   "ja": null,
   "slug": "skarmorite"
  },
+ "item:slowbronite": {
+  "ja": "ヤドランナイト",
+  "slug": "slowbronite"
+ },
  "item:smoothrock": {
   "ja": "さらさらいわ",
   "slug": "smooth-rock"
@@ -940,9 +1204,17 @@
   "ja": null,
   "slug": "starminite"
  },
+ "item:steelixite": {
+  "ja": "ハガネールナイト",
+  "slug": "steelixite"
+ },
  "item:swampertite": {
   "ja": "ラグラージナイト",
   "slug": "swampertite"
+ },
+ "item:tangaberry": {
+  "ja": "タンガのみ",
+  "slug": "tanga-berry"
  },
  "item:twistedspoon": {
   "ja": "まがったスプーン",
@@ -989,6 +1261,10 @@
   "ja": "アクセルロック",
   "slug": "accelerock"
  },
+ "move:acidarmor": {
+  "ja": "とける",
+  "slug": "acid-armor"
+ },
  "move:acidspray": {
   "ja": "アシッドボム",
   "slug": "acid-spray"
@@ -1000,6 +1276,10 @@
  "move:aerialace": {
   "ja": "つばめがえし",
   "slug": "aerial-ace"
+ },
+ "move:afteryou": {
+  "ja": "おさきにどうぞ",
+  "slug": "after-you"
  },
  "move:agility": {
   "ja": "こうそくいどう",
@@ -1017,6 +1297,10 @@
   "ja": "サイドチェンジ",
   "slug": "ally-switch"
  },
+ "move:amnesia": {
+  "ja": "ドわすれ",
+  "slug": "amnesia"
+ },
  "move:ancientpower": {
   "ja": "げんしのちから",
   "slug": "ancient-power"
@@ -1033,13 +1317,29 @@
   "ja": "アクアステップ",
   "slug": "aqua-step"
  },
+ "move:aquatail": {
+  "ja": "アクアテール",
+  "slug": "aqua-tail"
+ },
+ "move:armorcannon": {
+  "ja": "アーマーキャノン",
+  "slug": "armor-cannon"
+ },
  "move:assurance": {
   "ja": "ダメおし",
   "slug": "assurance"
  },
+ "move:attract": {
+  "ja": "メロメロ",
+  "slug": "attract"
+ },
  "move:aurasphere": {
   "ja": "はどうだん",
   "slug": "aura-sphere"
+ },
+ "move:aurawheel": {
+  "ja": "オーラぐるま",
+  "slug": "aura-wheel"
  },
  "move:auroraveil": {
   "ja": "オーロラベール",
@@ -1049,9 +1349,17 @@
   "ja": "ゆきなだれ",
   "slug": "avalanche"
  },
+ "move:babydolleyes": {
+  "ja": "つぶらなひとみ",
+  "slug": "baby-doll-eyes"
+ },
  "move:banefulbunker": {
   "ja": "トーチカ",
   "slug": "baneful-bunker"
+ },
+ "move:barbbarrage": {
+  "ja": "どくばりセンボン",
+  "slug": "barb-barrage"
  },
  "move:batonpass": {
   "ja": "バトンタッチ",
@@ -1077,6 +1385,10 @@
   "ja": "うらみつらみ",
   "slug": "bitter-malice"
  },
+ "move:blastburn": {
+  "ja": "ブラストバーン",
+  "slug": "blast-burn"
+ },
  "move:blazekick": {
   "ja": "ブレイズキック",
   "slug": "blaze-kick"
@@ -1085,6 +1397,10 @@
   "ja": "ふぶき",
   "slug": "blizzard"
  },
+ "move:block": {
+  "ja": "とおせんぼう",
+  "slug": "block"
+ },
  "move:bodypress": {
   "ja": "ボディプレス",
   "slug": "body-press"
@@ -1092,6 +1408,18 @@
  "move:bodyslam": {
   "ja": "のしかかり",
   "slug": "body-slam"
+ },
+ "move:bonerush": {
+  "ja": "ボーンラッシュ",
+  "slug": "bone-rush"
+ },
+ "move:boomburst": {
+  "ja": "ばくおんぱ",
+  "slug": "boomburst"
+ },
+ "move:bounce": {
+  "ja": "とびはねる",
+  "slug": "bounce"
  },
  "move:bravebird": {
   "ja": "ブレイブバード",
@@ -1117,6 +1445,10 @@
   "ja": "ビルドアップ",
   "slug": "bulk-up"
  },
+ "move:bulldoze": {
+  "ja": "じならし",
+  "slug": "bulldoze"
+ },
  "move:bulletpunch": {
   "ja": "バレットパンチ",
   "slug": "bullet-punch"
@@ -1129,6 +1461,10 @@
   "ja": "しっとのほのお",
   "slug": "burning-jealousy"
  },
+ "move:burnup": {
+  "ja": "もえつきる",
+  "slug": "burn-up"
+ },
  "move:calmmind": {
   "ja": "めいそう",
   "slug": "calm-mind"
@@ -1137,13 +1473,25 @@
   "ja": "ひけん・ちえなみ",
   "slug": "ceaseless-edge"
  },
+ "move:chargebeam": {
+  "ja": "チャージビーム",
+  "slug": "charge-beam"
+ },
  "move:charm": {
   "ja": "あまえる",
   "slug": "charm"
  },
+ "move:chillingwater": {
+  "ja": "ひやみず",
+  "slug": "chilling-water"
+ },
  "move:chillyreception": {
   "ja": "さむいギャグ",
   "slug": "chilly-reception"
+ },
+ "move:circlethrow": {
+  "ja": "ともえなげ",
+  "slug": "circle-throw"
  },
  "move:clangingscales": {
   "ja": "スケイルノイズ",
@@ -1152,6 +1500,10 @@
  "move:clangoroussoul": {
   "ja": "ソウルビート",
   "slug": "clangorous-soul"
+ },
+ "move:clearsmog": {
+  "ja": "クリアスモッグ",
+  "slug": "clear-smog"
  },
  "move:closecombat": {
   "ja": "インファイト",
@@ -1165,13 +1517,41 @@
   "ja": "とぐろをまく",
   "slug": "coil"
  },
+ "move:comeuppance": {
+  "ja": "ほうふく",
+  "slug": "comeuppance"
+ },
+ "move:confuseray": {
+  "ja": "あやしいひかり",
+  "slug": "confuse-ray"
+ },
+ "move:copycat": {
+  "ja": "まねっこ",
+  "slug": "copycat"
+ },
  "move:cosmicpower": {
   "ja": "コスモパワー",
   "slug": "cosmic-power"
  },
+ "move:cottonguard": {
+  "ja": "コットンガード",
+  "slug": "cotton-guard"
+ },
+ "move:counter": {
+  "ja": "カウンター",
+  "slug": "counter"
+ },
+ "move:crabhammer": {
+  "ja": "クラブハンマー",
+  "slug": "crabhammer"
+ },
  "move:crosschop": {
   "ja": "クロスチョップ",
   "slug": "cross-chop"
+ },
+ "move:crosspoison": {
+  "ja": "クロスポイズン",
+  "slug": "cross-poison"
  },
  "move:crunch": {
   "ja": "かみくだく",
@@ -1217,9 +1597,21 @@
   "ja": "ほうでん",
   "slug": "discharge"
  },
+ "move:dive": {
+  "ja": "ダイビング",
+  "slug": "dive"
+ },
  "move:doubleedge": {
   "ja": "すてみタックル",
   "slug": "double-edge"
+ },
+ "move:doublehit": {
+  "ja": "ダブルアタック",
+  "slug": "double-hit"
+ },
+ "move:doubleteam": {
+  "ja": "かげぶんしん",
+  "slug": "double-team"
  },
  "move:dracometeor": {
   "ja": "りゅうせいぐん",
@@ -1241,6 +1633,10 @@
   "ja": "りゅうのはどう",
   "slug": "dragon-pulse"
  },
+ "move:dragonrush": {
+  "ja": "ドラゴンダイブ",
+  "slug": "dragon-rush"
+ },
  "move:dragontail": {
   "ja": "ドラゴンテール",
   "slug": "dragon-tail"
@@ -1252,6 +1648,10 @@
  "move:drainpunch": {
   "ja": "ドレインパンチ",
   "slug": "drain-punch"
+ },
+ "move:drillpeck": {
+  "ja": "ドリルくちばし",
+  "slug": "drill-peck"
  },
  "move:drillrun": {
   "ja": "ドリルライナー",
@@ -1268,6 +1668,10 @@
  "move:earthquake": {
   "ja": "じしん",
   "slug": "earthquake"
+ },
+ "move:eerieimpulse": {
+  "ja": "かいでんぱ",
+  "slug": "eerie-impulse"
  },
  "move:electroshot": {
   "ja": "エレクトロビーム",
@@ -1293,9 +1697,25 @@
   "ja": "エナジーボール",
   "slug": "energy-ball"
  },
+ "move:entrainment": {
+  "ja": "なかまづくり",
+  "slug": "entrainment"
+ },
  "move:eruption": {
   "ja": "ふんか",
   "slug": "eruption"
+ },
+ "move:expandingforce": {
+  "ja": "ワイドフォース",
+  "slug": "expanding-force"
+ },
+ "move:explosion": {
+  "ja": "だいばくはつ",
+  "slug": "explosion"
+ },
+ "move:extrasensory": {
+  "ja": "じんつうりき",
+  "slug": "extrasensory"
  },
  "move:extremespeed": {
   "ja": "しんそく",
@@ -1313,9 +1733,17 @@
   "ja": "うそなき",
   "slug": "fake-tears"
  },
+ "move:featherdance": {
+  "ja": "フェザーダンス",
+  "slug": "feather-dance"
+ },
  "move:feint": {
   "ja": "フェイント",
   "slug": "feint"
+ },
+ "move:fellstinger": {
+  "ja": "とどめばり",
+  "slug": "fell-stinger"
  },
  "move:ficklebeam": {
   "ja": "きまぐレーザー",
@@ -1341,6 +1769,22 @@
   "ja": "ほのおのパンチ",
   "slug": "fire-punch"
  },
+ "move:firespin": {
+  "ja": "ほのおのうず",
+  "slug": "fire-spin"
+ },
+ "move:firstimpression": {
+  "ja": "であいがしら",
+  "slug": "first-impression"
+ },
+ "move:fissure": {
+  "ja": "じわれ",
+  "slug": "fissure"
+ },
+ "move:flail": {
+  "ja": "じたばた",
+  "slug": "flail"
+ },
  "move:flamecharge": {
   "ja": "ニトロチャージ",
   "slug": "flame-charge"
@@ -1357,6 +1801,10 @@
   "ja": "ラスターカノン",
   "slug": "flash-cannon"
  },
+ "move:fling": {
+  "ja": "なげつける",
+  "slug": "fling"
+ },
  "move:flipturn": {
   "ja": "クイックターン",
   "slug": "flip-turn"
@@ -1368,6 +1816,14 @@
  "move:focusblast": {
   "ja": "きあいだま",
   "slug": "focus-blast"
+ },
+ "move:focusenergy": {
+  "ja": "きあいだめ",
+  "slug": "focus-energy"
+ },
+ "move:focuspunch": {
+  "ja": "きあいパンチ",
+  "slug": "focus-punch"
  },
  "move:followme": {
   "ja": "このゆびとまれ",
@@ -1381,6 +1837,10 @@
   "ja": "フリーズドライ",
   "slug": "freeze-dry"
  },
+ "move:frostbreath": {
+  "ja": "こおりのいぶき",
+  "slug": "frost-breath"
+ },
  "move:futuresight": {
   "ja": "みらいよち",
   "slug": "future-sight"
@@ -1388,6 +1848,10 @@
  "move:gigadrain": {
   "ja": "ギガドレイン",
   "slug": "giga-drain"
+ },
+ "move:gigaimpact": {
+  "ja": "ギガインパクト",
+  "slug": "giga-impact"
  },
  "move:gigatonhammer": {
   "ja": "デカハンマー",
@@ -1400,6 +1864,18 @@
  "move:grassknot": {
   "ja": "くさむすび",
   "slug": "grass-knot"
+ },
+ "move:gravapple": {
+  "ja": "Ｇのちから",
+  "slug": "grav-apple"
+ },
+ "move:gravity": {
+  "ja": "じゅうりょく",
+  "slug": "gravity"
+ },
+ "move:growth": {
+  "ja": "せいちょう",
+  "slug": "growth"
  },
  "move:guillotine": {
   "ja": "ハサミギロチン",
@@ -1417,9 +1893,17 @@
   "ja": "アームハンマー",
   "slug": "hammer-arm"
  },
+ "move:hardpress": {
+  "ja": "ハードプレス",
+  "slug": "hard-press"
+ },
  "move:haze": {
   "ja": "くろいきり",
   "slug": "haze"
+ },
+ "move:headlongrush": {
+  "ja": "ぶちかまし",
+  "slug": "headlong-rush"
  },
  "move:headsmash": {
   "ja": "もろはのずつき",
@@ -1432,6 +1916,10 @@
  "move:healpulse": {
   "ja": "いやしのはどう",
   "slug": "heal-pulse"
+ },
+ "move:heatcrash": {
+  "ja": "ヒートスタンプ",
+  "slug": "heat-crash"
  },
  "move:heatwave": {
   "ja": "ねっぷう",
@@ -1456,6 +1944,10 @@
  "move:highjumpkick": {
   "ja": "とびひざげり",
   "slug": "high-jump-kick"
+ },
+ "move:horndrill": {
+  "ja": "つのドリル",
+  "slug": "horn-drill"
  },
  "move:howl": {
   "ja": "とおぼえ",
@@ -1521,9 +2013,21 @@
   "ja": "こごえるかぜ",
   "slug": "icy-wind"
  },
+ "move:imprison": {
+  "ja": "ふういん",
+  "slug": "imprison"
+ },
+ "move:infernalparade": {
+  "ja": "ひゃっきやこう",
+  "slug": "infernal-parade"
+ },
  "move:infestation": {
   "ja": "まとわりつく",
   "slug": "infestation"
+ },
+ "move:instruct": {
+  "ja": "さいはい",
+  "slug": "instruct"
  },
  "move:irondefense": {
   "ja": "てっぺき",
@@ -1532,6 +2036,10 @@
  "move:ironhead": {
   "ja": "アイアンヘッド",
   "slug": "iron-head"
+ },
+ "move:irontail": {
+  "ja": "アイアンテール",
+  "slug": "iron-tail"
  },
  "move:jetpunch": {
   "ja": "ジェットパンチ",
@@ -1548,6 +2056,10 @@
  "move:kowtowcleave": {
   "ja": "ドゲザン",
   "slug": "kowtow-cleave"
+ },
+ "move:lashout": {
+  "ja": "うっぷんばらし",
+  "slug": "lash-out"
  },
  "move:lastresort": {
   "ja": "とっておき",
@@ -1613,6 +2125,10 @@
   "ja": "マッハパンチ",
   "slug": "mach-punch"
  },
+ "move:magicpowder": {
+  "ja": "まほうのこな",
+  "slug": "magic-powder"
+ },
  "move:magnetrise": {
   "ja": "でんじふゆう",
   "slug": "magnet-rise"
@@ -1624,6 +2140,14 @@
  "move:matchagotcha": {
   "ja": "シャカシャカほう",
   "slug": "matcha-gotcha"
+ },
+ "move:meanlook": {
+  "ja": "くろいまなざし",
+  "slug": "mean-look"
+ },
+ "move:megahorn": {
+  "ja": "メガホーン",
+  "slug": "megahorn"
  },
  "move:megakick": {
   "ja": "メガトンキック",
@@ -1641,9 +2165,21 @@
   "ja": "コメットパンチ",
   "slug": "meteor-mash"
  },
+ "move:minimize": {
+  "ja": "ちいさくなる",
+  "slug": "minimize"
+ },
  "move:mirrorcoat": {
   "ja": "ミラーコート",
   "slug": "mirror-coat"
+ },
+ "move:mistyexplosion": {
+  "ja": "ミストバースト",
+  "slug": "misty-explosion"
+ },
+ "move:mistyterrain": {
+  "ja": "ミストフィールド",
+  "slug": "misty-terrain"
  },
  "move:moonblast": {
   "ja": "ムーンフォース",
@@ -1669,6 +2205,10 @@
   "ja": "マッドショット",
   "slug": "mud-shot"
  },
+ "move:mudslap": {
+  "ja": "どろかけ",
+  "slug": "mud-slap"
+ },
  "move:mysticalfire": {
   "ja": "マジカルフレイム",
   "slug": "mystical-fire"
@@ -1676,6 +2216,18 @@
  "move:nastyplot": {
   "ja": "わるだくみ",
   "slug": "nasty-plot"
+ },
+ "move:nightshade": {
+  "ja": "ナイトヘッド",
+  "slug": "night-shade"
+ },
+ "move:nightslash": {
+  "ja": "つじぎり",
+  "slug": "night-slash"
+ },
+ "move:noretreat": {
+  "ja": "はいすいのじん",
+  "slug": "no-retreat"
  },
  "move:nuzzle": {
   "ja": "ほっぺすりすり",
@@ -1709,9 +2261,21 @@
   "ja": "ほろびのうた",
   "slug": "perish-song"
  },
+ "move:petalblizzard": {
+  "ja": "はなふぶき",
+  "slug": "petal-blizzard"
+ },
+ "move:petaldance": {
+  "ja": "はなびらのまい",
+  "slug": "petal-dance"
+ },
  "move:phantomforce": {
   "ja": "ゴーストダイブ",
   "slug": "phantom-force"
+ },
+ "move:pinmissile": {
+  "ja": "ミサイルばり",
+  "slug": "pin-missile"
  },
  "move:playrough": {
   "ja": "じゃれつく",
@@ -1733,9 +2297,17 @@
   "ja": "ネズミざん",
   "slug": "population-bomb"
  },
+ "move:pounce": {
+  "ja": "とびつく",
+  "slug": "pounce"
+ },
  "move:powergem": {
   "ja": "パワージェム",
   "slug": "power-gem"
+ },
+ "move:powertrip": {
+  "ja": "つけあがる",
+  "slug": "power-trip"
  },
  "move:powerwhip": {
   "ja": "パワーウィップ",
@@ -1757,13 +2329,29 @@
   "ja": "サイコノイズ",
   "slug": "psychic-noise"
  },
+ "move:psychicterrain": {
+  "ja": "サイコフィールド",
+  "slug": "psychic-terrain"
+ },
  "move:psychocut": {
   "ja": "サイコカッター",
   "slug": "psycho-cut"
  },
+ "move:psychup": {
+  "ja": "じこあんじ",
+  "slug": "psych-up"
+ },
+ "move:psyshieldbash": {
+  "ja": "バリアーラッシュ",
+  "slug": "psyshield-bash"
+ },
  "move:psyshock": {
   "ja": "サイコショック",
   "slug": "psyshock"
+ },
+ "move:quash": {
+  "ja": "さきおくり",
+  "slug": "quash"
  },
  "move:quickattack": {
   "ja": "でんこうせっか",
@@ -1784,6 +2372,14 @@
  "move:ragepowder": {
   "ja": "いかりのこな",
   "slug": "rage-powder"
+ },
+ "move:ragingbull": {
+  "ja": "レイジングブル",
+  "slug": "raging-bull"
+ },
+ "move:ragingfury": {
+  "ja": "だいふんげき",
+  "slug": "raging-fury"
  },
  "move:raindance": {
   "ja": "あまごい",
@@ -1808,6 +2404,10 @@
  "move:rest": {
   "ja": "ねむる",
   "slug": "rest"
+ },
+ "move:risingvoltage": {
+  "ja": "ライジングボルト",
+  "slug": "rising-voltage"
  },
  "move:roar": {
   "ja": "ほえる",
@@ -1837,9 +2437,25 @@
   "ja": "はねやすめ",
   "slug": "roost"
  },
+ "move:round": {
+  "ja": "りんしょう",
+  "slug": "round"
+ },
  "move:sacredsword": {
   "ja": "せいなるつるぎ",
   "slug": "sacred-sword"
+ },
+ "move:safeguard": {
+  "ja": "しんぴのまもり",
+  "slug": "safeguard"
+ },
+ "move:saltcure": {
+  "ja": "しおづけ",
+  "slug": "salt-cure"
+ },
+ "move:sandstorm": {
+  "ja": "すなあらし",
+  "slug": "sandstorm"
  },
  "move:scald": {
   "ja": "ねっとう",
@@ -1849,9 +2465,17 @@
   "ja": "スケイルショット",
   "slug": "scale-shot"
  },
+ "move:scaryface": {
+  "ja": "こわいかお",
+  "slug": "scary-face"
+ },
  "move:scorchingsands": {
   "ja": "ねっさのだいち",
   "slug": "scorching-sands"
+ },
+ "move:screech": {
+  "ja": "いやなおと",
+  "slug": "screech"
  },
  "move:seedbomb": {
   "ja": "タネばくだん",
@@ -1873,6 +2497,18 @@
   "ja": "かげうち",
   "slug": "shadow-sneak"
  },
+ "move:shedtail": {
+  "ja": "しっぽきり",
+  "slug": "shed-tail"
+ },
+ "move:sheercold": {
+  "ja": "ぜったいれいど",
+  "slug": "sheer-cold"
+ },
+ "move:shellsidearm": {
+  "ja": "シェルアームズ",
+  "slug": "shell-side-arm"
+ },
  "move:shellsmash": {
   "ja": "からをやぶる",
   "slug": "shell-smash"
@@ -1880,6 +2516,14 @@
  "move:shelter": {
   "ja": "たてこもる",
   "slug": "shelter"
+ },
+ "move:skillswap": {
+  "ja": "スキルスワップ",
+  "slug": "skill-swap"
+ },
+ "move:skittersmack": {
+  "ja": "はいよるいちげき",
+  "slug": "skitter-smack"
  },
  "move:slackoff": {
   "ja": "なまける",
@@ -1889,6 +2533,10 @@
   "ja": "ねむりごな",
   "slug": "sleep-powder"
  },
+ "move:sleeptalk": {
+  "ja": "ねごと",
+  "slug": "sleep-talk"
+ },
  "move:sludgebomb": {
   "ja": "ヘドロばくだん",
   "slug": "sludge-bomb"
@@ -1897,9 +2545,21 @@
   "ja": "ヘドロウェーブ",
   "slug": "sludge-wave"
  },
+ "move:smackdown": {
+  "ja": "うちおとす",
+  "slug": "smack-down"
+ },
+ "move:snaptrap": {
+  "ja": "トラバサミ",
+  "slug": "snap-trap"
+ },
  "move:snarl": {
   "ja": "バークアウト",
   "slug": "snarl"
+ },
+ "move:snowscape": {
+  "ja": "ゆきげしき",
+  "slug": "snowscape"
  },
  "move:soak": {
   "ja": "みずびたし",
@@ -1908,6 +2568,10 @@
  "move:solarbeam": {
   "ja": "ソーラービーム",
   "slug": "solar-beam"
+ },
+ "move:solarblade": {
+  "ja": "ソーラーブレード",
+  "slug": "solar-blade"
  },
  "move:sparklingaria": {
   "ja": "うたかたのアリア",
@@ -1929,13 +2593,29 @@
   "ja": "ソウルクラッシュ",
   "slug": "spirit-break"
  },
+ "move:spiritshackle": {
+  "ja": "かげぬい",
+  "slug": "spirit-shackle"
+ },
  "move:stealthrock": {
   "ja": "ステルスロック",
   "slug": "stealth-rock"
  },
+ "move:steelbeam": {
+  "ja": "てっていこうせん",
+  "slug": "steel-beam"
+ },
+ "move:steelwing": {
+  "ja": "はがねのつばさ",
+  "slug": "steel-wing"
+ },
  "move:stickyweb": {
   "ja": "ねばねばネット",
   "slug": "sticky-web"
+ },
+ "move:stockpile": {
+  "ja": "たくわえる",
+  "slug": "stockpile"
  },
  "move:stompingtantrum": {
   "ja": "じだんだ",
@@ -1953,9 +2633,25 @@
   "ja": "アシストパワー",
   "slug": "stored-power"
  },
+ "move:stormthrow": {
+  "ja": "やまあらし",
+  "slug": "storm-throw"
+ },
  "move:strengthsap": {
   "ja": "ちからをすいとる",
   "slug": "strength-sap"
+ },
+ "move:stringshot": {
+  "ja": "いとをはく",
+  "slug": "string-shot"
+ },
+ "move:strugglebug": {
+  "ja": "むしのていこう",
+  "slug": "struggle-bug"
+ },
+ "move:stunspore": {
+  "ja": "しびれごな",
+  "slug": "stun-spore"
  },
  "move:substitute": {
   "ja": "みがわり",
@@ -1969,6 +2665,10 @@
   "ja": "にほんばれ",
   "slug": "sunny-day"
  },
+ "move:supercellslam": {
+  "ja": "サンダーダイブ",
+  "slug": "supercell-slam"
+ },
  "move:superfang": {
   "ja": "いかりのまえば",
   "slug": "super-fang"
@@ -1980,6 +2680,14 @@
  "move:surf": {
   "ja": "なみのり",
   "slug": "surf"
+ },
+ "move:swagger": {
+  "ja": "いばる",
+  "slug": "swagger"
+ },
+ "move:switcheroo": {
+  "ja": "すりかえ",
+  "slug": "switcheroo"
  },
  "move:swordsdance": {
   "ja": "つるぎのまい",
@@ -2005,6 +2713,14 @@
   "ja": "だいちのはどう",
   "slug": "terrain-pulse"
  },
+ "move:thief": {
+  "ja": "どろぼう",
+  "slug": "thief"
+ },
+ "move:thrash": {
+  "ja": "あばれる",
+  "slug": "thrash"
+ },
  "move:throatchop": {
   "ja": "じごくづき",
   "slug": "throat-chop"
@@ -2017,6 +2733,10 @@
   "ja": "１０まんボルト",
   "slug": "thunderbolt"
  },
+ "move:thunderfang": {
+  "ja": "かみなりのキバ",
+  "slug": "thunder-fang"
+ },
  "move:thunderpunch": {
   "ja": "かみなりパンチ",
   "slug": "thunder-punch"
@@ -2024,6 +2744,10 @@
  "move:thunderwave": {
   "ja": "でんじは",
   "slug": "thunder-wave"
+ },
+ "move:tickle": {
+  "ja": "くすぐる",
+  "slug": "tickle"
  },
  "move:tidyup": {
   "ja": "おかたづけ",
@@ -2040,6 +2764,10 @@
  "move:toxicspikes": {
   "ja": "どくびし",
   "slug": "toxic-spikes"
+ },
+ "move:trailblaze": {
+  "ja": "くさわけ",
+  "slug": "trailblaze"
  },
  "move:transform": {
   "ja": "へんしん",
@@ -2069,6 +2797,14 @@
   "ja": "ツインビーム",
   "slug": "twin-beam"
  },
+ "move:upperhand": {
+  "ja": "はやてがえし",
+  "slug": "upper-hand"
+ },
+ "move:uproar": {
+  "ja": "さわぐ",
+  "slug": "uproar"
+ },
  "move:uturn": {
   "ja": "とんぼがえり",
   "slug": "u-turn"
@@ -2077,9 +2813,17 @@
   "ja": "しんくうは",
   "slug": "vacuum-wave"
  },
+ "move:venoshock": {
+  "ja": "ベノムショック",
+  "slug": "venoshock"
+ },
  "move:voltswitch": {
   "ja": "ボルトチェンジ",
   "slug": "volt-switch"
+ },
+ "move:volttackle": {
+  "ja": "ボルテッカー",
+  "slug": "volt-tackle"
  },
  "move:waterfall": {
   "ja": "たきのぼり",
@@ -2105,6 +2849,10 @@
   "ja": "ウェザーボール",
   "slug": "weather-ball"
  },
+ "move:whirlpool": {
+  "ja": "うずしお",
+  "slug": "whirlpool"
+ },
  "move:whirlwind": {
   "ja": "ふきとばし",
   "slug": "whirlwind"
@@ -2112,6 +2860,10 @@
  "move:wideguard": {
   "ja": "ワイドガード",
   "slug": "wide-guard"
+ },
+ "move:wildcharge": {
+  "ja": "ワイルドボルト",
+  "slug": "wild-charge"
  },
  "move:willowisp": {
   "ja": "おにび",
@@ -2124,6 +2876,10 @@
  "move:woodhammer": {
   "ja": "ウッドハンマー",
   "slug": "wood-hammer"
+ },
+ "move:wrap": {
+  "ja": "まきつく",
+  "slug": "wrap"
  },
  "move:xscissor": {
   "ja": "シザークロス",
@@ -2143,1364 +2899,1888 @@
  },
  "species:abomasnow": {
   "ja": "ユキノオー",
+  "pid": 460,
   "slug": "abomasnow"
  },
  "species:abomasnowmega": {
   "form_ja": "メガユキノオー",
   "ja": "メガユキノオー",
+  "pid": 10060,
   "slug": "abomasnow-mega",
   "species_ja": "ユキノオー"
  },
  "species:absol": {
   "ja": "アブソル",
+  "pid": 359,
   "slug": "absol"
  },
  "species:absolmega": {
   "form_ja": "メガアブソル",
   "ja": "メガアブソル",
+  "pid": 10057,
   "slug": "absol-mega",
   "species_ja": "アブソル"
  },
  "species:aegislash": {
   "ja": "ギルガルド",
+  "pid": 681,
   "slug": "aegislash"
  },
  "species:aerodactyl": {
   "ja": "プテラ",
+  "pid": 142,
   "slug": "aerodactyl"
  },
  "species:aerodactylmega": {
   "form_ja": "メガプテラ",
   "ja": "メガプテラ",
+  "pid": 10042,
   "slug": "aerodactyl-mega",
   "species_ja": "プテラ"
  },
  "species:aggron": {
   "ja": "ボスゴドラ",
+  "pid": 306,
   "slug": "aggron"
  },
  "species:aggronmega": {
   "form_ja": "メガボスゴドラ",
   "ja": "メガボスゴドラ",
+  "pid": 10053,
   "slug": "aggron-mega",
   "species_ja": "ボスゴドラ"
  },
  "species:alakazam": {
   "ja": "フーディン",
+  "pid": 65,
   "slug": "alakazam"
  },
  "species:alakazammega": {
   "form_ja": "メガフーディン",
   "ja": "メガフーディン",
+  "pid": 10037,
   "slug": "alakazam-mega",
   "species_ja": "フーディン"
  },
  "species:alcremie": {
   "ja": "マホイップ",
+  "pid": 869,
   "slug": "alcremie"
  },
  "species:altaria": {
   "ja": "チルタリス",
+  "pid": 334,
   "slug": "altaria"
  },
  "species:altariamega": {
   "form_ja": "メガチルタリス",
   "ja": "メガチルタリス",
+  "pid": 10067,
   "slug": "altaria-mega",
   "species_ja": "チルタリス"
  },
  "species:ampharos": {
   "ja": "デンリュウ",
+  "pid": 181,
   "slug": "ampharos"
  },
  "species:ampharosmega": {
   "form_ja": "メガデンリュウ",
   "ja": "メガデンリュウ",
+  "pid": 10045,
   "slug": "ampharos-mega",
   "species_ja": "デンリュウ"
  },
  "species:annihilape": {
   "ja": "コノヨザル",
+  "pid": 979,
   "slug": "annihilape"
  },
  "species:appletun": {
   "ja": "タルップル",
+  "pid": 842,
   "slug": "appletun"
  },
  "species:araquanid": {
   "ja": "オニシズクモ",
+  "pid": 752,
   "slug": "araquanid"
  },
  "species:arbok": {
   "ja": "アーボック",
+  "pid": 24,
   "slug": "arbok"
  },
  "species:arcanine": {
   "ja": "ウインディ",
+  "pid": 59,
   "slug": "arcanine"
  },
  "species:arcaninehisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "ウインディ（ヒスイ）",
+  "pid": 10230,
   "slug": "arcanine-hisui",
   "species_ja": "ウインディ"
  },
  "species:archaludon": {
   "ja": "ブリジュラス",
+  "pid": 1018,
   "slug": "archaludon"
  },
  "species:ariados": {
   "ja": "アリアドス",
+  "pid": 168,
   "slug": "ariados"
  },
  "species:armarouge": {
   "ja": "グレンアルマ",
+  "pid": 936,
   "slug": "armarouge"
  },
  "species:aromatisse": {
   "ja": "フレフワン",
+  "pid": 683,
   "slug": "aromatisse"
  },
  "species:audino": {
   "ja": "タブンネ",
+  "pid": 531,
   "slug": "audino"
  },
  "species:audinomega": {
   "form_ja": "メガタブンネ",
   "ja": "メガタブンネ",
+  "pid": 10069,
   "slug": "audino-mega",
   "species_ja": "タブンネ"
  },
  "species:aurorus": {
   "ja": "アマルルガ",
+  "pid": 699,
   "slug": "aurorus"
  },
  "species:avalugg": {
   "ja": "クレベース",
+  "pid": 713,
   "slug": "avalugg"
  },
  "species:avalugghisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "クレベース（ヒスイ）",
+  "pid": 10243,
   "slug": "avalugg-hisui",
   "species_ja": "クレベース"
  },
  "species:azumarill": {
   "ja": "マリルリ",
+  "pid": 184,
   "slug": "azumarill"
  },
  "species:banette": {
   "ja": "ジュペッタ",
+  "pid": 354,
   "slug": "banette"
  },
  "species:banettemega": {
   "form_ja": "メガジュペッタ",
   "ja": "メガジュペッタ",
+  "pid": 10056,
   "slug": "banette-mega",
   "species_ja": "ジュペッタ"
  },
  "species:barbaracle": {
   "ja": "ガメノデス",
+  "pid": 689,
   "slug": "barbaracle"
  },
  "species:barbaraclemega": {
   "form_ja": "メガガメノデス",
   "ja": "メガガメノデス",
+  "pid": 10298,
   "slug": "barbaracle-mega",
   "species_ja": "ガメノデス"
  },
  "species:basculegion": {
   "ja": "イダイトウ",
+  "pid": 902,
   "slug": "basculegion"
  },
  "species:basculegionf": {
   "form_ja": "メスのすがた",
   "ja": "イダイトウ（メス）",
+  "pid": 10248,
   "slug": "basculegion-female",
   "species_ja": "イダイトウ"
  },
+ "species:bastiodon": {
+  "ja": "トリデプス",
+  "pid": 411,
+  "slug": "bastiodon"
+ },
  "species:baxcalibur": {
   "ja": "セグレイブ",
+  "pid": 998,
   "slug": "baxcalibur"
  },
  "species:beartic": {
   "ja": "ツンベアー",
+  "pid": 614,
   "slug": "beartic"
  },
  "species:beedrill": {
   "ja": "スピアー",
+  "pid": 15,
   "slug": "beedrill"
  },
  "species:beedrillmega": {
   "form_ja": "メガスピアー",
   "ja": "メガスピアー",
+  "pid": 10090,
   "slug": "beedrill-mega",
   "species_ja": "スピアー"
  },
  "species:bellibolt": {
   "ja": "ハラバリー",
+  "pid": 939,
   "slug": "bellibolt"
  },
  "species:blastoise": {
   "ja": "カメックス",
+  "pid": 9,
   "slug": "blastoise"
  },
  "species:blastoisemega": {
   "form_ja": "メガカメックス",
   "ja": "メガカメックス",
+  "pid": 10036,
   "slug": "blastoise-mega",
   "species_ja": "カメックス"
  },
  "species:blaziken": {
   "ja": "バシャーモ",
+  "pid": 257,
   "slug": "blaziken"
  },
  "species:blazikenmega": {
   "form_ja": "メガバシャーモ",
   "ja": "メガバシャーモ",
+  "pid": 10050,
   "slug": "blaziken-mega",
   "species_ja": "バシャーモ"
  },
  "species:camerupt": {
   "ja": "バクーダ",
+  "pid": 323,
   "slug": "camerupt"
  },
  "species:cameruptmega": {
   "form_ja": "メガバクーダ",
   "ja": "メガバクーダ",
+  "pid": 10087,
   "slug": "camerupt-mega",
   "species_ja": "バクーダ"
  },
+ "species:castform": {
+  "ja": "ポワルン",
+  "pid": 351,
+  "slug": "castform"
+ },
  "species:ceruledge": {
   "ja": "ソウブレイズ",
+  "pid": 937,
   "slug": "ceruledge"
  },
  "species:chandelure": {
   "ja": "シャンデラ",
+  "pid": 609,
   "slug": "chandelure"
  },
  "species:chandeluremega": {
   "form_ja": "メガシャンデラ",
   "ja": "メガシャンデラ",
+  "pid": 10291,
   "slug": "chandelure-mega",
   "species_ja": "シャンデラ"
  },
  "species:charizard": {
   "ja": "リザードン",
+  "pid": 6,
   "slug": "charizard"
  },
  "species:charizardmegax": {
   "form_ja": "メガリザードンＸ",
   "ja": "メガリザードンＸ",
+  "pid": 10034,
   "slug": "charizard-mega-x",
   "species_ja": "リザードン"
  },
  "species:charizardmegay": {
   "form_ja": "メガリザードンＹ",
   "ja": "メガリザードンＹ",
+  "pid": 10035,
   "slug": "charizard-mega-y",
   "species_ja": "リザードン"
  },
  "species:chesnaught": {
   "ja": "ブリガロン",
+  "pid": 652,
   "slug": "chesnaught"
  },
  "species:chesnaughtmega": {
   "form_ja": "メガブリガロン",
   "ja": "メガブリガロン",
+  "pid": 10292,
   "slug": "chesnaught-mega",
   "species_ja": "ブリガロン"
  },
  "species:chimecho": {
   "ja": "チリーン",
+  "pid": 358,
   "slug": "chimecho"
  },
  "species:chimechomega": {
   "form_ja": "メガチリーン",
   "ja": "メガチリーン",
+  "pid": 10306,
   "slug": "chimecho-mega",
   "species_ja": "チリーン"
  },
  "species:cinderace": {
   "ja": "エースバーン",
+  "pid": 815,
   "slug": "cinderace"
  },
  "species:clawitzer": {
   "ja": "ブロスター",
+  "pid": 693,
   "slug": "clawitzer"
  },
  "species:clefable": {
   "ja": "ピクシー",
+  "pid": 36,
   "slug": "clefable"
  },
  "species:clefablemega": {
   "form_ja": "メガピクシー",
   "ja": "メガピクシー",
+  "pid": 10278,
   "slug": "clefable-mega",
   "species_ja": "ピクシー"
  },
  "species:cofagrigus": {
   "ja": "デスカーン",
+  "pid": 563,
   "slug": "cofagrigus"
  },
  "species:conkeldurr": {
   "ja": "ローブシン",
+  "pid": 534,
   "slug": "conkeldurr"
  },
  "species:corviknight": {
   "ja": "アーマーガア",
+  "pid": 823,
   "slug": "corviknight"
  },
  "species:crabominable": {
   "ja": "ケケンカニ",
+  "pid": 740,
   "slug": "crabominable"
  },
  "species:crabominablemega": {
   "form_ja": "メガケケンカニ",
   "ja": "メガケケンカニ",
+  "pid": 10315,
   "slug": "crabominable-mega",
   "species_ja": "ケケンカニ"
  },
  "species:decidueye": {
   "ja": "ジュナイパー",
+  "pid": 724,
   "slug": "decidueye"
  },
  "species:decidueyehisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "ジュナイパー（ヒスイ）",
+  "pid": 10244,
   "slug": "decidueye-hisui",
   "species_ja": "ジュナイパー"
  },
+ "species:dedenne": {
+  "ja": "デデンネ",
+  "pid": 702,
+  "slug": "dedenne"
+ },
  "species:delphox": {
   "ja": "マフォクシー",
+  "pid": 655,
   "slug": "delphox"
  },
  "species:delphoxmega": {
   "form_ja": "メガマフォクシー",
   "ja": "メガマフォクシー",
+  "pid": 10293,
   "slug": "delphox-mega",
   "species_ja": "マフォクシー"
  },
  "species:diggersby": {
   "ja": "ホルード",
+  "pid": 660,
   "slug": "diggersby"
  },
  "species:ditto": {
   "ja": "メタモン",
+  "pid": 132,
   "slug": "ditto"
  },
  "species:dragalge": {
   "ja": "ドラミドロ",
+  "pid": 691,
   "slug": "dragalge"
  },
  "species:dragalgemega": {
   "form_ja": "メガドラミドロ",
   "ja": "メガドラミドロ",
+  "pid": 10299,
   "slug": "dragalge-mega",
   "species_ja": "ドラミドロ"
  },
  "species:dragapult": {
   "ja": "ドラパルト",
+  "pid": 887,
   "slug": "dragapult"
  },
  "species:dragonite": {
   "ja": "カイリュー",
+  "pid": 149,
   "slug": "dragonite"
  },
  "species:dragonitemega": {
   "form_ja": "メガカイリュー",
   "ja": "メガカイリュー",
+  "pid": 10281,
   "slug": "dragonite-mega",
   "species_ja": "カイリュー"
  },
  "species:drampa": {
   "ja": "ジジーロン",
+  "pid": 780,
   "slug": "drampa"
  },
  "species:drampamega": {
   "form_ja": "メガジジーロン",
   "ja": "メガジジーロン",
+  "pid": 10302,
   "slug": "drampa-mega",
   "species_ja": "ジジーロン"
  },
  "species:eelektross": {
   "ja": "シビルドン",
+  "pid": 604,
   "slug": "eelektross"
  },
  "species:eelektrossmega": {
   "form_ja": "メガシビルドン",
   "ja": "メガシビルドン",
+  "pid": 10290,
   "slug": "eelektross-mega",
   "species_ja": "シビルドン"
  },
  "species:emboar": {
   "ja": "エンブオー",
+  "pid": 500,
   "slug": "emboar"
  },
  "species:emboarmega": {
   "form_ja": "メガエンブオー",
   "ja": "メガエンブオー",
+  "pid": 10286,
   "slug": "emboar-mega",
   "species_ja": "エンブオー"
  },
+ "species:emolga": {
+  "ja": "エモンガ",
+  "pid": 587,
+  "slug": "emolga"
+ },
  "species:empoleon": {
   "ja": "エンペルト",
+  "pid": 395,
   "slug": "empoleon"
  },
  "species:espathra": {
   "ja": "クエスパトラ",
+  "pid": 956,
   "slug": "espathra"
  },
  "species:espeon": {
   "ja": "エーフィ",
+  "pid": 196,
   "slug": "espeon"
  },
  "species:excadrill": {
   "ja": "ドリュウズ",
+  "pid": 530,
   "slug": "excadrill"
  },
  "species:excadrillmega": {
   "form_ja": "メガドリュウズ",
   "ja": "メガドリュウズ",
+  "pid": 10287,
   "slug": "excadrill-mega",
   "species_ja": "ドリュウズ"
  },
  "species:falinks": {
   "ja": "タイレーツ",
+  "pid": 870,
   "slug": "falinks"
  },
  "species:falinksmega": {
   "form_ja": "メガタイレーツ",
   "ja": "メガタイレーツ",
+  "pid": 10303,
   "slug": "falinks-mega",
   "species_ja": "タイレーツ"
  },
  "species:farigiraf": {
   "ja": "リキキリン",
+  "pid": 981,
   "slug": "farigiraf"
  },
  "species:feraligatr": {
   "ja": "オーダイル",
+  "pid": 160,
   "slug": "feraligatr"
  },
  "species:feraligatrmega": {
   "form_ja": "メガオーダイル",
   "ja": "メガオーダイル",
+  "pid": 10283,
   "slug": "feraligatr-mega",
   "species_ja": "オーダイル"
  },
  "species:flapple": {
   "ja": "アップリュー",
+  "pid": 841,
   "slug": "flapple"
  },
  "species:flareon": {
   "ja": "ブースター",
+  "pid": 136,
   "slug": "flareon"
  },
  "species:floetteeternal": {
   "form_ja": "えいえんのはな",
   "ja": "フラエッテ（えいえんのはな）",
+  "pid": 10061,
   "slug": "floette-eternal",
   "species_ja": "フラエッテ"
  },
  "species:floettemega": {
   "form_ja": "メガフラエッテ",
   "ja": "メガフラエッテ",
+  "pid": 10296,
   "slug": "floette-mega",
   "species_ja": "フラエッテ"
  },
  "species:florges": {
   "ja": "フラージェス",
+  "pid": 671,
   "slug": "florges"
  },
  "species:forretress": {
   "ja": "フォレトス",
+  "pid": 205,
   "slug": "forretress"
  },
  "species:froslass": {
   "ja": "ユキメノコ",
+  "pid": 478,
   "slug": "froslass"
  },
  "species:froslassmega": {
   "form_ja": "メガユキメノコ",
   "ja": "メガユキメノコ",
+  "pid": 10285,
   "slug": "froslass-mega",
   "species_ja": "ユキメノコ"
  },
+ "species:furfrou": {
+  "ja": "トリミアン",
+  "pid": 676,
+  "slug": "furfrou"
+ },
  "species:gallade": {
   "ja": "エルレイド",
+  "pid": 475,
   "slug": "gallade"
  },
  "species:gallademega": {
   "form_ja": "メガエルレイド",
   "ja": "メガエルレイド",
+  "pid": 10068,
   "slug": "gallade-mega",
   "species_ja": "エルレイド"
  },
  "species:garchomp": {
   "ja": "ガブリアス",
+  "pid": 445,
   "slug": "garchomp"
  },
  "species:garchompmega": {
   "form_ja": "メガガブリアス",
   "ja": "メガガブリアス",
+  "pid": 10058,
   "slug": "garchomp-mega",
   "species_ja": "ガブリアス"
  },
  "species:gardevoir": {
   "ja": "サーナイト",
+  "pid": 282,
   "slug": "gardevoir"
  },
  "species:gardevoirmega": {
   "form_ja": "メガサーナイト",
   "ja": "メガサーナイト",
+  "pid": 10051,
   "slug": "gardevoir-mega",
   "species_ja": "サーナイト"
  },
  "species:garganacl": {
   "ja": "キョジオーン",
+  "pid": 934,
   "slug": "garganacl"
+ },
+ "species:genesect": {
+  "ja": "ゲノセクト",
+  "pid": 649,
+  "slug": "genesect"
  },
  "species:gengar": {
   "ja": "ゲンガー",
+  "pid": 94,
   "slug": "gengar"
  },
  "species:gengarmega": {
   "form_ja": "メガゲンガー",
   "ja": "メガゲンガー",
+  "pid": 10038,
   "slug": "gengar-mega",
   "species_ja": "ゲンガー"
  },
  "species:gholdengo": {
   "ja": "サーフゴー",
+  "pid": 1000,
   "slug": "gholdengo"
  },
  "species:glaceon": {
   "ja": "グレイシア",
+  "pid": 471,
   "slug": "glaceon"
  },
  "species:glalie": {
   "ja": "オニゴーリ",
+  "pid": 362,
   "slug": "glalie"
  },
  "species:glimmora": {
   "ja": "キラフロル",
+  "pid": 970,
   "slug": "glimmora"
  },
  "species:glimmoramega": {
   "form_ja": "メガキラフロル",
   "ja": "メガキラフロル",
+  "pid": 10321,
   "slug": "glimmora-mega",
   "species_ja": "キラフロル"
  },
  "species:gliscor": {
   "ja": "グライオン",
+  "pid": 472,
   "slug": "gliscor"
  },
  "species:golisopod": {
   "ja": "グソクムシャ",
+  "pid": 768,
   "slug": "golisopod"
  },
  "species:golurk": {
   "ja": "ゴルーグ",
+  "pid": 623,
   "slug": "golurk"
  },
  "species:golurkmega": {
   "form_ja": "メガゴルーグ",
   "ja": "メガゴルーグ",
+  "pid": 10313,
   "slug": "golurk-mega",
   "species_ja": "ゴルーグ"
  },
  "species:goodra": {
   "ja": "ヌメルゴン",
+  "pid": 706,
   "slug": "goodra"
  },
  "species:goodrahisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "ヌメルゴン（ヒスイ）",
+  "pid": 10242,
   "slug": "goodra-hisui",
   "species_ja": "ヌメルゴン"
+ },
+ "species:gougingfire": {
+  "ja": "ウガツホムラ",
+  "pid": 1020,
+  "slug": "gouging-fire"
+ },
+ "species:gourgeist": {
+  "ja": "パンプジン",
+  "pid": 711,
+  "slug": "gourgeist"
+ },
+ "species:gourgeistsmall": {
+  "form_ja": "ちいさいサイズ",
+  "ja": "パンプジン（ちいさいサイズ）",
+  "pid": 10030,
+  "slug": "gourgeist-small",
+  "species_ja": "パンプジン"
  },
  "species:gourgeistsuper": {
   "form_ja": "とくだいサイズ",
   "ja": "パンプジン（とくだいサイズ）",
+  "pid": 10032,
   "slug": "gourgeist-super",
   "species_ja": "パンプジン"
  },
  "species:grapploct": {
   "ja": "オトスパス",
+  "pid": 853,
   "slug": "grapploct"
  },
  "species:greninja": {
   "ja": "ゲッコウガ",
+  "pid": 658,
   "slug": "greninja"
  },
  "species:greninjamega": {
   "form_ja": "メガゲッコウガ",
   "ja": "メガゲッコウガ",
+  "pid": 10294,
   "slug": "greninja-mega",
   "species_ja": "ゲッコウガ"
  },
  "species:grimmsnarl": {
   "ja": "オーロンゲ",
+  "pid": 861,
   "slug": "grimmsnarl"
  },
  "species:gyarados": {
   "ja": "ギャラドス",
+  "pid": 130,
   "slug": "gyarados"
  },
  "species:gyaradosmega": {
   "form_ja": "メガギャラドス",
   "ja": "メガギャラドス",
+  "pid": 10041,
   "slug": "gyarados-mega",
   "species_ja": "ギャラドス"
  },
  "species:hatterene": {
   "ja": "ブリムオン",
+  "pid": 858,
   "slug": "hatterene"
  },
  "species:hawlucha": {
   "ja": "ルチャブル",
+  "pid": 701,
   "slug": "hawlucha"
  },
  "species:hawluchamega": {
   "form_ja": "メガルチャブル",
   "ja": "メガルチャブル",
+  "pid": 10300,
   "slug": "hawlucha-mega",
   "species_ja": "ルチャブル"
  },
  "species:heliolisk": {
   "ja": "エレザード",
+  "pid": 695,
   "slug": "heliolisk"
  },
  "species:heracross": {
   "ja": "ヘラクロス",
+  "pid": 214,
   "slug": "heracross"
  },
  "species:heracrossmega": {
   "form_ja": "メガヘラクロス",
   "ja": "メガヘラクロス",
+  "pid": 10047,
   "slug": "heracross-mega",
   "species_ja": "ヘラクロス"
  },
  "species:hippowdon": {
   "ja": "カバルドン",
+  "pid": 450,
   "slug": "hippowdon"
+ },
+ "species:hitmontop": {
+  "ja": "カポエラー",
+  "pid": 237,
+  "slug": "hitmontop"
  },
  "species:houndoom": {
   "ja": "ヘルガー",
+  "pid": 229,
   "slug": "houndoom"
  },
  "species:houndoommega": {
   "form_ja": "メガヘルガー",
   "ja": "メガヘルガー",
+  "pid": 10048,
   "slug": "houndoom-mega",
   "species_ja": "ヘルガー"
  },
  "species:houndstone": {
   "ja": "ハカドッグ",
+  "pid": 972,
   "slug": "houndstone"
  },
  "species:hydrapple": {
   "ja": "カミツオロチ",
+  "pid": 1019,
   "slug": "hydrapple"
  },
  "species:hydreigon": {
   "ja": "サザンドラ",
+  "pid": 635,
   "slug": "hydreigon"
  },
  "species:incineroar": {
   "ja": "ガオガエン",
+  "pid": 727,
   "slug": "incineroar"
  },
  "species:indeedee": {
   "ja": "イエッサン",
+  "pid": 876,
   "slug": "indeedee"
  },
  "species:infernape": {
   "ja": "ゴウカザル",
+  "pid": 392,
   "slug": "infernape"
  },
  "species:inteleon": {
   "ja": "インテレオン",
+  "pid": 818,
   "slug": "inteleon"
+ },
+ "species:irontreads": {
+  "ja": "テツノワダチ",
+  "pid": 990,
+  "slug": "iron-treads"
+ },
+ "species:ironvaliant": {
+  "ja": "テツノブジン",
+  "pid": 1006,
+  "slug": "iron-valiant"
  },
  "species:jolteon": {
   "ja": "サンダース",
+  "pid": 135,
   "slug": "jolteon"
  },
  "species:kangaskhan": {
   "ja": "ガルーラ",
+  "pid": 115,
   "slug": "kangaskhan"
  },
  "species:kangaskhanmega": {
   "form_ja": "メガガルーラ",
   "ja": "メガガルーラ",
+  "pid": 10039,
   "slug": "kangaskhan-mega",
   "species_ja": "ガルーラ"
  },
  "species:kingambit": {
   "ja": "ドドゲザン",
+  "pid": 983,
   "slug": "kingambit"
  },
  "species:kleavor": {
   "ja": "バサギリ",
+  "pid": 900,
   "slug": "kleavor"
  },
  "species:klefki": {
   "ja": "クレッフィ",
+  "pid": 707,
   "slug": "klefki"
  },
  "species:kommoo": {
   "ja": "ジャラランガ",
+  "pid": 784,
   "slug": "kommo-o"
  },
  "species:krookodile": {
   "ja": "ワルビアル",
+  "pid": 553,
   "slug": "krookodile"
+ },
+ "species:latias": {
+  "ja": "ラティアス",
+  "pid": 380,
+  "slug": "latias"
+ },
+ "species:latios": {
+  "ja": "ラティオス",
+  "pid": 381,
+  "slug": "latios"
+ },
+ "species:liepard": {
+  "ja": "レパルダス",
+  "pid": 510,
+  "slug": "liepard"
+ },
+ "species:lilligant": {
+  "ja": "ドレディア",
+  "pid": 549,
+  "slug": "lilligant"
  },
  "species:lopunny": {
   "ja": "ミミロップ",
+  "pid": 428,
   "slug": "lopunny"
  },
  "species:lopunnymega": {
   "form_ja": "メガミミロップ",
   "ja": "メガミミロップ",
+  "pid": 10088,
   "slug": "lopunny-mega",
   "species_ja": "ミミロップ"
  },
  "species:lucario": {
   "ja": "ルカリオ",
+  "pid": 448,
   "slug": "lucario"
  },
  "species:lucariomega": {
   "form_ja": "メガルカリオ",
   "ja": "メガルカリオ",
+  "pid": 10059,
   "slug": "lucario-mega",
   "species_ja": "ルカリオ"
  },
+ "species:luxray": {
+  "ja": "レントラー",
+  "pid": 405,
+  "slug": "luxray"
+ },
  "species:lycanroc": {
   "ja": "ルガルガン",
+  "pid": 745,
   "slug": "lycanroc"
  },
  "species:lycanrocdusk": {
   "form_ja": "たそがれのすがた",
   "ja": "ルガルガン（たそがれ）",
+  "pid": 10152,
   "slug": "lycanroc-dusk",
+  "species_ja": "ルガルガン"
+ },
+ "species:lycanrocmidnight": {
+  "form_ja": "まよなかのすがた",
+  "ja": "ルガルガン（まよなか）",
+  "pid": 10126,
+  "slug": "lycanroc-midnight",
   "species_ja": "ルガルガン"
  },
  "species:machamp": {
   "ja": "カイリキー",
+  "pid": 68,
   "slug": "machamp"
  },
  "species:malamar": {
   "ja": "カラマネロ",
+  "pid": 687,
   "slug": "malamar"
  },
  "species:malamarmega": {
   "form_ja": "メガカラマネロ",
   "ja": "メガカラマネロ",
+  "pid": 10297,
   "slug": "malamar-mega",
   "species_ja": "カラマネロ"
  },
  "species:mamoswine": {
   "ja": "マンムー",
+  "pid": 473,
   "slug": "mamoswine"
  },
  "species:manectric": {
   "ja": "ライボルト",
+  "pid": 310,
   "slug": "manectric"
  },
  "species:manectricmega": {
   "form_ja": "メガライボルト",
   "ja": "メガライボルト",
+  "pid": 10055,
   "slug": "manectric-mega",
   "species_ja": "ライボルト"
  },
  "species:maushold": {
   "ja": "イッカネズミ",
+  "pid": 925,
   "slug": "maushold"
  },
  "species:mausholdfour": {
   "form_ja": "４ひきかぞく",
   "ja": "イッカネズミ（４ひきかぞく）",
+  "pid": 925,
   "slug": "maushold-family-of-four",
   "species_ja": "イッカネズミ"
  },
  "species:mawile": {
   "ja": "クチート",
+  "pid": 303,
   "slug": "mawile"
  },
  "species:mawilemega": {
   "form_ja": "メガクチート",
   "ja": "メガクチート",
+  "pid": 10052,
   "slug": "mawile-mega",
   "species_ja": "クチート"
  },
  "species:medicham": {
   "ja": "チャーレム",
+  "pid": 308,
   "slug": "medicham"
  },
  "species:medichammega": {
   "form_ja": "メガチャーレム",
   "ja": "メガチャーレム",
+  "pid": 10054,
   "slug": "medicham-mega",
   "species_ja": "チャーレム"
  },
  "species:meganium": {
   "ja": "メガニウム",
+  "pid": 154,
   "slug": "meganium"
  },
  "species:meganiummega": {
   "form_ja": "メガメガニウム",
   "ja": "メガメガニウム",
+  "pid": 10282,
   "slug": "meganium-mega",
   "species_ja": "メガニウム"
  },
  "species:meowscarada": {
   "ja": "マスカーニャ",
+  "pid": 908,
   "slug": "meowscarada"
  },
  "species:meowstic": {
   "ja": "ニャオニクス",
+  "pid": 678,
   "slug": "meowstic"
  },
  "species:meowsticf": {
   "form_ja": "メスのすがた",
   "ja": "ニャオニクス（メス）",
+  "pid": 10025,
   "slug": "meowstic-female",
   "species_ja": "ニャオニクス"
  },
  "species:meowsticfmega": {
   "form_ja": "メガニャオニクス",
   "ja": "メガニャオニクス",
+  "pid": 10326,
   "slug": "meowstic-female-mega",
   "species_ja": "ニャオニクス"
  },
  "species:metagross": {
   "ja": "メタグロス",
+  "pid": 376,
   "slug": "metagross"
  },
  "species:metagrossmega": {
   "form_ja": "メガメタグロス",
   "ja": "メガメタグロス",
+  "pid": 10076,
   "slug": "metagross-mega",
   "species_ja": "メタグロス"
  },
  "species:milotic": {
   "ja": "ミロカロス",
+  "pid": 350,
   "slug": "milotic"
  },
  "species:mimikyu": {
   "ja": "ミミッキュ",
+  "pid": 778,
   "slug": "mimikyu"
  },
  "species:morpeko": {
   "ja": "モルペコ",
+  "pid": 877,
   "slug": "morpeko"
+ },
+ "species:mrrime": {
+  "ja": "バリコオル",
+  "pid": 866,
+  "slug": "mr-rime"
  },
  "species:mudsdale": {
   "ja": "バンバドロ",
+  "pid": 750,
   "slug": "mudsdale"
+ },
+ "species:murkrow": {
+  "ja": "ヤミカラス",
+  "pid": 198,
+  "slug": "murkrow"
+ },
+ "species:musharna": {
+  "ja": "ムシャーナ",
+  "pid": 518,
+  "slug": "musharna"
  },
  "species:ninetales": {
   "ja": "キュウコン",
+  "pid": 38,
   "slug": "ninetales"
  },
  "species:ninetalesalola": {
   "form_ja": "アローラのすがた",
   "ja": "キュウコン（アローラ）",
+  "pid": 10104,
   "slug": "ninetales-alola",
   "species_ja": "キュウコン"
  },
  "species:noivern": {
   "ja": "オンバーン",
+  "pid": 715,
   "slug": "noivern"
+ },
+ "species:ogerponhearthflame": {
+  "form_ja": "かまどのめん",
+  "ja": "オーガポン（かまどのめん）",
+  "pid": 10274,
+  "slug": "ogerpon-hearthflame-mask",
+  "species_ja": "オーガポン"
+ },
+ "species:ogerponwellspring": {
+  "form_ja": "いどのめん",
+  "ja": "オーガポン（いどのめん）",
+  "pid": 10273,
+  "slug": "ogerpon-wellspring-mask",
+  "species_ja": "オーガポン"
  },
  "species:oranguru": {
   "ja": "ヤレユータン",
+  "pid": 765,
   "slug": "oranguru"
  },
  "species:orthworm": {
   "ja": "ミミズズ",
+  "pid": 968,
   "slug": "orthworm"
  },
  "species:overqwil": {
   "ja": "ハリーマン",
+  "pid": 904,
   "slug": "overqwil"
  },
  "species:palafin": {
   "ja": "イルカマン",
+  "pid": 964,
   "slug": "palafin"
  },
  "species:pangoro": {
   "ja": "ゴロンダ",
+  "pid": 675,
   "slug": "pangoro"
+ },
+ "species:passimian": {
+  "ja": "ナゲツケサル",
+  "pid": 766,
+  "slug": "passimian"
  },
  "species:pawmot": {
   "ja": "パーモット",
+  "pid": 923,
   "slug": "pawmot"
  },
  "species:pelipper": {
   "ja": "ペリッパー",
+  "pid": 279,
   "slug": "pelipper"
  },
  "species:pidgeot": {
   "ja": "ピジョット",
+  "pid": 18,
   "slug": "pidgeot"
  },
  "species:pidgeotmega": {
   "form_ja": "メガピジョット",
   "ja": "メガピジョット",
+  "pid": 10073,
   "slug": "pidgeot-mega",
   "species_ja": "ピジョット"
  },
  "species:pikachu": {
   "ja": "ピカチュウ",
+  "pid": 25,
   "slug": "pikachu"
  },
  "species:pinsir": {
   "ja": "カイロス",
+  "pid": 127,
   "slug": "pinsir"
  },
  "species:pinsirmega": {
   "form_ja": "メガカイロス",
   "ja": "メガカイロス",
+  "pid": 10040,
   "slug": "pinsir-mega",
   "species_ja": "カイロス"
  },
  "species:politoed": {
   "ja": "ニョロトノ",
+  "pid": 186,
   "slug": "politoed"
  },
  "species:polteageist": {
   "ja": "ポットデス",
+  "pid": 855,
   "slug": "polteageist"
  },
  "species:primarina": {
   "ja": "アシレーヌ",
+  "pid": 730,
   "slug": "primarina"
  },
  "species:pyroar": {
   "ja": "カエンジシ",
+  "pid": 668,
   "slug": "pyroar"
  },
  "species:pyroarmega": {
   "form_ja": "メガカエンジシ",
   "ja": "メガカエンジシ",
+  "pid": 10295,
   "slug": "pyroar-mega",
   "species_ja": "カエンジシ"
  },
  "species:quaquaval": {
   "ja": "ウェーニバル",
+  "pid": 914,
   "slug": "quaquaval"
  },
  "species:qwilfish": {
   "ja": "ハリーセン",
+  "pid": 211,
   "slug": "qwilfish"
  },
  "species:raichu": {
   "ja": "ライチュウ",
+  "pid": 26,
   "slug": "raichu"
  },
  "species:raichualola": {
   "form_ja": "アローラのすがた",
   "ja": "ライチュウ（アローラ）",
+  "pid": 10100,
   "slug": "raichu-alola",
   "species_ja": "ライチュウ"
  },
  "species:raichumegax": {
   "form_ja": "メガライチュウX",
   "ja": "メガライチュウX",
+  "pid": 10304,
   "slug": "raichu-mega-x",
   "species_ja": "ライチュウ"
  },
  "species:raichumegay": {
   "form_ja": "メガライチュウY",
   "ja": "メガライチュウY",
+  "pid": 10305,
   "slug": "raichu-mega-y",
   "species_ja": "ライチュウ"
  },
+ "species:rampardos": {
+  "ja": "ラムパルド",
+  "pid": 409,
+  "slug": "rampardos"
+ },
  "species:reuniclus": {
   "ja": "ランクルス",
+  "pid": 579,
   "slug": "reuniclus"
  },
  "species:rhyperior": {
   "ja": "ドサイドン",
+  "pid": 464,
   "slug": "rhyperior"
  },
  "species:rillaboom": {
   "ja": "ゴリランダー",
+  "pid": 812,
   "slug": "rillaboom"
  },
  "species:roserade": {
   "ja": "ロズレイド",
+  "pid": 407,
   "slug": "roserade"
+ },
+ "species:rotom": {
+  "ja": "ロトム",
+  "pid": 479,
+  "slug": "rotom"
+ },
+ "species:rotomfan": {
+  "form_ja": "スピンロトム",
+  "ja": "スピンロトム",
+  "pid": 10011,
+  "slug": "rotom-fan",
+  "species_ja": "ロトム"
  },
  "species:rotomfrost": {
   "form_ja": "フロストロトム",
   "ja": "フロストロトム",
+  "pid": 10010,
   "slug": "rotom-frost",
   "species_ja": "ロトム"
  },
  "species:rotomheat": {
   "form_ja": "ヒートロトム",
   "ja": "ヒートロトム",
+  "pid": 10008,
   "slug": "rotom-heat",
   "species_ja": "ロトム"
  },
  "species:rotommow": {
   "form_ja": "カットロトム",
   "ja": "カットロトム",
+  "pid": 10012,
   "slug": "rotom-mow",
   "species_ja": "ロトム"
  },
  "species:rotomwash": {
   "form_ja": "ウォッシュロトム",
   "ja": "ウォッシュロトム",
+  "pid": 10009,
   "slug": "rotom-wash",
   "species_ja": "ロトム"
  },
  "species:runerigus": {
   "ja": "デスバーン",
+  "pid": 867,
   "slug": "runerigus"
  },
  "species:sableye": {
   "ja": "ヤミラミ",
+  "pid": 302,
   "slug": "sableye"
  },
  "species:sableyemega": {
   "form_ja": "メガヤミラミ",
   "ja": "メガヤミラミ",
+  "pid": 10066,
   "slug": "sableye-mega",
   "species_ja": "ヤミラミ"
  },
  "species:salamence": {
   "ja": "ボーマンダ",
+  "pid": 373,
   "slug": "salamence"
  },
  "species:salazzle": {
   "ja": "エンニュート",
+  "pid": 758,
   "slug": "salazzle"
+ },
+ "species:samurott": {
+  "ja": "ダイケンキ",
+  "pid": 503,
+  "slug": "samurott"
  },
  "species:samurotthisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "ダイケンキ（ヒスイ）",
+  "pid": 10236,
   "slug": "samurott-hisui",
   "species_ja": "ダイケンキ"
  },
+ "species:sandaconda": {
+  "ja": "サダイジャ",
+  "pid": 844,
+  "slug": "sandaconda"
+ },
  "species:sceptile": {
   "ja": "ジュカイン",
+  "pid": 254,
   "slug": "sceptile"
  },
  "species:sceptilemega": {
   "form_ja": "メガジュカイン",
   "ja": "メガジュカイン",
+  "pid": 10065,
   "slug": "sceptile-mega",
   "species_ja": "ジュカイン"
  },
  "species:scizor": {
   "ja": "ハッサム",
+  "pid": 212,
   "slug": "scizor"
  },
  "species:scizormega": {
   "form_ja": "メガハッサム",
   "ja": "メガハッサム",
+  "pid": 10046,
   "slug": "scizor-mega",
   "species_ja": "ハッサム"
  },
  "species:scolipede": {
   "ja": "ペンドラー",
+  "pid": 545,
   "slug": "scolipede"
  },
  "species:scolipedemega": {
   "form_ja": "メガペンドラー",
   "ja": "メガペンドラー",
+  "pid": 10288,
   "slug": "scolipede-mega",
   "species_ja": "ペンドラー"
  },
  "species:scovillain": {
   "ja": "スコヴィラン",
+  "pid": 952,
   "slug": "scovillain"
  },
  "species:scovillainmega": {
   "form_ja": "メガスコヴィラン",
   "ja": "メガスコヴィラン",
+  "pid": 10320,
   "slug": "scovillain-mega",
   "species_ja": "スコヴィラン"
  },
  "species:scrafty": {
   "ja": "ズルズキン",
+  "pid": 560,
   "slug": "scrafty"
  },
  "species:scraftymega": {
   "form_ja": "メガズルズキン",
   "ja": "メガズルズキン",
+  "pid": 10289,
   "slug": "scrafty-mega",
   "species_ja": "ズルズキン"
  },
  "species:serperior": {
   "ja": "ジャローダ",
+  "pid": 497,
   "slug": "serperior"
  },
  "species:sharpedo": {
   "ja": "サメハダー",
+  "pid": 319,
   "slug": "sharpedo"
  },
  "species:sharpedomega": {
   "form_ja": "メガサメハダー",
   "ja": "メガサメハダー",
+  "pid": 10070,
   "slug": "sharpedo-mega",
   "species_ja": "サメハダー"
  },
  "species:simipour": {
   "ja": "ヒヤッキー",
+  "pid": 516,
   "slug": "simipour"
  },
  "species:simisage": {
   "ja": "ヤナッキー",
+  "pid": 512,
   "slug": "simisage"
+ },
+ "species:simisear": {
+  "ja": "バオッキー",
+  "pid": 514,
+  "slug": "simisear"
  },
  "species:sinistcha": {
   "ja": "ヤバソチャ",
+  "pid": 1013,
   "slug": "sinistcha"
  },
- "species:sinistchamasterpiece": null,
+ "species:sinistchamasterpiece": {
+  "form_ja": "ボンサクのすがた",
+  "ja": "ヤバソチャ（ボンサク）",
+  "pid": 1013,
+  "slug": "sinistcha",
+  "species_ja": "ヤバソチャ"
+ },
  "species:sirfetchd": {
   "ja": "ネギガナイト",
+  "pid": 865,
   "slug": "sirfetchd"
  },
  "species:skarmory": {
   "ja": "エアームド",
+  "pid": 227,
   "slug": "skarmory"
  },
  "species:skarmorymega": {
   "form_ja": "メガエアームド",
   "ja": "メガエアームド",
+  "pid": 10284,
   "slug": "skarmory-mega",
   "species_ja": "エアームド"
  },
  "species:skeledirge": {
   "ja": "ラウドボーン",
+  "pid": 911,
   "slug": "skeledirge"
  },
  "species:slowbro": {
   "ja": "ヤドラン",
+  "pid": 80,
   "slug": "slowbro"
  },
  "species:slowbrogalar": {
   "form_ja": "ガラルのすがた",
   "ja": "ヤドラン（ガラル）",
+  "pid": 10165,
   "slug": "slowbro-galar",
   "species_ja": "ヤドラン"
  },
  "species:slowbromega": {
   "form_ja": "メガヤドラン",
   "ja": "メガヤドラン",
+  "pid": 10071,
   "slug": "slowbro-mega",
   "species_ja": "ヤドラン"
  },
  "species:slowking": {
   "ja": "ヤドキング",
+  "pid": 199,
   "slug": "slowking"
  },
  "species:slowkinggalar": {
   "form_ja": "ガラルのすがた",
   "ja": "ヤドキング（ガラル）",
+  "pid": 10172,
   "slug": "slowking-galar",
   "species_ja": "ヤドキング"
  },
  "species:slurpuff": {
   "ja": "ペロリーム",
+  "pid": 685,
   "slug": "slurpuff"
  },
  "species:sneasler": {
   "ja": "オオニューラ",
+  "pid": 903,
   "slug": "sneasler"
  },
  "species:snorlax": {
   "ja": "カビゴン",
+  "pid": 143,
   "slug": "snorlax"
  },
  "species:spiritomb": {
   "ja": "ミカルゲ",
+  "pid": 442,
   "slug": "spiritomb"
  },
  "species:staraptor": {
   "ja": "ムクホーク",
+  "pid": 398,
   "slug": "staraptor"
  },
  "species:staraptormega": {
   "form_ja": "メガムクホーク",
   "ja": "メガムクホーク",
+  "pid": 10308,
   "slug": "staraptor-mega",
   "species_ja": "ムクホーク"
  },
  "species:starmie": {
   "ja": "スターミー",
+  "pid": 121,
   "slug": "starmie"
  },
  "species:starmiemega": {
   "form_ja": "メガスターミー",
   "ja": "メガスターミー",
+  "pid": 10280,
   "slug": "starmie-mega",
   "species_ja": "スターミー"
  },
  "species:steelix": {
   "ja": "ハガネール",
+  "pid": 208,
   "slug": "steelix"
  },
  "species:steelixmega": {
   "form_ja": "メガハガネール",
   "ja": "メガハガネール",
+  "pid": 10072,
   "slug": "steelix-mega",
   "species_ja": "ハガネール"
  },
+ "species:stunfisk": {
+  "ja": "マッギョ",
+  "pid": 618,
+  "slug": "stunfisk"
+ },
+ "species:stunfiskgalar": {
+  "form_ja": "ガラルのすがた",
+  "ja": "マッギョ（ガラル）",
+  "pid": 10180,
+  "slug": "stunfisk-galar",
+  "species_ja": "マッギョ"
+ },
  "species:swampert": {
   "ja": "ラグラージ",
+  "pid": 260,
   "slug": "swampert"
  },
  "species:swampertmega": {
   "form_ja": "メガラグラージ",
   "ja": "メガラグラージ",
+  "pid": 10064,
   "slug": "swampert-mega",
   "species_ja": "ラグラージ"
  },
  "species:sylveon": {
   "ja": "ニンフィア",
+  "pid": 700,
   "slug": "sylveon"
  },
  "species:talonflame": {
   "ja": "ファイアロー",
+  "pid": 663,
   "slug": "talonflame"
+ },
+ "species:tauros": {
+  "ja": "ケンタロス",
+  "pid": 128,
+  "slug": "tauros"
  },
  "species:taurospaldeaaqua": {
   "form_ja": "パルデアのすがた",
   "ja": "ケンタロス（パルデア）",
+  "pid": 10252,
   "slug": "tauros-paldea-aqua-breed",
   "species_ja": "ケンタロス"
  },
  "species:taurospaldeablaze": {
   "form_ja": "パルデアのすがた",
   "ja": "ケンタロス（パルデア）",
+  "pid": 10251,
   "slug": "tauros-paldea-blaze-breed",
+  "species_ja": "ケンタロス"
+ },
+ "species:taurospaldeacombat": {
+  "form_ja": "パルデアのすがた",
+  "ja": "ケンタロス（パルデア）",
+  "pid": 10250,
+  "slug": "tauros-paldea-combat-breed",
   "species_ja": "ケンタロス"
  },
  "species:tinkaton": {
   "ja": "デカヌチャン",
+  "pid": 959,
   "slug": "tinkaton"
+ },
+ "species:togekiss": {
+  "ja": "トゲキッス",
+  "pid": 468,
+  "slug": "togekiss"
  },
  "species:torkoal": {
   "ja": "コータス",
+  "pid": 324,
   "slug": "torkoal"
  },
  "species:torterra": {
   "ja": "ドダイトス",
+  "pid": 389,
   "slug": "torterra"
  },
  "species:toucannon": {
   "ja": "ドデカバシ",
+  "pid": 733,
   "slug": "toucannon"
  },
  "species:toxapex": {
   "ja": "ドヒドイデ",
+  "pid": 748,
   "slug": "toxapex"
  },
  "species:toxicroak": {
   "ja": "ドクロッグ",
+  "pid": 454,
   "slug": "toxicroak"
+ },
+ "species:toxtricity": {
+  "ja": "ストリンダー",
+  "pid": 849,
+  "slug": "toxtricity"
  },
  "species:trevenant": {
   "ja": "オーロット",
+  "pid": 709,
   "slug": "trevenant"
  },
  "species:tsareena": {
   "ja": "アマージョ",
+  "pid": 763,
   "slug": "tsareena"
  },
  "species:typhlosion": {
   "ja": "バクフーン",
+  "pid": 157,
   "slug": "typhlosion"
  },
  "species:typhlosionhisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "バクフーン（ヒスイ）",
+  "pid": 10233,
   "slug": "typhlosion-hisui",
   "species_ja": "バクフーン"
  },
  "species:tyranitar": {
   "ja": "バンギラス",
+  "pid": 248,
   "slug": "tyranitar"
  },
  "species:tyranitarmega": {
   "form_ja": "メガバンギラス",
   "ja": "メガバンギラス",
+  "pid": 10049,
   "slug": "tyranitar-mega",
   "species_ja": "バンギラス"
  },
  "species:tyrantrum": {
   "ja": "ガチゴラス",
+  "pid": 697,
   "slug": "tyrantrum"
  },
  "species:umbreon": {
   "ja": "ブラッキー",
+  "pid": 197,
   "slug": "umbreon"
+ },
+ "species:urshifu": {
+  "ja": "ウーラオス",
+  "pid": 892,
+  "slug": "urshifu"
+ },
+ "species:urshifurapidstrike": {
+  "form_ja": "れんげきのかた",
+  "ja": "ウーラオス（れんげきのかた）",
+  "pid": 10191,
+  "slug": "urshifu-rapid-strike",
+  "species_ja": "ウーラオス"
  },
  "species:vanilluxe": {
   "ja": "バイバニラ",
+  "pid": 584,
   "slug": "vanilluxe"
  },
  "species:vaporeon": {
   "ja": "シャワーズ",
+  "pid": 134,
   "slug": "vaporeon"
  },
  "species:venusaur": {
   "ja": "フシギバナ",
+  "pid": 3,
   "slug": "venusaur"
  },
  "species:venusaurmega": {
   "form_ja": "メガフシギバナ",
   "ja": "メガフシギバナ",
+  "pid": 10033,
   "slug": "venusaur-mega",
   "species_ja": "フシギバナ"
  },
  "species:victreebel": {
   "ja": "ウツボット",
+  "pid": 71,
   "slug": "victreebel"
  },
  "species:victreebelmega": {
   "form_ja": "メガウツボット",
   "ja": "メガウツボット",
+  "pid": 10279,
   "slug": "victreebel-mega",
   "species_ja": "ウツボット"
  },
  "species:vileplume": {
   "ja": "ラフレシア",
+  "pid": 45,
   "slug": "vileplume"
  },
  "species:vivillon": {
   "ja": "ビビヨン",
+  "pid": 666,
   "slug": "vivillon"
  },
  "species:volcarona": {
   "ja": "ウルガモス",
+  "pid": 637,
   "slug": "volcarona"
+ },
+ "species:walkingwake": {
+  "ja": "ウネルミナモ",
+  "pid": 1009,
+  "slug": "walking-wake"
+ },
+ "species:watchog": {
+  "ja": "ミルホッグ",
+  "pid": 505,
+  "slug": "watchog"
  },
  "species:weavile": {
   "ja": "マニューラ",
+  "pid": 461,
   "slug": "weavile"
  },
  "species:whimsicott": {
   "ja": "エルフーン",
+  "pid": 547,
   "slug": "whimsicott"
  },
  "species:wyrdeer": {
   "ja": "アヤシシ",
+  "pid": 899,
   "slug": "wyrdeer"
+ },
+ "species:xurkitree": {
+  "ja": "デンジュモク",
+  "pid": 796,
+  "slug": "xurkitree"
+ },
+ "species:zoroark": {
+  "ja": "ゾロアーク",
+  "pid": 571,
+  "slug": "zoroark"
  },
  "species:zoroarkhisui": {
   "form_ja": "ヒスイのすがた",
   "ja": "ゾロアーク（ヒスイ）",
+  "pid": 10239,
   "slug": "zoroark-hisui",
   "species_ja": "ゾロアーク"
  }

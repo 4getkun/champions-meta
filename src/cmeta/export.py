@@ -4,9 +4,9 @@ import json
 from datetime import datetime
 
 from . import smogon
-from .analysis import changepoint, cores, matchup, monthly, weekly
+from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, weekly
 from .config import DATA, DEFAULT_CUTOFF, JST, OUT, REPLAY_BASE, SMOGON_BASE
-from .dex import JaNames, Showdown
+from .dex import JaNames, Showdown, sprite_urls
 from .formats import parse_format
 from .replays import REPLAY_DIR, jst_day, load_rows
 
@@ -67,8 +67,18 @@ def build(fetch_names: bool = True, log=print) -> dict:
                     names_items.update(s["items"])
                     names_moves.update(s["moves"])
                     names_abilities.update(s["abilities"])
-            # M6 コア（標準の足切り）
+            # ポケモン詳細（最新の月・標準の足切り）
             cut = mo["default_cutoff"]
+            det = monthly.pokemon_detail(data, fid, mo["months"][-1], cut)
+            if det:
+                _write(f"pokemon/{fid}.json", det)
+                names_pokemon.update(det["pokemon"])
+                for p in det["pokemon"].values():
+                    names_pokemon.update(b for b, _ in p["teammates"])
+                    names_items.update(p["items"])
+                    names_moves.update(p["moves"])
+                    names_abilities.update(p["abilities"])
+            # M6 コア（標準の足切り）
             month_datas = {m: data[(m, fid, cut)] for m in mo["months"] if (m, fid, cut) in data}
             co = cores.analyze(month_datas)
             co.update({"format": fid, "cutoff": cut})
@@ -89,6 +99,37 @@ def build(fetch_names: bool = True, log=print) -> dict:
             wk.update({"format": fid, "replays": len(rows)})
             _write(f"weekly/{fid}.json", wk)
 
+            # メガストーンを持つ確率（月次のメガの内訳。メガの姿の割合の合計）
+            stone, mega_types = {}, {}
+            if mo:
+                ms = mo["mega_split"].get(mo["months"][-1], {})
+                stone = {g: sum(v for form, v in forms.items() if "-Mega" in form) for g, forms in ms.items()}
+                stone = {g: v for g, v in stone.items() if v > 0}
+                # メガの姿のタイプ（姿が複数あれば多いほう）
+                mega_types = {g: sd.types(max((x for x in forms if "-Mega" in x), key=lambda x: (forms[x], x)))
+                              for g, forms in ms.items() if any("-Mega" in x for x in forms)}
+
+            # P1 選出・先発の予想（組の予想。答え合わせの結果つき）
+            doubles = f["game_type"] == "doubles"
+            if f["team_select"]:
+                sel = joint.build(rows, group_of, sd, det if mo else None, stone, doubles, mega_types)
+            else:
+                sel = {"available": False, "reason": "6 匹すべてで戦うルールなので、選出はありません"}
+            sel["format"] = fid
+            _write(f"select/{fid}.json", sel)
+            if sel.get("available"):
+                names_pokemon.update(sel["base"])
+                names_pokemon.update(sel["roles"])
+
+            # 選出誘導（あるポケモンを見せると、相手の選出がどう変わるか）
+            if f["team_select"]:
+                ind = induce.build(select.samples(rows, group_of), 4 if doubles else 3, sd, stone, doubles)
+                ind["format"] = fid
+                _write(f"induce/{fid}.json", ind)
+                for v in ind["pokemon"].values():
+                    names_pokemon.update(r["name"] for r in v["up"] + v["down"])
+                names_pokemon.update(ind["pokemon"])
+
             # X1〜X3（コアがあるルールだけ）
             co = cores_by_format.get(fid)
             if co:
@@ -106,6 +147,23 @@ def build(fetch_names: bool = True, log=print) -> dict:
                 _write(f"matchup/{fid}.json", {"format": fid, "experimental": True, "months": res})
         fmt_meta.append(entry)
 
+    # P2 チーム診断の材料（月次がある形式だけ）
+    for f in formats:
+        mo = per_format.get(f["id"])
+        if not mo:
+            continue
+        rows = load_rows(f["id"]) if (REPLAY_DIR / f["id"]).exists() else []
+        det_path = OUT / f"pokemon/{f['id']}.json"
+        det = json.loads(det_path.read_text("utf-8")) if det_path.exists() else None
+        ug = mo["usage_grouped"][str(mo["default_cutoff"])]
+        dg = diag.build(det, rows, group_of, sd.move_info, ug, len(mo["months"]) - 1)
+        dg["format"] = f["id"]
+        _write(f"diag/{f['id']}.json", dg)
+        names_pokemon.update(dg["pairs"])
+
+    # タイプ相性（画面側の予想と診断で使う）
+    _write("dex.json", {"typechart": sd.typechart})
+
     tracks = monthly.join_track(per_format, formats)
     for t, obj in tracks.items():
         _write(f"tracks/{t}.json", obj)
@@ -120,9 +178,11 @@ def build(fetch_names: bool = True, log=print) -> dict:
             "ja": ja.species(n) if fetch_names else None,
             "group": group_of(n),
             "mega": sd.is_mega(n),
-            "types": e["types"] if e else None,
-            "num": e["num"] if e else None,
-            "base_stats": e["baseStats"] if e else None,
+            "types": sd.types(n) or None,
+            "num": e.get("num") if e else None,
+            "base_stats": (e.get("baseStats") or ((sd.species(e["baseSpecies"]) or {}).get("baseStats")
+                                                   if e.get("baseSpecies") else None)) if e else None,
+            "sprite": sprite_urls(ja.pokemon_id(n)) if fetch_names else None,
         }
     for kind, ids, en_of, ja_of in (
         ("items", names_items, sd.item_names, ja.item),
@@ -136,6 +196,10 @@ def build(fetch_names: bool = True, log=print) -> dict:
     ja.save()
     for kind, d in names.items():
         missing = [k for k, v in d.items() if not v["ja"]]
+        if kind == "pokemon" and fetch_names:
+            no_sprite = [k for k, v in d.items() if not v["sprite"]]
+            if no_sprite:
+                warnings.append({"kind": "no_sprite:pokemon", "count": len(no_sprite), "examples": no_sprite[:20]})
         if missing and fetch_names:
             warnings.append({"kind": f"no_ja_name:{kind}", "count": len(missing), "examples": missing[:20]})
     by_ja: dict[str, list[str]] = {}

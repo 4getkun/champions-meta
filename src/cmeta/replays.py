@@ -6,16 +6,26 @@
 import gzip
 import hashlib
 import json
+import re
 import time
 from collections import defaultdict
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 
 from . import http
 from .config import DATA, JST, REPLAY_BACKFILL_DAYS, REPLAY_BASE, REPLAY_MAX_PER_RUN
 from .dex import to_id
 
 REPLAY_DIR = DATA / "replays"
+BACKFILL_WORKERS = 3
 STATE_PATH = REPLAY_DIR / "state.json"
+# ボットらしい名前（研究用の AI など）。どちらかの名前が当てはまる試合は "bot": true を付け、解析から外す
+# （ボットの選出は人の読み合いと違う。BSS では 2026-09-04〜06 の公開リプレイの大半がボットの試合だった）
+BOT_NAME = re.compile(r"bot|pokechamp|metamon|pokellmon|agent", re.I)
+
+
+def is_bot(names) -> bool:
+    return any(n and BOT_NAME.search(to_id(n)) for n in names)
 
 
 def hash_player(name: str) -> str:
@@ -50,8 +60,18 @@ def _match_preview(preview: list[str], species: str) -> int | None:
     return None
 
 
+def _nick(ident: str) -> str:
+    """'p1a: 名前' -> 'p1: 名前'（場の位置 a/b を落とす）。"""
+    side, _, name = ident.partition(": ")
+    return f"{side[:2]}: {name}"
+
+
 def parse_log(log: str) -> dict | None:
-    """ログ全文から、見せ合い・選出・メガ・先発・勝敗を取り出す。見せ合いが無い試合は None。"""
+    """ログ全文から、見せ合い・選出・メガ・先発・勝敗、明かされた技・持ち物・特性、倒れた順を取り出す。
+
+    見せ合いが無い試合は None。明かされたものは「本人のもの」と分かる行だけを数える
+    （トリックで受け取った持ち物、トレースで写した特性、他の技から呼ばれた技などは除く）。
+    """
     players: list[str | None] = [None, None]
     preview: list[list[str]] = [[], []]
     brought: list[list[int]] = [[], []]  # 見せ合いの何番目が場に出たか（出た順）
@@ -62,6 +82,16 @@ def parse_log(log: str) -> dict | None:
     turns = 0
     bo3 = "Best of = " in log
     started_turns = False
+    slot: dict[str, tuple[int, int]] = {}  # 'p1: 名前' -> (側, 見せ合いの何番目)
+    revealed: list[dict[int, dict]] = [{}, {}]
+    faints: list[list] = []
+
+    def who(ident: str):
+        return slot.get(_nick(ident))
+
+    def rev(pos) -> dict:
+        return revealed[pos[0]].setdefault(pos[1], {"m": []})
+
     for line in log.split("\n"):
         if not line.startswith("|"):
             continue
@@ -91,6 +121,31 @@ def parse_log(log: str) -> dict | None:
                 brought[s].append(i)
             if not started_turns and i not in leads[s]:
                 leads[s].append(i)
+            slot[_nick(parts[2])] = (s, i)
+        elif tag == "move" and len(parts) >= 4:
+            pos = who(parts[2])
+            if pos and parts[3] != "Struggle" and not any(x.startswith("[from]") for x in parts[4:]):
+                r = rev(pos)
+                mid = to_id(parts[3])
+                if mid not in r["m"]:
+                    r["m"].append(mid)
+        elif tag in ("-item", "-enditem") and len(parts) >= 4:
+            pos = who(parts[2])
+            # -item の「[from] move: トリック」などは受け取った持ち物なので除く。-enditem は元の持ち物
+            if pos and not (tag == "-item" and "[from] move:" in line):
+                rev(pos).setdefault("i", to_id(parts[3]))
+        elif tag == "-mega" and len(parts) >= 5:
+            pos = who(parts[2])
+            if pos:
+                rev(pos)["i"] = to_id(parts[4])
+        elif tag == "-ability" and len(parts) >= 4:
+            pos = who(parts[2])
+            if pos and not any(x.startswith("[from]") for x in parts[4:]):
+                rev(pos).setdefault("a", to_id(parts[3]))
+        elif tag == "faint" and len(parts) >= 3:
+            pos = who(parts[2])
+            if pos:
+                faints.append(pos)
         elif tag == "detailschange" and len(parts) >= 4:
             s = _side(parts[2])
             sp = _species(parts[3])
@@ -111,10 +166,14 @@ def parse_log(log: str) -> dict | None:
         return None
     return {
         "players": [hash_player(players[0]), hash_player(players[1])],
+        "bot": is_bot(players),
         "teams": preview,
         "brought": [[preview[s][i] for i in brought[s]] for s in (0, 1)],
         "leads": [[preview[s][i] for i in leads[s]] for s in (0, 1)],
         "megas": megas,
+        # 明かされた技・持ち物・特性（見せ合いの名前ごと。m: 技, i: 持ち物, a: 特性）と、倒れた順（[側, 名前]）
+        "revealed": [{preview[s][i]: v for i, v in sorted(revealed[s].items())} for s in (0, 1)],
+        "faints": [[fs, preview[fs][fi]] for fs, fi in faints],
         "winner": None if tie else winner,
         "turns": turns,
         "bo3": bo3,
@@ -146,10 +205,11 @@ def write_day(fmt: str, day: str, rows: list[dict]) -> None:
         f.write(body.encode("utf-8"))
 
 
-def load_rows(fmt: str) -> list[dict]:
+def load_rows(fmt: str, bots: bool = False) -> list[dict]:
+    """bots=False: ボットの試合を除く（解析はすべてこちら）。"""
     rows = []
     for p in sorted((REPLAY_DIR / fmt).glob("*.jsonl.gz")):
-        rows.extend(read_day(fmt, p.name.split(".")[0]))
+        rows.extend(r for r in read_day(fmt, p.name.split(".")[0]) if bots or not r.get("bot"))
     return rows
 
 
@@ -182,7 +242,7 @@ def list_new(fmt: str, since: int) -> list[dict]:
             if r["uploadtime"] <= since:
                 done = True
                 break
-            if not r.get("private") and not r.get("password"):
+            if not r.get("private") and not r.get("password") and not is_bot(r.get("players", [])):
                 out.append(r)
         if done or not more or not page:
             break
@@ -227,3 +287,60 @@ def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print) -> int:
     n = sum(len(v) for v in by_day.values())
     log(f"replays {fmt}: {n} 件（読めなかったもの {skipped}）")
     return n
+
+
+# ── 上位の人のリプレイを狙って取るための部品（ladder.py から使う） ─────────
+
+
+def fetch_record(r: dict) -> dict | None:
+    """一覧の 1 行（id, uploadtime, rating）から、読み取った 1 試合を作る。読めなければ None。"""
+    try:
+        body = http.get_json(f"{REPLAY_BASE}/{r['id']}.json")
+    except http.NotFound:
+        return None
+    rec = parse_log(body.get("log", ""))
+    if rec is not None:
+        rec.update({"id": r["id"], "t": r["uploadtime"], "rating": r.get("rating")})
+    return rec
+
+
+def store(fmt: str, recs: list[dict]) -> int:
+    """日ごとのファイルに足す（同じ id は足さない）。足した件数を返す。"""
+    by_day: dict[str, list[dict]] = defaultdict(list)
+    for rec in recs:
+        by_day[jst_day(rec["t"])].append(rec)
+    added = 0
+    for day, rows in by_day.items():
+        existing = read_day(fmt, day)
+        seen = {x["id"] for x in existing}
+        new = [x for x in rows if x["id"] not in seen]
+        if new:
+            write_day(fmt, day, existing + new)
+            added += len(new)
+    return added
+
+
+def backfill(fmt: str, days: int, max_n: int = REPLAY_MAX_PER_RUN, log=print) -> int:
+    """過去 days 日の公開リプレイで、まだ持っていないものを新しい順に max_n 件まで取る（ボットの試合は取らない）。
+    毎日の crawl は前回の続きからしか取らないので、始めた日より前の分や取りこぼしはこれで埋める。"""
+    since = int(time.time()) - days * 86400
+    have = known_ids(fmt, days + 1)
+    todo = [r for r in reversed(list_new(fmt, since)) if r["id"] not in have][:max_n]
+    log(f"backfill {fmt}: まだ持っていないもの {len(todo)} 件を取る")
+    added = 0
+    # 返事を待つ間に次を頼めるよう 3 本まで同時に取る（始める間隔は http が 1 秒以上に保つ）
+    with ThreadPoolExecutor(max_workers=BACKFILL_WORKERS) as pool:
+        for i in range(0, len(todo), 200):  # 途中で止まっても取った分は残るよう、200 件ごとに書く
+            added += store(fmt, [rec for rec in pool.map(fetch_record, todo[i:i + 200]) if rec])
+        log(f"backfill {fmt}: {min(i + 200, len(todo))} / {len(todo)}")
+    return added
+
+
+def known_ids(fmt: str, days: int) -> set[str]:
+    """直近 days 日ぶんのファイルにある id。"""
+    today = datetime.now(JST).date()
+    out = set()
+    for d in range(days + 1):
+        day = (today - timedelta(days=d)).isoformat()
+        out.update(x["id"] for x in read_day(fmt, day))
+    return out

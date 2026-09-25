@@ -1,6 +1,8 @@
 """使い方:
     python -m cmeta fetch-smogon          まだ持っていない月の Smogon 統計を取る
-    python -m cmeta fetch-replays [--max N] [--format ID …]
+    python -m cmeta fetch-replays [--max N] [--format ID …] [--backfill DAYS]
+                                          --backfill: 過去 DAYS 日の取りこぼしを埋める（ボットの試合は取らない）
+    python -m cmeta fetch-ladder          上位 500 人を記録し、上位の人のリプレイを狙って取る（シングル・ダブル）
     python -m cmeta build [--no-names]    out/ を作り直す（--no-names: PokeAPI に問い合わせない）
     python -m cmeta all                   上の三つを順に
 """
@@ -8,7 +10,7 @@
 import argparse
 import sys
 
-from . import export, replays, smogon
+from . import export, ladder, replays, smogon
 from .config import EXTRA_REPLAY_FORMATS, REPLAY_MAX_PER_RUN
 
 
@@ -29,6 +31,8 @@ def main(argv=None) -> int:
     fr = sub.add_parser("fetch-replays")
     fr.add_argument("--max", type=int, default=REPLAY_MAX_PER_RUN)
     fr.add_argument("--format", action="append")
+    fr.add_argument("--backfill", type=int, metavar="DAYS")
+    sub.add_parser("fetch-ladder")
     b = sub.add_parser("build")
     b.add_argument("--no-names", action="store_true")
     a = sub.add_parser("all")
@@ -39,7 +43,13 @@ def main(argv=None) -> int:
         smogon.sync()
     if args.cmd in ("fetch-replays", "all"):
         for fid in getattr(args, "format", None) or _replay_targets():
-            replays.crawl(fid, max_n=args.max)
+            if getattr(args, "backfill", None):
+                replays.backfill(fid, args.backfill, max_n=args.max)
+            else:
+                replays.crawl(fid, max_n=args.max)
+    if args.cmd in ("fetch-ladder", "all"):
+        # 上位の人を狙うのは、ゲーム内のランクバトルと同じルール（シングル = BSS、ダブル = VGC）だけ
+        ladder.run([f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f])
     if args.cmd in ("build", "all"):
         export.build(fetch_names=not getattr(args, "no_names", False))
     return 0
