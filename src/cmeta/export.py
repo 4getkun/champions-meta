@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 from . import smogon
-from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, weekly
+from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, speed, weekly
 from .config import DATA, DEFAULT_CUTOFF, JST, OUT, REPLAY_BASE, SMOGON_BASE
 from .dex import JaNames, Showdown, sprite_urls
 from .formats import parse_format
@@ -28,6 +28,19 @@ def _events() -> list[dict]:
     """手で書く出来事（data/events.json）。日付が確かなものだけを書く決まり。"""
     p = DATA / "events.json"
     return json.loads(p.read_text("utf-8")).get("events", []) if p.exists() else []
+
+
+def _speed_of(spd: dict, stone: dict[str, float]) -> dict[str, float]:
+    """まとめた名前ごとの、実数値の平均（メガストーンを持つ確率 0.5 以上ならメガの姿、それ以外はメガでない姿で一番多いもの）。"""
+    by_group: dict[str, list[tuple[float, str, dict]]] = {}
+    for name, e in spd["pokemon"].items():
+        by_group.setdefault(e["group"], []).append((e["usage"], name, e))
+    out = {}
+    for g, forms in by_group.items():
+        want_mega = stone.get(g, 0.0) >= 0.5
+        cands = [f for f in forms if ("-Mega" in f[1]) == want_mega] or forms
+        out[g] = round(speed.mean_speed(max(cands)[2]), 2)
+    return out
 
 
 def replay_formats() -> list[str]:
@@ -78,6 +91,15 @@ def build(fetch_names: bool = True, log=print) -> dict:
                     names_items.update(p["items"])
                     names_moves.update(p["moves"])
                     names_abilities.update(p["abilities"])
+            # すばやさの分布と線（最新の月と、その前の月）
+            months = mo["months"]
+            cur = data.get((months[-1], fid, cut))
+            prev = data.get((months[-2], fid, cut)) if len(months) > 1 else None
+            spd = speed.build(cur, prev, sd) if cur else None
+            if spd:
+                spd["format"] = fid
+                _write(f"speed/{fid}.json", spd)
+                names_pokemon.update(spd["pokemon"])
             # M6 コア（標準の足切り）
             month_datas = {m: data[(m, fid, cut)] for m in mo["months"] if (m, fid, cut) in data}
             co = cores.analyze(month_datas)
@@ -112,7 +134,11 @@ def build(fetch_names: bool = True, log=print) -> dict:
             # P1 選出・先発の予想（組の予想。答え合わせの結果つき）
             doubles = f["game_type"] == "doubles"
             if f["team_select"]:
-                sel = joint.build(rows, group_of, sd, det if mo else None, stone, doubles, mega_types)
+                # すばやさの特徴は種族値のまま（振り方の分布の平均に替えても答え合わせは良くならなかった: 2026-09、
+                # VGC M-B 選出 −0.3pt、BSS 差なし。_speed_of と joint の speed_of はその比べ直し用に残す）
+                ug = mo["usage_grouped"][str(mo["default_cutoff"])] if mo else {}
+                sel = joint.build(rows, group_of, sd, det if mo else None, stone, doubles, mega_types,
+                                  usage={g: v[-1] for g, v in ug.items() if v[-1]})
             else:
                 sel = {"available": False, "reason": "6 匹すべてで戦うルールなので、選出はありません"}
             sel["format"] = fid

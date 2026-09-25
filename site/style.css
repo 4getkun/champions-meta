@@ -305,7 +305,8 @@ a.tile:hover { transform: translateY(-2px); }
 
 @media (max-width: 720px) {
   .logo { font-size: 18px; }
-  .views a { padding: 6px 8px; font-size: 13px; }
+  .views { display: none; }
+  .top .theme { margin-left: auto; }  /* 狭い画面では下のタブで切り替える（メニューが 5 つになり、上に並べると明るさのボタンが押し出されるため） */
   .formats { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .rank-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .rank-grid a { grid-template-columns: 1fr; grid-template-rows: 58px auto auto; height: auto; padding: 0 0 10px; text-align: center; position: relative; }
@@ -386,3 +387,35 @@ a.tile:hover { transform: translateY(-2px); }
   .sets li { font-size: 12px; }
   .sets li > span:nth-child(2) { word-break: normal; overflow-wrap: anywhere; }
 }
+
+/* すばやさ */
+.spd-top { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.spd-hist { position: relative; height: 64px; border-bottom: 1px solid var(--line); margin: 0 6px; }
+.spd-hist i { position: absolute; bottom: 0; width: 5px; margin-left: -2px; border-radius: 2px 2px 0 0; background: var(--accent); }
+.spd-axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-family: 'Inter Tight', sans-serif; }
+.spd-in { display: grid; gap: 8px; font-size: 13px; }
+.spd-in input[type=number] { width: 90px; margin-left: 6px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+.spd-in .chk { display: flex; gap: 6px; align-items: center; }
+.spd-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.spd-quick button { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
+.spd-out .kv small { display: block; }
+.spd-lines { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+.spd-lines li { display: grid; grid-template-columns: 28px 44px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px; }
+.spd-lines .v { font-family: 'Inter Tight', sans-serif; font-weight: 700; text-align: right; }
+.spd-lines b.up { color: var(--up); }
+.spd-lines b.down { color: var(--down, #c2410c); }
+@media (max-width: 720px) { .spd-top { grid-template-columns: minmax(0, 1fr); } }
+
+/* すばやさ調整（ミラー） */
+.spd-head { display: flex; gap: 14px; align-items: center; }
+.spd-chart text { font-size: 11px; fill: var(--muted); font-family: 'Inter Tight', sans-serif; }
+.spd-chart .gl { stroke: var(--line); }
+.spd-chart .ln { fill: none; stroke-width: 2.5; stroke: var(--accent); }
+.spd-chart .ln.plus { stroke: var(--up); }
+.spd-chart .ln.prev { stroke-dasharray: 4 4; stroke-width: 1.8; opacity: .55; }
+.spd-legend .sw { display: inline-block; width: 18px; height: 3px; margin: 0 4px 3px 10px; vertical-align: middle; background: var(--accent); }
+.spd-legend .sw.plus { background: var(--up); }
+.spd-legend .sw.prev { background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 8px); }
+.spd-tbl td, .spd-tbl th { text-align: center; }
+.tt .ok { color: var(--up); }
+h2 .more { margin-left: auto; float: right; font-size: 13px; font-weight: 700; color: var(--accent); }

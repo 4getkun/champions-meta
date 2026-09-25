@@ -30,6 +30,10 @@ HOLDOUT_DAYS = 7
 MIN_TEST = 300  # 直近 7 日で足りなければ、この件数になるまで答え合わせの期間をさかのぼる（シングルは公開リプレイが少ない）
 MAX_TEST_SHARE = 0.4  # ただし答え合わせは全体の 4 割まで（学習が足りなくならないように）
 MIN_TRAIN = 300
+# 学習は答え合わせの直前 TRAIN_DAYS 日だけ（環境が動くので古い試合は外す）。BSS M-B の答え合わせ（2026-09、重ならない 6 区間 1,800 件）で、
+# 全期間より直近 30 日のほうが先発がはっきり良かった（全体の率との差 +1.2pt → +3.2pt。選出 +2.3 → +3.3pt）
+TRAIN_DAYS = 30
+EVAL_BLOCKS = 4  # 答え合わせは、重ならない区間（MIN_TEST 件ずつ）を新しい順に最大これだけ重ねる
 FOLDS = 5
 AVG_OPP_N = 80  # 自分のチームが分からないときの「平均的な相手」に使うポケモンの数
 WEATHER_SETTER = {"drizzle": "rain", "drought": "sun", "sandstream": "sand", "snowwarning": "snow"}
@@ -54,6 +58,11 @@ FEATURES = [
     ("tr_lead", "役割"), ("tr_bring", "役割"), ("hazard_lead", "役割"), ("sash_lead", "役割"),
     ("weather_bring", "天候"), ("weather_pair", "天候"), ("weather_lead", "天候"),
 ]
+# 基本的な読み（どくびし × 毒を受けるポケモン、ステルスロック × いわ弱点、壁 × 壁を壊せるポケモンがいない）を特徴に足しても、
+# 答え合わせ（2026-09、BSS・VGC M-B とも 4 区間 1,200 件）で差が出なかったので入れていない。
+# 直接比べると向きは合う（BSS: ステルスロック × いわ 4 倍 +2.0pt、壁 × 壊せるポケモンなし +4.2pt）が、はっきりしない。件数が増えたら比べ直す
+# 「相手の先発に出やすいポケモンに弱点を突けるポケモンを出す」も、直接比べるとはっきり出る（BSS 先発 +2.1pt・選出 +3.4pt）が、
+# 相性（hit）に上乗せする特徴にすると差が無い（BSS）か悪くなった（VGC 対数尤度 −0.008）。hit がすでに同じことを拾っている
 GROUPS = sorted({g for _, g in FEATURES})
 
 
@@ -347,10 +356,11 @@ def bootstrap_diff(a_per, b_per, idx, reps=2000, seed=0) -> tuple[float, float, 
 # ── 準備（答え合わせと公開で共通） ──────────────────────────────────
 
 
-def _roles(detail, rows, group_of, sd, stone, mega_types):
+def _roles(detail, rows, group_of, sd, stone, mega_types, speed_of=None):
+    """speed_of: {まとめた名前: 実数値の平均}（振り方から。メガストーンを持つ確率が高ければメガの姿）。無ければ種族値。"""
     roles = roles_from(detail, rows, group_of, stone)
     for g, d in roles.items():
-        d["speed"] = (sd.species(g) or {}).get("baseStats", {}).get("spe")
+        d["speed"] = (speed_of or {}).get(g) or (sd.species(g) or {}).get("baseStats", {}).get("spe")
         if mega_types and g in mega_types:
             d["mega_types"] = mega_types[g]
     return roles
@@ -394,14 +404,28 @@ def split_holdout(xs, offset_days=0):
 
 
 def run(rows, group_of, sd, detail, stone, doubles: bool, mega_types: dict[str, list[str]] | None = None,
-        offset_days: int = 0) -> dict:
-    """答え合わせ用。offset_days: 答え合わせの期間を何日前にずらすか（ローリング検証用）。"""
+        offset_days: int = 0, speed_of: dict[str, float] | None = None, block: int | None = None,
+        keep_train=None) -> dict:
+    """答え合わせ用。offset_days: 答え合わせの期間を何日前にずらす（ローリング検証用）。
+    block: 選出・先発がそろった標本を新しい順に MIN_TEST 件ずつ区切った、何番目の区間を答え合わせにするか（0 が最新）。"""
     k_bring, k_lead = (4, 2) if doubles else (3, 1)
     xs = dedupe(sorted(samples(rows, group_of), key=lambda x: x["t"]))
     if not xs:
         return {"available": False, "reason": "リプレイがない"}
-    train, test, cut = split_holdout(xs, offset_days)
-    roles = _roles(detail, [r for r in rows if r["t"] < cut], group_of, sd, stone, mega_types)  # 答え合わせの期間は見ない
+    if block is None:
+        train, test, cut = split_holdout(xs, offset_days)
+    else:
+        full = [i for i, x in enumerate(xs) if len(x["brought"]) == k_bring and len(x["leads"]) == k_lead]
+        hi = len(full) - block * MIN_TEST
+        lo = hi - MIN_TEST
+        if lo <= 0:
+            return {"available": False, "reason": "区間が足りない"}
+        cut = xs[full[lo]]["t"]
+        end = xs[full[hi - 1]]["t"]
+        train = [x for x in xs if x["t"] < cut]
+        test = [x for x in xs if cut <= x["t"] <= end]
+    train = [x for x in train if x["t"] >= cut - TRAIN_DAYS * 86400 and (keep_train is None or keep_train(x))]
+    roles = _roles(detail, [r for r in rows if r["t"] < cut], group_of, sd, stone, mega_types, speed_of)  # 答え合わせの期間は見ない
     dtrain = _crossfit(train, roles, sd, k_bring, k_lead)
     feat = _featurizer(train, roles, sd, k_bring)
     dtest = _dataset(test, feat, k_bring, k_lead)
@@ -409,7 +433,7 @@ def run(rows, group_of, sd, detail, stone, doubles: bool, mega_types: dict[str, 
         return {"available": False,
                 "reason": f"標本が足りない（学習 {len(dtrain)}・答え合わせ {len(dtest)}。{MIN_TRAIN} と 100 が必要）"}
     return {"available": True, "k": (k_bring, k_lead), "train": dtrain, "test": dtest, "roles": roles,
-            "stats": feat.stats, "feat": feat, "test_x": test, "train_x": train, "cut": cut}
+            "stats": feat.stats, "feat": feat, "test_x": test, "train_x": train, "cut": cut, "xs": xs}
 
 
 # ── 公開 ───────────────────────────────────────────────────
@@ -419,39 +443,88 @@ def _r(v, n=4):
     return round(float(v), n)
 
 
-def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None) -> dict:
-    """答え合わせをして、公開用に全期間で学び直す。画面側は weights と材料の表から同じ確率を計算する。"""
-    r = run(rows, group_of, sd, detail, stone, doubles, mega_types)
-    if not r["available"]:
-        return r
-    kb, kl = r["k"]
-    w = fit(r["train"])
-    ev_m = evaluate(r["test"], w, kb, kl)
-    ev_b = evaluate(r["test"], baseline_w(), kb, kl)
-    # 自分のチームが分からないとき（平均的な相手）の当たり
-    d_avg = _dataset(r["test_x"], r["feat"], kb, kl, opp=avg_opponent(r["train_x"]))
-    ev_a = evaluate(d_avg, w, kb, kl)
+def _pool(evs: list[dict], key: str) -> float:
+    n = sum(e["n"] for e in evs)
+    return sum(e[key] * e["n"] for e in evs) / n
+
+
+ODD_SHARE = 0.05  # ふつうさ（6 匹の月次使用率の対数の平均）の下位 5% を「変わったチーム」とする
+
+
+def typicality(team: list[str], usage: dict[str, float]) -> float:
+    """6 匹の月次使用率（標準の足切り、まとめた名前）の対数の平均。小さいほど、よくある組み合わせから外れている。"""
+    return sum(math.log(max(usage.get(k, 0.0), 1e-4)) for k in team) / len(team)
+
+
+def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, speed_of=None, usage=None) -> dict:
+    """答え合わせ（重ならない区間を新しい順に最大 EVAL_BLOCKS 個。各区間はその直前 TRAIN_DAYS 日で学ぶ）をまとめ、
+    公開用に直近 TRAIN_DAYS 日で学び直す。画面側は weights と材料の表から同じ確率を計算する。"""
+    blocks = []
+    for b in range(EVAL_BLOCKS):
+        r = run(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of=speed_of, block=b)
+        if not r["available"]:
+            break
+        kb, kl = r["k"]
+        w = fit(r["train"])
+        d_avg = _dataset(r["test_x"], r["feat"], kb, kl, opp=avg_opponent(r["train_x"]))  # 自分のチームが分からないとき
+        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl)))
+    if not blocks:
+        r = run(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of=speed_of)
+        if not r["available"]:
+            return r
+        kb, kl = r["k"]
+        w = fit(r["train"])
+        d_avg = _dataset(r["test_x"], r["feat"], kb, kl, opp=avg_opponent(r["train_x"]))
+        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl)))
+    r = blocks[0][0]
+    ems, ebs, eas = [b[1] for b in blocks], [b[2] for b in blocks], [b[3] for b in blocks]
+    per_m = [p for e in ems for p in e["_per"]]
+    per_b = [p for e in ebs for p in e["_per"]]
 
     def cmp(idx, key):
-        m, lo, hi = bootstrap_diff(ev_m["_per"], ev_b["_per"], idx)
-        return {"model": _r(ev_m[key]), "baseline": _r(ev_b[key]), "diff": _r(m), "ci": [_r(lo), _r(hi)]}
+        m, lo, hi = bootstrap_diff(per_m, per_b, idx)
+        return {"model": _r(_pool(ems, key)), "baseline": _r(_pool(ebs, key)), "diff": _r(m), "ci": [_r(lo), _r(hi)]}
 
+    calib = defaultdict(lambda: [0.0, 0.0, 0])
+    for e in ems:
+        for pred, act, n in e["calibration"]:
+            c = calib[min(int(pred * 10), 9)]
+            c[0] += pred * n
+            c[1] += act * n
+            c[2] += n
     ev = {
-        "train": len(r["train"]), "test": len(r["test"]), "test_from": int(r["cut"]),
-        "bring": {**cmp(0, "bring_top"), "random": _r(kb / 6), "unknown_opp": _r(ev_a["bring_top"])},
-        "lead": {**cmp(1, "lead_top"), "random": _r(kl / 6), "unknown_opp": _r(ev_a["lead_top"])},
+        "train": sum(len(b[0]["train"]) for b in blocks), "test": sum(e["n"] for e in ems), "blocks": len(blocks),
+        "test_from": int(blocks[-1][0]["cut"]), "train_days": TRAIN_DAYS,
+        "bring": {**cmp(0, "bring_top"), "random": _r(kb / 6), "unknown_opp": _r(_pool(eas, "bring_top"))},
+        "lead": {**cmp(1, "lead_top"), "random": _r(kl / 6), "unknown_opp": _r(_pool(eas, "lead_top"))},
         "back": {**cmp(3, "back_top"), "random": _r((kb - kl) / (6 - kl))},
         "loglik": cmp(2, "loglik"),
-        "bring_set_top1": {"model": _r(ev_m["bring_set_top1"]), "baseline": _r(ev_b["bring_set_top1"])},
-        "lead_set_top3": {"model": _r(ev_m["lead_set_top3"]), "baseline": _r(ev_b["lead_set_top3"])},
-        "calibration": ev_m["calibration"],
+        "bring_set_top1": {"model": _r(_pool(ems, "bring_set_top1")), "baseline": _r(_pool(ebs, "bring_set_top1"))},
+        "lead_set_top3": {"model": _r(_pool(ems, "lead_set_top3")), "baseline": _r(_pool(ebs, "lead_set_top3"))},
+        "calibration": [[round(c[0] / c[2], 3), round(c[1] / c[2], 3), c[2]] for _, c in sorted(calib.items()) if c[2]],
     }
+    # 変わったチーム（低レートに多い）では当たり方が違うので、分けて出す。学習データのレートの分布も出す
+    if usage:
+        all_x = r["xs"]
+        typs = sorted(typicality(x["team"], usage) for x in all_x)
+        odd_cut = typs[int(len(typs) * ODD_SHARE)]
+        per_all = [(typicality(x["team"], usage), pm, pb) for b in blocks for (_, _, _, x), pm, pb
+                   in zip(b[0]["test"], b[1]["_per"], b[2]["_per"])]
+        for lab, sel in (("odd", [t for t in per_all if t[0] <= odd_cut]), ("typical", [t for t in per_all if t[0] > odd_cut])):
+            if sel:
+                ev[f"bring_{lab}"] = {"n": len(sel), "model": _r(sum(t[1][0] for t in sel) / len(sel)),
+                                      "baseline": _r(sum(t[2][0] for t in sel) / len(sel))}
+        ev["odd_cut"] = round(odd_cut, 3)
+    ratings = sorted(x["rating"] for x in r["xs"] if x.get("rating"))
+    if ratings:
+        ev["ratings"] = {"n": len(ratings), "of": len(r["xs"]),
+                         **{f"p{q}": ratings[min(len(ratings) - 1, int(len(ratings) * q / 100))] for q in (10, 50, 90)}}
     # 予想を出すのは、確率の質（対数尤度）が全体の率だけよりはっきり良いときだけ
     usable = ev["loglik"]["ci"][0] > 0
 
-    # 公開用: 全期間で学び直す（交差適合で重み、全期間の集計で材料）
-    xs = r["train_x"] + r["test_x"]
-    roles = _roles(detail, rows, group_of, sd, stone, mega_types)
+    # 公開用: 直近 TRAIN_DAYS 日で学び直す（交差適合で重み、同じ期間の集計で材料）
+    xs = [x for x in r["xs"] if x["t"] >= r["xs"][-1]["t"] - TRAIN_DAYS * 86400]
+    roles = _roles(detail, rows, group_of, sd, stone, mega_types, speed_of)
     w_pub = fit(_crossfit(xs, roles, sd, kb, kl))
     feat = _featurizer(xs, roles, sd, kb)
     st = feat.stats

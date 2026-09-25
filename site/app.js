@@ -351,7 +351,7 @@ function linkTo(next) {
   const q = new URLSearchParams();
   if (r.f) q.set('f', r.f);
   if (r.v && r.v !== 'env') q.set('v', r.v);
-  if (r.v === 'poke' && r.p) q.set('p', r.p);
+  if ((r.v === 'poke' || r.v === 'speed') && r.p) q.set('p', r.p);
   return `#${q.toString()}`;
 }
 function go(next) { location.hash = linkTo(next).slice(1); }
@@ -396,7 +396,7 @@ async function load(fid) {
 async function onRoute() {
   const r = readHash();
   route.f = r.f && META.formats.some((x) => x.id === r.f) ? r.f : currentFormats()[0].id;
-  route.v = ['env', 'rank', 'poke', 'select', 'diag'].includes(r.v) ? r.v : 'env';
+  route.v = ['env', 'rank', 'poke', 'select', 'diag', 'speed'].includes(r.v) ? r.v : 'env';
   route.p = r.p;
   await load(route.f);
   document.querySelectorAll('#formats .pill').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === route.f)));
@@ -410,6 +410,7 @@ async function onRoute() {
   if (shown === 'env') drawCharts();
   if (shown === 'select') await renderSelect();
   if (shown === 'diag') await renderDiag();
+  if (shown === 'speed') await renderSpeedView();
   phrase(document.querySelector(`[data-view-panel="${shown}"]`));
   const label = formatLabel(view.f);
   document.title = {
@@ -417,6 +418,7 @@ async function onRoute() {
     rank: `使用率ランキング（${label}）— チャンピオンズ メタ`,
     select: `選出予想（${label}）— チャンピオンズ メタ`,
     diag: `チーム診断（${label}）— チャンピオンズ メタ`,
+    speed: `すばやさ調整${route.p ? `・${short(route.p)}` : ''}（${label}）— チャンピオンズ メタ`,
   }[shown] || `チャンピオンズ メタ（${label}）— 使用率・並び・選出率の推移`;
 }
 
@@ -600,6 +602,7 @@ function renderPoke(g) {
     cards.push(`<section class="card c4"><h2>技</h2>${barList(d.moves, nameIn('moves'), 10)}</section>`);
     cards.push(`<section class="card c4"><h2>持ち物</h2>${barList(d.items, nameIn('items'), 8)}<h2 class="sub">特性</h2>${barList(d.abilities, nameIn('abilities'), 3)}</section>`);
     cards.push(`<section class="card c4"><h2>能力ポイント（性格）</h2>${barList(d.spreads, spreadLabel, 5)}</section>`);
+    cards.push(`<div data-spd-slot="${esc(k)}" hidden></div>`);
     if (j === 0 && d.teammates.length) {
       cards.push(`<section class="card c8"><h2>同じチームに入りやすい</h2><ul class="mates">${d.teammates.map(([b, sh]) => `<li><a href="${linkTo({ p: groupOf(b) })}">${icon(b, 48)}<span>${esc(short(b))}</span><b>${pct(sh, 0)}</b></a></li>`).join('')}</ul></section>`);
     }
@@ -614,7 +617,207 @@ function renderPoke(g) {
   }
   $('poke-body').innerHTML = cards.join('');
   if (series) trendChart($('p-trend'), { ...track, usage_grouped: { [g]: series } }, $('p-trend').clientWidth || 600);
+  if (document.querySelector('[data-spd-slot]')) fillSpeedCards();
   if ($('p-induce')) loadInduce().then((ind) => { if ($('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); });
+}
+
+// ── すばやさ（src/cmeta/analysis/speed.py） ─────────────────────────
+// 実数値 = trunc((種族値 + 能力ポイント + 20) × 性格補正)。レベル 50・個体値 31 固定
+async function loadSpeed() {
+  if (view.speed === undefined) view.speed = await getJSON(`speed/${view.f.id}.json`).catch(() => null);
+  return view.speed;
+}
+const spdStat = (b, pts, sign) => { const v = b + pts + 20; return sign === '+' ? Math.floor(v * 110 / 100) : sign === '-' ? Math.floor(v * 90 / 100) : v; };
+const spdScarf = (v) => Math.floor((v * 6144 + 2047) / 4096); // Showdown の丸め
+// 実数値 v が、分布の相手より先に動く確率（同速は 1/2）
+const spdFaster = (v, dist) => dist.reduce((a, [x, s]) => a + (x < v ? s : x === v ? s / 2 : 0), 0);
+const spdSlower = (v, dist) => dist.reduce((a, [x, s]) => a + (x > v ? s : x === v ? s / 2 : 0), 0);
+// 環境全体（姿ごと、使用率で重み付け）に対して
+function spdVsMeta(S, v, exclude) {
+  let f = 0, sl = 0, u = 0;
+  for (const [k, e] of Object.entries(S.pokemon)) {
+    if (k === exclude) continue;
+    f += e.usage * spdFaster(v, e.dist);
+    sl += e.usage * spdSlower(v, e.dist);
+    u += e.usage;
+  }
+  return { faster: f / u, slower: sl / u };
+}
+function spdKinds(e) {
+  const b = e.base;
+  const named = { [spdStat(b, 32, '+')]: '最速', [b + 52]: '準速', [b + 20]: '無振り', [spdStat(b, 0, '-')]: '最遅' };
+  const out = { 最速: 0, 準速: 0, 無振り: 0, 最遅: 0, 調整: 0 };
+  for (const [v, s] of e.dist) out[named[v] || '調整'] += s;
+  return out;
+}
+const spdMode = (e) => e.dist.reduce((m, d) => (d[1] > m[1] ? d : m), [0, -1])[0];
+
+function speedCard(S, k) {
+  const e = S.pokemon[k];
+  const b = e.base;
+  const kinds = spdKinds(e);
+  const lo = e.dist[0][0], hi = e.dist.at(-1)[0];
+  const maxS = Math.max(...e.dist.map(([, s]) => s));
+  const bars = e.dist.map(([v, s]) => `<i style="left:${hi > lo ? ((v - lo) / (hi - lo) * 100).toFixed(1) : 50}%;height:${Math.max(4, s / maxS * 100).toFixed(0)}%" title="${v}: ${pct(s, 0)}"></i>`).join('');
+  const chips = Object.entries(kinds).filter(([, s]) => s >= 0.005).map(([n, s]) => `<span class="chip">${n} ${pct(s, 0)}</span>`).join(' ');
+  const extra = [e.scarf >= 0.01 ? `こだわりスカーフ ${pct(e.scarf, 0)}` : '', e.ironball >= 0.01 ? `くろいてっきゅう ${pct(e.ironball, 0)}` : '',
+    ...Object.entries(e.abilities || {}).map(([a, s]) => `${esc(nameIn('abilities')(a))} ${pct(s, 0)}`)].filter(Boolean).join('・');
+  const prio = Object.entries(e.priority || {}).map(([m, s]) => `${esc(nameIn('moves')(m))} ${pct(s, 0)}`).join('・');
+  const sp = e.spread;
+  const spreadTxt = sp ? `実数値の 9 割は ${sp.p05}〜${sp.p95}（よくある値の実質の数 ${sp.effective.toFixed(1)}。多いほど相手から見て読みにくい）` : '';
+  const id = `spd-${k.replace(/[^A-Za-z0-9]/g, '')}`;
+  return `<section class="card c12 spd" id="${id}" data-form="${esc(k)}"><h2>すばやさ <span class="chip">種族値 ${b}</span> <a class="plain more" href="${linkTo({ v: 'speed', p: k })}">ミラーの調整表 ›</a></h2>`
+    + `<div class="spd-top"><div><div class="spd-hist">${bars}</div><div class="spd-axis"><span>${lo}</span><span>${hi}</span></div>`
+    + `<p class="note" style="margin:6px 0 0">${chips}<br>${spreadTxt}${prio ? `<br>先制技: ${prio}` : ''}${extra ? `<br>${extra}` : ''}</p></div>`
+    + `<div class="spd-in"><label>実数値 <input type="number" min="1" max="999" value="${spdMode(e)}" data-v></label>`
+    + `<label class="chk"><input type="checkbox" data-scarf> スカーフ</label>`
+    + `<div class="spd-quick">${[['最速', spdStat(b, 32, '+')], ['準速', b + 52], ['無振り', b + 20], ['最遅', spdStat(b, 0, '-')]].map(([n, v]) => `<button type="button" data-set="${v}">${n} ${v}</button>`).join('')}</div></div></div>`
+    + '<div class="spd-out" data-out></div>'
+    + `<p class="note">Smogon の月次統計（${esc(S.month)}・レート ${S.cutoff} 以上）の振り方から計算。環境の割合は姿ごとに使用率で重み付け。`
+    + '持ち物・特性・おいかぜ・トリックルーム・まひ・ランク変化は含みません（相手のスカーフは線で確認してください）。統計には持ち物と振り方の組み合わせが無いため、スカーフの線は「最速・準速のスカーフ」を仮に置いたものです。</p></section>';
+}
+
+function speedUpdate(S, root) {
+  const k = root.dataset.form;
+  const e = S.pokemon[k];
+  let v = +root.querySelector('[data-v]').value || 0;
+  const scarf = root.querySelector('[data-scarf]').checked;
+  if (scarf) v = spdScarf(v);
+  const m = spdVsMeta(S, v, null);
+  const mirror = spdFaster(v, e.dist);
+  const prev = e.prev_dist ? spdFaster(v, e.prev_dist) : null;
+  // 近くの線（上下 12 以内、多い順に 10 本まで）
+  const near = S.lines.filter((l) => Math.abs(l.value - v) <= 12).sort((a, b) => b.value - a.value || b.weight - a.weight).slice(0, 12);
+  const mark = (x) => (v > x ? '<b class="up">抜ける</b>' : v === x ? '<b>同速</b>' : '<b class="down">抜かれる</b>');
+  const lineRow = (l) => `<li>${icon(l.name, 28)}<span class="v">${l.value}</span><span>${esc(short(l.name))} ${l.scarf ? 'スカーフ' : ''}${l.kind}`
+    + ` <small class="note">${l.scarf ? `スカーフ ${pct(l.scarf_share, 0)}・` : ''}${esc(short(l.name))}の ${pct(l.share, 0)}${l.aimed >= 0.025 ? `・${l.value + 1} に合わせる調整が多い` : ''}</small></span>${mark(l.value)}</li>`;
+  root.querySelector('[data-out]').innerHTML = `<div class="kv">`
+    + `<div><span class="k">${scarf ? `スカーフ込み ${v}` : `実数値 ${v}`}: 環境で先に動ける</span><b>${pct(m.faster, 0)}</b></div>`
+    + `<div><span class="k">後に動ける</span><b>${pct(m.slower, 0)}</b></div>`
+    + `<div><span class="k">ミラーで先に動ける</span><b>${pct(mirror, 0)}</b>${prev != null ? `<small class="note">先月 ${pct(prev, 0)}</small>` : ''}</div></div>`
+    + (near.length ? `<div class="k" style="margin-top:10px">近くの線</div><ul class="spd-lines">${near.map(lineRow).join('')}</ul>` : '');
+}
+
+async function fillSpeedCards() {
+  const S = await loadSpeed();
+  if (!S) return;
+  document.querySelectorAll('[data-spd-slot]').forEach((slot) => {
+    const k = slot.dataset.spdSlot;
+    if (!S.pokemon[k]) { slot.remove(); return; }
+    slot.outerHTML = speedCard(S, k);
+  });
+  document.querySelectorAll('.spd').forEach((root) => {
+    const upd = () => speedUpdate(S, root);
+    root.querySelector('[data-v]').addEventListener('input', upd);
+    root.querySelector('[data-scarf]').addEventListener('change', upd);
+    root.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => { root.querySelector('[data-v]').value = b.dataset.set; upd(); }));
+    upd();
+  });
+}
+
+// チーム診断: メガストーンを持つ割合が 5 割以上ならメガの姿、それ以外はメガでない姿で一番多いもの
+function spdFormOf(S, g) {
+  const forms = Object.entries(S.pokemon).filter(([, e]) => e.group === g);
+  if (!forms.length) return null;
+  const split = view.mo.mega_split?.[view.mo.months.at(-1)]?.[g] || {};
+  const megaShare = Object.entries(split).filter(([f]) => f.includes('-Mega')).reduce((a, [, s]) => a + s, 0);
+  const want = megaShare >= 0.5;
+  const cands = forms.filter(([f]) => f.includes('-Mega') === want);
+  return (cands.length ? cands : forms).sort((a, b) => b[1].usage - a[1].usage)[0][0];
+}
+
+// ── すばやさ調整（ミラー）: 何ポイント振れば、同じポケモンどうしで先に動けるか ─────────
+const SPD_THRESH = [[0.5, '5割'], [0.8, '8割'], [0.9, '9割'], [1, '確実']];
+// 振る数 0〜32 のうち、ミラーで先に動く確率が thr 以上になる最小の振る数（届かなければ null）
+function spdNeed(e, dist, sign, thr) {
+  for (let sp = 0; sp <= 32; sp++) {
+    const p = spdFaster(spdStat(e.base, sp, sign), dist);
+    if (thr >= 1 ? p >= 1 - 1e-9 : p >= thr - 1e-9) return sp;
+  }
+  return null;
+}
+function spdMirrorChart(e, width) {
+  const W = Math.max(280, Math.min(width, 720)), H = 220, L = 38, R = 12, T = 12, B = 30;
+  const x = (sp) => L + sp / 32 * (W - L - R);
+  const y = (p) => T + (1 - p) * (H - T - B);
+  const line = (dist, sign) => Array.from({ length: 33 }, (_, sp) => `${x(sp).toFixed(1)},${y(spdFaster(spdStat(e.base, sp, sign), dist)).toFixed(1)}`).join(' ');
+  const grid = [0, 0.25, 0.5, 0.75, 1].map((p) => `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" class="gl"/><text x="${L - 6}" y="${y(p) + 4}" text-anchor="end">${Math.round(p * 100)}%</text>`).join('');
+  const xt = [0, 8, 16, 24, 32].map((sp) => `<text x="${x(sp)}" y="${H - 10}" text-anchor="middle">${sp}</text>`).join('');
+  const series = [];
+  if (e.prev_dist) {
+    series.push(`<polyline points="${line(e.prev_dist, '=')}" class="ln prev"/>`, `<polyline points="${line(e.prev_dist, '+')}" class="ln prev plus"/>`);
+  }
+  series.push(`<polyline points="${line(e.dist, '=')}" class="ln now"/>`, `<polyline points="${line(e.dist, '+')}" class="ln now plus"/>`);
+  return `<svg class="spd-chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="振る数ごとのミラーで先に動く確率">${grid}${xt}${series.join('')}`
+    + `<text x="${W - R}" y="${H - 10}" text-anchor="end">振る数</text></svg>`
+    + `<p class="note spd-legend"><span class="sw now"></span>今月 補正なし <span class="sw now plus"></span>今月 最速補正${e.prev_dist ? ' <span class="sw prev"></span>先月（点線）' : ''}</p>`;
+}
+
+async function renderSpeedView() {
+  const S = await loadSpeed();
+  const out = $('speed-out');
+  const label = formatLabel(view.f);
+  if (!S) { $('speed-asof').innerHTML = dots(esc(label)); out.innerHTML = '<section class="card c12"><p class="empty">このルールは、すばやさのデータがありません。</p></section>'; return; }
+  $('speed-asof').innerHTML = dots(esc(label), `Smogon の月次統計 ${esc(S.month)}${S.prev_month ? `（先月 ${esc(S.prev_month)}）` : ''}`, `レート ${S.cutoff} 以上`);
+  const forms = Object.entries(S.pokemon).sort((a, b) => b[1].usage - a[1].usage);
+  const inp = $('spd-q');
+  $('spd-names').innerHTML = forms.map(([k]) => `<option value="${esc(ja(k))}"></option>`).join('');
+  if (!inp.dataset.bound) {
+    inp.dataset.bound = '1';
+    inp.addEventListener('change', () => {
+      const t = norm(inp.value.trim());
+      const hit = Object.keys(view.speed?.pokemon || {}).find((k) => norm(ja(k)) === t || norm(k) === t || norm(short(k)) === t);
+      if (hit) go({ v: 'speed', p: hit });
+    });
+  }
+  const k = route.p && S.pokemon[route.p] ? route.p : forms[0][0];
+  inp.value = ja(k);
+  const e = S.pokemon[k];
+  const kinds = spdKinds(e);
+  const chips = Object.entries(kinds).filter(([, s]) => s >= 0.005).map(([n, s]) => `<span class="chip">${n} ${pct(s, 0)}</span>`).join(' ');
+  const needTxt = (dist, sign) => SPD_THRESH.map(([thr, lab]) => {
+    const sp = spdNeed(e, dist, sign, thr);
+    const why = sp == null ? (thr >= 1 ? '最速の相手とは同速（1/2）になる' : sign === '=' ? '最速補正の相手に届かない' : '') : `実数値 ${spdStat(e.base, sp, sign)}`;
+    return `<div><span class="k">${lab}</span><b>${sp == null ? '届かない' : `${sp} 振り`}</b><small class="note">${why}</small></div>`;
+  }).join('');
+  const prevNeed = (sign, thr) => (e.prev_dist ? spdNeed(e, e.prev_dist, sign, thr) : undefined);
+  const creep = e.prev_dist ? ['=', '+'].map((sign) => {
+    const a = prevNeed(sign, 0.9), b = spdNeed(e, e.dist, sign, 0.9);
+    return `${sign === '=' ? '補正なし' : '最速補正'}で 9 割: 先月 ${a == null ? '届かない' : `${a} 振り`} → 今月 ${b == null ? '届かない' : `${b} 振り`}`;
+  }).join('<br>') : '';
+  // 表: 振る数ごと
+  const pts = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 23, 26, 29, 32];
+  const cell = (sp, sign) => {
+    const v = spdStat(e.base, sp, sign);
+    const now = spdFaster(v, e.dist);
+    const prev = e.prev_dist ? spdFaster(v, e.prev_dist) : null;
+    return `<td>${v}</td><td class="${now >= 0.9 ? 'ok' : now < 0.5 ? 'hole' : ''}"><b>${pct(now, 0)}</b></td><td class="note">${prev == null ? '—' : pct(prev, 0)}</td>`;
+  };
+  const rows = pts.map((sp) => `<tr><td>${sp}</td>${cell(sp, '=')}${cell(sp, '+')}</tr>`).join('');
+  const slow = spdStat(e.base, 0, '-');
+  // 一覧: 使用率の高い姿ごとに、9 割に必要な振る数
+  const list = forms.slice(0, 40).filter(([, x]) => x.usage >= 0.01).map(([n, x]) => {
+    const a = spdNeed(x, x.dist, '=', 0.9), b = spdNeed(x, x.dist, '+', 0.9);
+    const pa = x.prev_dist ? spdNeed(x, x.prev_dist, '=', 0.9) : null;
+    const pb = x.prev_dist ? spdNeed(x, x.prev_dist, '+', 0.9) : null;
+    const d = (now, prev) => (now == null || prev == null || now === prev ? '' : ` <small class="${now > prev ? 'down' : 'up'}-t">${now > prev ? '↑' : '↓'}${Math.abs(now - prev)}</small>`);
+    return `<tr><td><a class="plain" href="${linkTo({ v: 'speed', p: n })}">${icon(n, 28)} ${esc(short(n))}</a></td><td>${x.base}</td><td>${pct(x.usage, 1)}</td>`
+      + `<td>${x.spread ? x.spread.effective.toFixed(1) : '—'}</td><td>${a == null ? '届かない' : a}${d(a, pa)}</td><td>${b == null ? '届かない' : b}${d(b, pb)}</td></tr>`;
+  }).join('');
+  out.innerHTML = `<section class="card c12"><div class="spd-head">${icon(k, 56)}<div><h2 style="margin:0">${esc(ja(k))} <span class="chip">種族値 ${e.base}</span> <span class="chip">使用率 ${pct(e.usage, 1)}</span></h2>`
+    + `<p class="note" style="margin:6px 0 0">${chips}${e.spread ? `<br>実数値の 9 割は ${e.spread.p05}〜${e.spread.p95}（よくある値の実質の数 ${e.spread.effective.toFixed(1)}）` : ''}</p></div></div></section>`
+    + `<section class="card c5"><h2>ミラーで先に動くのに必要な振る数</h2><div class="k">補正なし（無補正の性格）</div><div class="kv">${needTxt(e.dist, '=')}</div>`
+    + `<div class="k" style="margin-top:10px">最速補正（すばやさ上昇の性格）</div><div class="kv">${needTxt(e.dist, '+')}</div>`
+    + (creep ? `<p class="note">${creep}</p>` : '') + '</section>'
+    + `<section class="card c7"><h2>振る数とミラーで先に動く確率</h2>${spdMirrorChart(e, 640)}</section>`
+    + `<section class="card c12"><h2>振る数ごとの表</h2><table class="tt spd-tbl"><thead><tr><th rowspan="2">振る数</th><th colspan="3">補正なし</th><th colspan="3">最速補正</th></tr>`
+    + '<tr><th>実数値</th><th>今月</th><th>先月</th><th>実数値</th><th>今月</th><th>先月</th></tr></thead>'
+    + `<tbody>${rows}</tbody></table><p class="note">最遅（すばやさ下降の性格・0 振り）は実数値 ${slow}: ミラーで先に動く確率 ${pct(spdFaster(slow, e.dist), 0)}。</p></section>`
+    + `<section class="card c12"><h2>ミラーの競り合い（使用率の高い順）</h2><table class="tt"><thead><tr><th>ポケモン</th><th>種族値</th><th>使用率</th><th>値の散らばり</th><th>9割に必要（補正なし）</th><th>9割に必要（最速補正）</th></tr></thead><tbody>${list}</tbody></table>`
+    + '<p class="note">値の散らばり = よくある実数値の実質の数（大きいほど相手から読みにくい）。矢印は先月から必要な振る数が増えた（↑）・減った（↓）数。</p></section>'
+    + `<section class="card c12"><p class="note" style="margin:0">ミラーで先に動く確率 = 相手（同じ姿）の実数値があなたより小さい割合 + 同じ割合の半分（同速は 1/2）。`
+    + ` 実数値 = trunc((種族値 + 振る数 + 20) × 性格補正)、レベル 50。メガシンカする場合はメガの姿どうしで比べてください（姿ごとに選べます）。`
+    + ' こだわりスカーフ・特性・おいかぜ・トリックルーム・まひ・ランク変化は含みません。先制技（アクアジェットなど）は優先度で先に動くので、この比較とは別です。</p></section>';
 }
 
 // ── 選出誘導（src/cmeta/analysis/induce.py） ───────────────────────
@@ -630,6 +833,7 @@ function induceRow(r, which) {
 function induceCard(ind, g) {
   const head = '<h2>選出誘導 <span class="chip warn">参考値</span></h2>';
   const e = ind?.pokemon?.[g];
+  if (e && e.strength.bring == null) return `${head}<p class="empty">変化を比べられる相手が足りないため、まだ出せません。</p>`;
   if (!e) return `${head}<p class="empty">見せ合いの件数が足りないため、まだ出せません（${ind ? `${ind.min_u} 回以上` : 'データなし'}が必要）。</p>`;
   const all = Object.values(ind.pokemon).map((v) => v.strength.bring).filter((v) => v != null).sort((a, b) => b - a);
   const rank = all.indexOf(e.strength.bring) + 1;
@@ -640,7 +844,11 @@ function induceCard(ind, g) {
   return head
     + `<p class="note" style="margin-top:0">${esc(short(g))}を見せ合いに入れると、相手の選出がどれだけ変わるか。`
     + ` 強さ <b>${(e.strength.bring * 100).toFixed(1)} pt</b>（調べた ${all.length} 匹のうち ${rank} 位。見せ合い ${e.n} 回）${e.stone >= 0.5 ? '・メガシンカ要員' : ''}`
-    + (e.strength.bring < 0.005 ? '。<b>偶然の揺れと区別できないくらい小さく</b>、下の変化もほとんどが揺れの範囲です。' : '') + '</p>'
+    + (e.strength.bring < 0.005
+      ? (up.concat(down).some((r) => r.clear)
+        ? '。全体としての誘導は小さく、ほとんどの相手の選出は変わりません（●の付いた相手だけは、はっきり変わります）。'
+        : '。<b>偶然の揺れと区別できないくらい小さく</b>、下の変化もほとんどが揺れの範囲です。')
+      : '') + '</p>'
     + `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">相手が出しやすくなる</div><ul class="mu">${up.map((r) => induceRow(r, 'bring')).join('') || none}</ul></div>`
     + `<div class="c6"><div class="k">相手が出しにくくなる</div><ul class="mu">${down.map((r) => induceRow(r, 'bring')).join('') || none}</ul></div></div>`
     + (pairs.length ? `<div class="k" style="margin-top:10px">増える相手の先発の組</div><ul class="sets">${pairs.map((r) => `<li><span class="icons">${r.pair.map((k) => icon(k, 36)).join('')}</span><span>${r.pair.map((k) => esc(short(k))).join('・')}</span><b>${pct(r.share[0], 0)} → ${pct(r.share[1], 0)}</b></li>`).join('')}</ul>` : '')
@@ -942,7 +1150,7 @@ async function renderSelect() {
   const n2 = (x, k) => (x * k).toFixed(2);
   const pt = (d) => `${d >= 0 ? '+' : ''}${(d * 100).toFixed(1)}`;
   const sig = (c) => (c.ci[0] > 0 ? '（はっきり良い）' : c.ci[1] < 0 ? '（はっきり悪い）' : '（差ははっきりしない）');
-  const evalTxt = `<b>答え合わせ</b>（予想に使っていない ${day(ev.test_from)} 以降の ${ev.test.toLocaleString()} 試合）<br>`
+  const evalTxt = `<b>答え合わせ</b>（${day(ev.test_from)} 以降の ${ev.test.toLocaleString()} 試合を ${ev.blocks || 1} 区間に分け、それぞれ直前 ${ev.train_days || 30} 日の試合だけで学んだ予想で確かめたもの）<br>`
     + `・選出: 予想の上位 ${kb} 匹のうち実際に出たのは平均 <b>${n2(ev.bring.model, kb)} 匹</b>（全体の選出率だけ ${n2(ev.bring.baseline, kb)} 匹、でたらめ ${n2(ev.bring.random, kb)} 匹）${sig(ev.bring)}<br>`
     + `・先発: 上位 ${kl} 匹のうち平均 ${n2(ev.lead.model, kl)} 匹（全体だけ ${n2(ev.lead.baseline, kl)} 匹）${sig(ev.lead)}<br>`
     + `・先発を見たあとの残り: 上位 ${kb - kl} 匹のうち平均 ${n2(ev.back.model, kb - kl)} 匹（全体だけ ${n2(ev.back.baseline, kb - kl)} 匹）${sig(ev.back)}<br>`
@@ -952,13 +1160,20 @@ async function renderSelect() {
     ? `確率は相性（タイプ・メガシンカ後のタイプ）・役割（天候・${kl === 2 ? 'ねこだまし・いかく・トリックルームなど' : '設置技・きあいのタスキなど'}）・実績から計算しています。`
       + ' 選出は相手を見て変える読み合いの部分が大きく、ぴったり当てるのは難しい予想です。確率が高くない枠は「相手しだい」と考えてください。'
     : 'このルールでは、予想の確率が全体の率だけより良くならなかったため、<b>全体の選出率・先発率</b>から計算しています。';
+  // よくある組み合わせから外れたチーム（ふつうさの下位 5%。低レートに多い）は、予想が当たりにくい
+  const ugU = view.mo?.usage_grouped?.[String(view.mo.default_cutoff)] || {};
+  const typ = opp.reduce((a, k) => a + Math.log(Math.max(ugU[k]?.at(-1) || 0, 1e-4)), 0) / opp.length;
+  // 注意は、答え合わせで変わったチームの予想が全体の率だけを上回れていないルールだけ（BSS は下回った。VGC は上回った）
+  const odd = ev.odd_cut != null && typ <= ev.odd_cut && ev.bring_odd && ev.bring_odd.model <= ev.bring_odd.baseline + 0.005;
+  const oddTxt = odd ? `<p class="evalbox" style="margin-top:0">このチームは、よくある組み合わせから大きく外れています（下位 5%）。こうしたチームでは予想が当たりにくく、答え合わせでは上位 ${kb} 匹の当たりが平均 ${ev.bring_odd ? (ev.bring_odd.model * kb).toFixed(2) : '—'} 匹（全体の率だけ ${ev.bring_odd ? (ev.bring_odd.baseline * kb).toFixed(2) : '—'} 匹）でした。</p>` : '';
+  const rateTxt = ev.ratings ? `<br>学習に使った試合のレートは中央値 ${ev.ratings.p50}（1 割〜9 割で ${ev.ratings.p10}〜${ev.ratings.p90}。レートの分かる ${ev.ratings.n.toLocaleString()} 件）。${ev.ratings.p90 < 1500 ? '上位の対戦の公開リプレイは少ないため、上位帯の選び方とは違うことがあります。' : ''}` : '';
   const unknown = mine.length === 6 ? '' : `<br>自分の 6 匹を入れると、あなたのチームとの相性も考えます（いまは環境の平均的な相手として計算。答え合わせでは選出 ${n2(ev.bring.unknown_opp, kb)} 匹）。`;
-  out.innerHTML = `<h2>相手の選出 <span class="chip warn">参考値</span></h2>`
+  out.innerHTML = `<h2>相手の選出 <span class="chip warn">参考値</span></h2>${oddTxt}`
     + '<p class="note" style="margin-top:0">相手の先発が出たら「先発に出た」を押すと、残りの選出の確率に切り替わります。</p>'
     + `<ul class="pred">${rows}</ul>`
     + `<div class="grid" style="gap:12px;margin-top:14px"><div class="c6"><div class="k">${kl === 2 ? '先発の組' : '先発'}の候補</div><ul class="sets">${setList(leadSets)}</ul></div>`
     + `<div class="c6"><div class="k">選出の組の候補${seen ? '（先発を見たあと）' : ''}</div><ul class="sets">${setList(bringSets)}</ul></div></div>`
-    + `<div class="evalbox">${mode}${unknown}<br>${evalTxt}</div>`;
+    + `<div class="evalbox">${mode}${unknown}<br>${evalTxt}${rateTxt}</div>`;
   out.querySelectorAll('[data-seen]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.seen;
     if (SEEN_LEADS.has(k)) SEEN_LEADS.delete(k);
@@ -1014,16 +1229,20 @@ async function renderDiag() {
       : '<p class="empty">このルールはリプレイがまだ足りません。</p>')
     + '</section>');
 
-  // 3) すばやさ（種族値）
-  const top20 = D.top.slice(0, 20).map(([k]) => k).filter((k) => !team.includes(k));
-  const spe = (k) => poke(k).base_stats?.spe;
-  const srow = [...team].sort((a, b) => (spe(b) ?? 0) - (spe(a) ?? 0)).map((k) => {
-    const s = spe(k);
-    const faster = s == null ? 0 : top20.filter((o) => (spe(o) ?? 999) < s).length;
-    return `<tr><td>${icon(k, 28)} ${esc(short(k))}</td><td>${s ?? '—'}</td><td>${faster} / ${top20.length}</td></tr>`;
-  }).join('');
-  cards.push(`<section class="card c6"><h2>すばやさ</h2><table class="tt"><thead><tr><th>ポケモン</th><th>種族値</th><th>上位 20 匹より速い数</th></tr></thead><tbody>${srow}</tbody></table>`
-    + '<p class="note">種族値だけで比べています（能力ポイント・性格・持ち物・メガシンカは考えていません）。</p></section>');
+  // 3) すばやさ（振り方の分布どうし。メガストーンを持つ割合が 5 割以上ならメガの姿）
+  const S = await loadSpeed();
+  if (S) {
+    const srow = team.map((g) => [g, spdFormOf(S, g)]).map(([g, k]) => {
+      if (!k) return [g, null, -1, ''];
+      const e = S.pokemon[k];
+      // 自分の分布 × 環境: Σ 自分の割合 × その値で先に動ける割合
+      const f = e.dist.reduce((a, [v, s]) => a + s * spdVsMeta(S, v, null).faster, 0);
+      const fast = spdVsMeta(S, spdStat(e.base, 32, '+'), null).faster;
+      return [g, k, f, `<tr><td>${icon(k, 28)} ${esc(short(k))}</td><td>${spdMode(e)}</td><td><b>${pct(f, 0)}</b></td><td>${pct(fast, 0)}</td></tr>`];
+    }).sort((x, y) => y[2] - x[2]).map((r) => r[3] || `<tr><td>${icon(r[0], 28)} ${esc(short(r[0]))}</td><td colspan="3" class="note">データ不足</td></tr>`).join('');
+    cards.push(`<section class="card c6"><h2>すばやさ</h2><table class="tt"><thead><tr><th>ポケモン</th><th>よくある実数値</th><th>環境で先に動ける</th><th>最速なら</th></tr></thead><tbody>${srow}</tbody></table>`
+      + `<p class="note">そのポケモンのよくある振り方の分布どうしで比べ、環境（使用率で重み付け）の何%より先に動けるか（${esc(S.month)}・レート ${S.cutoff} 以上）。持ち物・特性・場の状態は含みません。詳しい線は各ポケモンのページ。</p></section>`);
+  }
 
   // 4) 並びとの重なりと、相方の候補
   const month = view.mo.months.at(-1);
@@ -1053,7 +1272,7 @@ async function renderDiag() {
     const got = team.filter((k) => ind.pokemon[k]);
     const up = new Map(); // 相手のポケモン → [全体, 変化の合計, 誘導したメンバー]
     // 誘導の強さが偶然の揺れと区別できるメンバーだけ（0pt のメンバーの変化は揺れ）。重なりの足し算はせず、一番大きい変化
-    for (const k of got.filter((x) => ind.pokemon[x].strength.bring >= 0.005)) {
+    for (const k of got.filter((x) => (ind.pokemon[x].strength.bring ?? 0) >= 0.005)) {
       for (const r of ind.pokemon[k].up) {
         if (team.includes(r.name) || r.bring[1] <= r.bring[0]) continue;
         const e = up.get(r.name) || [r.bring[0], 0, []];
@@ -1063,7 +1282,7 @@ async function renderDiag() {
       }
     }
     const top = [...up.entries()].sort((a, b) => b[1][1] - a[1][1]).slice(0, 6);
-    const strong = got.map((k) => [k, ind.pokemon[k].strength.bring]).sort((a, b) => b[1] - a[1]);
+    const strong = got.map((k) => [k, ind.pokemon[k].strength.bring ?? 0]).sort((a, b) => b[1] - a[1]);
     cards.push(`<section class="card c6"><h2>このチームを見た相手の選出 <span class="chip warn">参考値</span></h2>`
       + (got.length
         ? `<p class="note" style="margin-top:0">誘導の強さ: ${strong.map(([k, s]) => `${esc(short(k))} <b>${(s * 100).toFixed(1)}pt</b>`).join('・')}`

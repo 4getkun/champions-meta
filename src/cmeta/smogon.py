@@ -42,6 +42,23 @@ def list_files(month: str) -> list[tuple[str, int]]:
     return sorted(set(out))
 
 
+SPEED_UP = {"Timid", "Jolly", "Hasty", "Naive"}
+SPEED_DOWN = {"Brave", "Quiet", "Relaxed", "Sassy"}
+
+
+def speed_points(spreads: dict[str, float], weight: float) -> dict[str, float]:
+    """振り方（性格:H/A/B/C/D/S）を、すばやさだけの分布にまとめる。キーは「性格補正の向き + ポイント」
+    （'+32' = すばやさ上昇の性格で 32、'=0' = 補正なしで 0、'-0' = すばやさ下降の性格で 0）。値はそのポケモンの重みに対する割合。
+    上位だけに切らない（すばやさの線は、少数の調整の振り方が大事なので）。"""
+    out: dict[str, float] = {}
+    for sp, w in spreads.items():
+        nature, pts = sp.split(":")
+        sign = "+" if nature in SPEED_UP else "-" if nature in SPEED_DOWN else "="
+        key = f"{sign}{int(pts.split('/')[5])}"
+        out[key] = out.get(key, 0.0) + w / weight
+    return {k: round(v, 5) for k, v in sorted(out.items()) if v >= 1e-5}
+
+
 def _top(d: dict, weight: float, n: int) -> dict[str, float]:
     items = sorted(((k, v / weight) for k, v in d.items() if v > 0), key=lambda t: -t[1])[:n]
     return {k: round(v, 5) for k, v in items}
@@ -68,6 +85,7 @@ def condense(chaos: dict, month: str, full: bool = True) -> dict:
                 "items": _top(p["Items"], w, TOP_ITEMS),
                 "moves": _top(p["Moves"], w, TOP_MOVES),
                 "spreads": _top(p["Spreads"], w, TOP_SPREADS),
+                "speed": speed_points(p["Spreads"], w),
             })
         if full and name in keep_tm:
             entry["teammates"] = {

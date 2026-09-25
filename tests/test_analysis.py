@@ -190,3 +190,18 @@ def test_split_holdout_extends_to_min_test():
     assert len(test) == joint.MIN_TEST and len(train) + len(test) == 1000
     train, test, _ = joint.split_holdout(xs[:500])
     assert len(test) == 200  # 4 割まで
+
+
+def test_speed_stat_and_scarf_lines():
+    from cmeta.analysis import speed
+    from cmeta.smogon import speed_points
+
+    # ガブリアス（種族値 102）: 最速 169・準速 154・無振り 122・最遅 109（Showdown: trunc(122 × 90 / 100)）
+    assert [speed.stat(102, 32, "+"), speed.stat(102, 32, "="), speed.stat(102, 0, "="), speed.stat(102, 0, "-")] == \
+        [169, 154, 122, 109]
+    # スカーフ（Showdown の丸め）: イダイトウ ようき 143→214・いじっぱり 130→195、ガブリアス 169→253
+    assert [speed.modify(143, 3, 2), speed.modify(130, 3, 2), speed.modify(169, 3, 2)] == [214, 195, 253]
+    pts = speed_points({"Jolly:2/32/0/0/0/32": 3.0, "Adamant:2/32/0/0/0/32": 1.0, "Quiet:0/0/0/32/2/0": 1.0}, 5.0)
+    assert pts == {"+32": 0.6, "-0": 0.2, "=32": 0.2}
+    dist = [[100, 0.5], [110, 0.5]]
+    assert speed.p_faster(110, dist) == 0.75 and speed.p_faster(100, dist) == 0.25 and speed.p_faster(111, dist) == 1.0

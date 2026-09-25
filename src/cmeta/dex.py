@@ -93,7 +93,10 @@ class Showdown:
         self.pokedex = json.loads(http.cached_bytes(f"{SHOWDOWN_DATA}/pokedex.json", d / "pokedex.json", refresh))
         moves = json.loads(http.cached_bytes(f"{SHOWDOWN_DATA}/moves.json", d / "moves.json", refresh))
         self.move_names = {k: v["name"] for k, v in moves.items() if "name" in v}
-        self.move_info = {k: {"type": v.get("type"), "category": v.get("category"), "power": v.get("basePower", 0)}
+        self.move_info = {k: {"type": v.get("type"), "category": v.get("category"), "power": v.get("basePower", 0),
+                               "priority": v.get("priority", 0),
+                               # 優先度が特性で変わりうる技の目印（ヒーリングシフト: 回復・吸収、はやてのつばさ: ひこう）
+                               "heal": bool(v.get("drain") or v.get("flags", {}).get("heal"))}
                           for k, v in moves.items() if "type" in v}
         items_js = http.cached_bytes(f"{SHOWDOWN_DATA}/items.js", d / "items.js", refresh).decode("utf-8")
         abil_js = http.cached_bytes(f"{SHOWDOWN_DATA}/abilities.js", d / "abilities.js", refresh).decode("utf-8")

@@ -28,6 +28,7 @@
       <a href="#" data-view="rank">ランキング</a>
       <a href="#" data-view="select">選出予想</a>
       <a href="#" data-view="diag">チーム診断</a>
+      <a href="#" data-view="speed">すばやさ</a>
     </nav>
     <button class="pill theme" id="theme" type="button" aria-label="明るさを切り替える">◐</button>
     <nav class="formats" id="formats" aria-label="ルール"></nav>
@@ -93,6 +94,21 @@
     <ol class="rank-grid" id="rank-grid"></ol>
   </main>
 
+  <!-- ═══ すばやさ調整（ミラー） ═══ -->
+  <main id="view-speed" data-view-panel="speed" hidden>
+    <div class="rank-head">
+      <div>
+        <div class="k" id="speed-asof"></div>
+        <h1 class="h1">すばやさ調整</h1>
+        <p class="lead">同じポケモンどうし（ミラー）で先に動くには、すばやさに何ポイント振ればよいか。月次の振り方の分布から、今月と先月を並べて計算します。</p>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span>
+        <input id="spd-q" type="search" list="spd-names" placeholder="ポケモンを選ぶ" autocomplete="off"></label>
+    </div>
+    <div class="grid" id="speed-out"></div>
+    <datalist id="spd-names"></datalist>
+  </main>
+
   <!-- ═══ 選出予想 ═══ -->
   <main id="view-select" data-view-panel="select" hidden>
     <div class="rank-head"><div>
@@ -150,6 +166,7 @@
   <a href="#" data-view="rank"><b>≡</b>ランキング</a>
   <a href="#" data-view="select"><b>⇄</b>選出予想</a>
   <a href="#" data-view="diag"><b>✓</b>診断</a>
+  <a href="#" data-view="speed"><b>»</b>すばやさ</a>
 </nav>
 <datalist id="poke-names"></datalist>
 <div class="tip" id="tip" role="status" hidden></div>

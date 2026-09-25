@@ -3523,6 +3523,11 @@
   "slug": "gallade-mega",
   "species_ja": "エルレイド"
  },
+ "species:garbodor": {
+  "ja": "ダストダス",
+  "pid": 569,
+  "slug": "garbodor"
+ },
  "species:garchomp": {
   "ja": "ガブリアス",
   "pid": 445,
@@ -3840,6 +3845,11 @@
   "ja": "ラティオス",
   "pid": 381,
   "slug": "latios"
+ },
+ "species:leafeon": {
+  "ja": "リーフィア",
+  "pid": 470,
+  "slug": "leafeon"
  },
  "species:liepard": {
   "ja": "レパルダス",

@@ -34,6 +34,7 @@ def samples(rows: list[dict], group_of) -> list[dict]:
                 "brought": {group_of(x) for x in r["brought"][s]},
                 "leads": {group_of(x) for x in r["leads"][s]},
                 "megas": {group_of(x) for x in r["megas"][s]},
+                "rating": r.get("rating") or None,  # 一覧に出ている試合のレート（無いこともある）
             })
     return out
 

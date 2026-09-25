@@ -80,3 +80,21 @@ def test_bot_names():
 
     assert is_bot(["someone", "ChampNashBot94154"]) and is_bot(["PokeChamp v2", "x"])
     assert not is_bot(["alice", "carol"])
+
+
+def test_items_from_heal_and_damage_lines():
+    from cmeta.replays import parse_log
+
+    log = "\n".join([
+        "|player|p1|Alice|", "|player|p2|Bob|", "|poke|p1|Primarina, L50|", "|poke|p2|Garchomp, L50|",
+        "|switch|p1a: Primarina|Primarina, L50|100/100", "|switch|p2a: Garchomp|Garchomp, L50|100/100", "|turn|1",
+        "|move|p2a: Garchomp|Earthquake|p1a: Primarina", "|-damage|p1a: Primarina|60/100",
+        "|move|p1a: Primarina|Moonblast|p2a: Garchomp", "|-damage|p2a: Garchomp|10/100",
+        "|-damage|p2a: Garchomp|0 fnt|[from] item: Rocky Helmet|[of] p1a: Primarina",
+        "|-heal|p1a: Primarina|66/100|[from] item: Leftovers", "|win|Alice",
+    ])
+    rec = parse_log(log)
+    # ゴツゴツメットは [of] の持ち主（アシレーヌ）のもの。最初に分かった持ち物を残す
+    assert rec["revealed"][0]["Primarina"]["i"] == "rockyhelmet"
+    assert "i" not in rec["revealed"][1].get("Garchomp", {})
+    assert rec["v"] >= 3
