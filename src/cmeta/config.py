@@ -29,7 +29,8 @@ DEFAULT_CUTOFF = 1630
 REPLAY_MAX_PER_RUN = 1500  # 1 ルール・1 回の実行で取る上限
 REPLAY_BACKFILL_DAYS = 14  # 初回にさかのぼる日数
 SERIES_GAP_SEC = 3 * 3600  # これより離れていれば別のシリーズ
-EXTRA_REPLAY_FORMATS: tuple[str, ...] = ()  # Smogon にまだ無い新しいルールを足すとき
+# Smogon にまだ無い新しいルールを足すとき（月次統計は月の終わりのあとに出るので、始まったばかりのルールはここで取る）
+EXTRA_REPLAY_FORMATS: tuple[str, ...] = ("gen9championsbssregmc", "gen9championsvgc2026regmc", "gen9championsvgc2026regmcbo3")
 
 # 解析
 MONTHLY_TOP_SETS = 6  # 持ち物・技などを何位まで出すか

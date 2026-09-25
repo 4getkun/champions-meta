@@ -205,3 +205,95 @@ def test_speed_stat_and_scarf_lines():
     assert pts == {"+32": 0.6, "-0": 0.2, "=32": 0.2}
     dist = [[100, 0.5], [110, 0.5]]
     assert speed.p_faster(110, dist) == 0.75 and speed.p_faster(100, dist) == 0.25 and speed.p_faster(111, dist) == 1.0
+
+
+def test_toprate_pools_and_flags_differences():
+    from cmeta.analysis import toprate
+
+    xs = []
+    team = ["a", "b", "c", "d", "e", "f"]
+    for i in range(1200):
+        top = i % 2 == 0
+        # 上位の人（300 人が 2 回ずつ）は a を 9 割選び、ほかの人は 1 割
+        pick_a = (i // 2) % 10 != 0 if top else (i // 2) % 10 == 0
+        brought = {"a" if pick_a else "e", "c", "d"}
+        xs.append({"t": i, "team": team, "opp": [], "brought": brought, "leads": {"c"},
+                   "megas": set(), "player": f"p{(i // 2) % 300}" if top else f"q{i}"})
+    top_players = {f"p{j}": 1700.0 for j in range(300)}
+    res = toprate.build(xs, top_players, 3, 1)
+    a = res["pokemon"]["a"]["bring"]
+    assert a["est"] > 0.8 and a["other"] < 0.2 and a["clear"] and a["players"] == 300
+    assert 0 <= res["icc_bring"] <= 1 and 0 <= res["coverage_bring"] <= 1
+
+
+def test_toprate_icc_discounts_one_player():
+    from cmeta.analysis import toprate
+
+    # 1 人が同じ選び方を 100 回: 同じ人の似かたが大きく、差は「はっきり」にならない
+    team = ["a", "b", "c", "d", "e", "f"]
+    xs = [{"t": i, "team": team, "opp": [], "brought": {"a", "c", "d"}, "leads": {"c"}, "megas": set(), "player": "p0"}
+          for i in range(100)]
+    xs += [{"t": 100 + i, "team": team, "opp": [], "brought": {"a", "c", "d"} if i % 10 == 0 else {"b", "c", "d"},
+            "leads": {"c"}, "megas": set(), "player": f"q{i}"} for i in range(400)]  # ほかの人は a を 1 割
+    xs += [{"t": 600 + i, "team": team, "opp": [], "brought": {"b", "c", "d"}, "leads": {"c"}, "megas": set(),
+            "player": f"p{1 + i}"} for i in range(20)]
+    res = toprate.build(xs, {f"p{j}": 1700.0 for j in range(30)}, 3, 1)
+    assert not res["pokemon"]["a"]["bring"]["clear"]
+
+
+def test_set_trends_lists_big_changes_only():
+    from cmeta.analysis import sets
+
+    def month(m, share_a, w=500.0):
+        return {"pokemon": {"x": {"usage": 0.2, "weight": w, "items": {"a": share_a, "b": 1 - share_a},
+                                  "moves": {"m": 0.5}}}}
+    data = {("2026-07", "f", 0): month("2026-07", 0.5), ("2026-07", "f", 1630): month("2026-07", 0.6),
+            ("2026-08", "f", 0): month("2026-08", 0.45), ("2026-08", "f", 1630): month("2026-08", 0.3),
+            ("2026-08", "f", 1760): month("2026-08", 0.2, 150.0)}
+    out = sets.build(data, "f", ["2026-07", "2026-08"], [0, 1630, 1760], 1630)
+    kinds = {(c["type"], c["key"]) for c in out["changes"]}
+    assert ("month", "a") in kinds and ("top", "a") in kinds  # 60% → 30%、45% → 20%
+    assert all(c["key"] != "m" for c in out["changes"])  # 動いていない技は出ない
+
+
+def test_induce_pairs_finds_consistent_reaction():
+    from cmeta.analysis import toprate
+
+    team = ["k", "b", "c", "d", "e", "f"]
+    xs = []
+    for i in range(600):
+        has_u = i % 2 == 0
+        # 上位の人（40 人）は、相手に u がいると k を必ず選び、いないと選ばない
+        brought = {"k", "c", "d"} if has_u else {"b", "c", "d"}
+        xs.append({"t": i, "team": team, "opp": ["u" if has_u else "z", "y"], "brought": brought, "leads": {"c"},
+                   "megas": set(), "player": f"p{i % 40}"})
+    res = toprate.induce_pairs(xs, {f"p{j}": 1700.0 for j in range(40)}, 3)
+    assert any(r["opp"] == "u" and r["name"] == "k" and r["diff"] > 0.9 for r in res["clear"])
+
+
+def test_temperature_shrinks_overconfident_weights():
+    import numpy as np
+
+    from cmeta.analysis import joint
+
+    rng = np.random.default_rng(0)
+    data = []
+    for _ in range(300):
+        X = rng.normal(size=(5, 1))
+        z = X[:, 0] * 1.0
+        p = np.exp(z) / np.exp(z).sum()
+        data.append((X, int(rng.choice(5, p=p)), np.array([3.0])))  # 本当の強さは 1 なのに、重みは 3（強すぎる）
+    t = joint.fit_temperature(data)
+    assert 0.2 < t < 0.6
+
+
+def test_track_roundtrip(tmp_path, monkeypatch):
+    from cmeta.analysis import track
+
+    monkeypatch.setattr(track, "PREDLOG", tmp_path)
+    pub = {"available": True, "model": "joint", "k_bring": 3, "k_lead": 1, "features": ["base"], "weights": [1.0],
+           "g_bring": 0.5, "g_lead": 0.2, "base": {}, "vs": {}, "cobring": {}, "roles": {}, "avg_opp": [],
+           "trained": {"samples": 1, "from": 0, "to": 100}, "eval": {"big": 1}, "examples": [1]}
+    track.save("f", pub, day="2026-09-01", seeded=True)
+    snaps = track.load("f")
+    assert len(snaps) == 1 and snaps[0]["seeded"] and "eval" not in snaps[0] and "examples" not in snaps[0]

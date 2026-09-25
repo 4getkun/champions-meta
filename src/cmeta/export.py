@@ -3,8 +3,10 @@
 import json
 from datetime import datetime
 
-from . import smogon
-from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, speed, weekly
+from . import ladder, smogon
+from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, speed, toprate, weekly
+from .analysis import sets as set_trends
+from .analysis import early, track
 from .config import DATA, DEFAULT_CUTOFF, JST, OUT, REPLAY_BASE, SMOGON_BASE
 from .dex import JaNames, Showdown, sprite_urls
 from .formats import parse_format
@@ -43,6 +45,51 @@ def _speed_of(spd: dict, stone: dict[str, float]) -> dict[str, float]:
     return out
 
 
+def select_inputs(data: dict, fid: str) -> dict | None:
+    """選出予想の材料（月次から）: メガストーンを持つ確率・メガの姿のタイプ・ポケモン詳細・使用率。月次が無ければ None。"""
+    sd = Showdown()
+    mo = monthly.analyze_format(data, fid, sd.group_name)
+    if not mo:
+        return None
+    cut = mo["default_cutoff"]
+    ms = mo["mega_split"].get(mo["months"][-1], {})
+    stone = {g: v for g, v in ((g, sum(x for f, x in forms.items() if "-Mega" in f)) for g, forms in ms.items()) if v > 0}
+    mega_types = {g: sd.types(max((x for x in forms if "-Mega" in x), key=lambda x: (forms[x], x)))
+                  for g, forms in ms.items() if any("-Mega" in x for x in forms)}
+    ug = mo["usage_grouped"][str(cut)]
+    return {"month": mo["months"][-1], "stone": stone, "mega_types": mega_types,
+            "detail": monthly.pokemon_detail(data, fid, mo["months"][-1], cut),
+            "usage": {g: v[-1] for g, v in ug.items() if v[-1]}}
+
+
+def seed_predlog(fids: list[str], start: str | None = None, log=print) -> None:
+    """成績表を始める前の日について、その日までの試合と、その日より前に公開された月次統計だけで予想を作り直して保存する。
+    start を省くと、最新の月次の月の翌月 3 日から（月次は月初めに公開されるので、それより前の日は未来の月次を使ってしまう）。"""
+    from datetime import date, timedelta
+    sd = Showdown()
+    data = smogon.load_all()
+    for fid in fids:
+        f = parse_format(fid)
+        inp = select_inputs(data, fid)
+        rows = load_rows(fid) if (REPLAY_DIR / fid).exists() else []
+        if not f or not f["team_select"] or not inp or not rows:
+            continue
+        y, m = map(int, inp["month"].split("-"))
+        first = date(y + (m == 12), m % 12 + 1, 3)
+        d0 = date.fromisoformat(start) if start else first
+        d0 = max(d0, first)
+        last = datetime.fromtimestamp(max(r["t"] for r in rows), JST).date()
+        d = d0
+        while d < last:
+            end = datetime(d.year, d.month, d.day, tzinfo=JST).timestamp() + 86400
+            pub = joint.build([r for r in rows if r["t"] < end], sd.group_name, sd, inp["detail"], inp["stone"],
+                              f["game_type"] == "doubles", inp["mega_types"], evaluate_blocks=False)
+            if pub.get("available"):
+                track.save(fid, pub, day=d.isoformat(), seeded=True)
+            log(f"seed-predlog {fid} {d}: {'保存' if pub.get('available') else pub.get('reason')}")
+            d += timedelta(days=1)
+
+
 def replay_formats() -> list[str]:
     return sorted(p.name for p in REPLAY_DIR.iterdir() if p.is_dir()) if REPLAY_DIR.exists() else []
 
@@ -65,7 +112,7 @@ def build(fetch_names: bool = True, log=print) -> dict:
     for f in formats:
         fid = f["id"]
         mo = monthly.analyze_format(data, fid, group_of)
-        entry = {**f, "months": [], "replay_days": 0}
+        entry = {**f, "months": [], "replay_days": 0, "early": not bool(mo)}
         if mo:
             per_format[fid] = mo
             entry["months"] = mo["months"]
@@ -100,6 +147,13 @@ def build(fetch_names: bool = True, log=print) -> dict:
                 spd["format"] = fid
                 _write(f"speed/{fid}.json", spd)
                 names_pokemon.update(spd["pokemon"])
+            # 型（持ち物・技）の移り変わり: 月 × レート帯
+            st = set_trends.build(data, fid, mo["months"], mo["cutoffs"], cut)
+            st["format"] = fid
+            _write(f"sets/{fid}.json", st)
+            for e in st["pokemon"].values():
+                names_items.update(k for k in e["items"])
+                names_moves.update(k for k in e["moves"])
             # M6 コア（標準の足切り）
             month_datas = {m: data[(m, fid, cut)] for m in mo["months"] if (m, fid, cut) in data}
             co = cores.analyze(month_datas)
@@ -121,8 +175,21 @@ def build(fetch_names: bool = True, log=print) -> dict:
             wk.update({"format": fid, "replays": len(rows)})
             _write(f"weekly/{fid}.json", wk)
 
-            # メガストーンを持つ確率（月次のメガの内訳。メガの姿の割合の合計）
+            # メガストーンを持つ確率（月次のメガの内訳。メガの姿の割合の合計）。月次が無いルールは、リプレイで
+            # 「選出されたときにメガシンカした割合」で代える（持っていても使わなかった分は数えられないので、少なめに出る）
             stone, mega_types = {}, {}
+            if not mo:
+                nb, nm = {}, {}
+                for r in rows:
+                    for s_ in (0, 1):
+                        for x in r["brought"][s_]:
+                            g = group_of(x)
+                            nb[g] = nb.get(g, 0) + 1
+                        for x in r["megas"][s_]:
+                            g = group_of(x)
+                            nm[g] = nm.get(g, 0) + 1
+                            mega_types.setdefault(g, sd.types(x))
+                stone = {g: nm[g] / nb[g] for g in nm if nb.get(g, 0) >= 10}
             if mo:
                 ms = mo["mega_split"].get(mo["months"][-1], {})
                 stone = {g: sum(v for form, v in forms.items() if "-Mega" in form) for g, forms in ms.items()}
@@ -142,10 +209,22 @@ def build(fetch_names: bool = True, log=print) -> dict:
             else:
                 sel = {"available": False, "reason": "6 匹すべてで戦うルールなので、選出はありません"}
             sel["format"] = fid
+            if sel.get("available"):
+                # 成績表: 公開した予想を保存し、保存済みの予想をそのあとの試合で答え合わせする
+                track.save(fid, sel)
+                sel["track"] = track.evaluate(fid, rows, group_of, sd)
             _write(f"select/{fid}.json", sel)
             if sel.get("available"):
                 names_pokemon.update(sel["base"])
                 names_pokemon.update(sel["roles"])
+
+            # 開始直後の環境（月次統計がまだ無いルール）: 同じ人の同じチームを 1 つとして数える
+            if not mo and f["team_select"]:
+                ea = early.build(rows, group_of, 4 if doubles else 3, 2 if doubles else 1)
+                ea["format"] = fid
+                _write(f"early/{fid}.json", ea)
+                names_pokemon.update(ea.get("pokemon", {}))
+                entry["started"] = early.started(rows)
 
             # 選出誘導（あるポケモンを見せると、相手の選出がどう変わるか）
             if f["team_select"]:
@@ -155,6 +234,16 @@ def build(fetch_names: bool = True, log=print) -> dict:
                 for v in ind["pokemon"].values():
                     names_pokemon.update(r["name"] for r in v["up"] + v["down"])
                 names_pokemon.update(ind["pokemon"])
+
+                # 上位の人（ランキング表の上位 500 人）の選出率・先発率と、ほかの人との差
+                top = toprate.build(select.dedupe(select.samples(rows, group_of)), ladder.top_players(fid),
+                                    4 if doubles else 3, 2 if doubles else 1)
+                top.update({"format": fid, "ladder_days": len(ladder.load_snapshots(fid))})
+                if top.get("available"):
+                    top["induce"] = toprate.induce_pairs(select.dedupe(select.samples(rows, group_of)),
+                                                         ladder.top_players(fid), 4 if doubles else 3)
+                _write(f"top/{fid}.json", top)
+                names_pokemon.update(top.get("pokemon", {}))
 
             # X1〜X3（コアがあるルールだけ）
             co = cores_by_format.get(fid)

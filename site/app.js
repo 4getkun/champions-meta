@@ -77,9 +77,11 @@ function currentFormats() {
   // 最新の月にあるルールだけを並べる（終わったレギュレーションは推移のグラフで見られる）
   const latest = META.formats.reduce((m, f) => (f.months.length && f.months.at(-1) > m ? f.months.at(-1) : m), '');
   const rank = (f) => FAMILY_ORDER.findIndex((p) => f.family.startsWith(p));
+  // 月次統計がまだ無い、始まったばかりのルール（リプレイがあり、見せ合いから選出するもの）も並べ、同じ系統では新しいレギュレーションを先に
+  const reg = (f) => f.regulation || '';
   return META.formats
-    .filter((f) => f.months.length && f.months.at(-1) === latest)
-    .sort((a, b) => rank(a) - rank(b) || a.bo3 - b.bo3);
+    .filter((f) => (f.months.length && f.months.at(-1) === latest) || (f.early && f.replay_days && f.team_select))
+    .sort((a, b) => rank(a) - rank(b) || (reg(a) < reg(b) ? 1 : reg(a) > reg(b) ? -1 : 0) || a.bo3 - b.bo3);
 }
 
 // ── ツールチップ ──────────────────────────────────────────
@@ -378,14 +380,30 @@ function renderPills() {
 async function load(fid) {
   const f = META.formats.find((x) => x.id === fid) || currentFormats()[0];
   if (view && view.f.id === f.id) return;
-  const [mo, track, cores, weekly, detail] = await Promise.all([
+  if (f.early) {
+    const [early, weekly, top] = await Promise.all([
+      getJSON(`early/${f.id}.json`).catch(() => null),
+      f.replay_days ? getJSON(`weekly/${f.id}.json`).catch(() => null) : Promise.resolve(null),
+      getJSON(`top/${f.id}.json`).catch(() => null),
+    ]);
+    view = { f, mo: null, early, weekly, top, trend: 'usage' };
+    renderEnv();
+    renderRank();
+    fillDatalist();
+    useTeamFor(f);
+    renderTeamInputs();
+    return;
+  }
+  const [mo, track, cores, weekly, detail, top, sets] = await Promise.all([
     getJSON(`monthly/${f.id}.json`),
     getJSON(`tracks/${f.track}.json`),
     getJSON(`cores/${f.id}.json`).catch(() => null),
     f.replay_days ? getJSON(`weekly/${f.id}.json`).catch(() => null) : Promise.resolve(null),
     getJSON(`pokemon/${f.id}.json`).catch(() => null),
+    f.team_select && f.replay_days ? getJSON(`top/${f.id}.json`).catch(() => null) : Promise.resolve(null),
+    getJSON(`sets/${f.id}.json`).catch(() => null),
   ]);
-  view = { f, mo, track, cores, weekly, detail, trend: view ? view.trend : 'usage' };
+  view = { f, mo, track, cores, weekly, detail, top, sets, trend: view ? view.trend : 'usage' };
   renderEnv();
   renderRank();
   fillDatalist();
@@ -422,8 +440,117 @@ async function onRoute() {
   }[shown] || `チャンピオンズ メタ（${label}）— 使用率・並び・選出率の推移`;
 }
 
+// ── 開始直後の環境（月次統計がまだ無いルール。src/cmeta/analysis/early.py） ─────────────
+// 同じ人の同じチームを 1 つとして数えた、リプレイだけの数字。件数が目安に届くまでは「集計中」と出す
+function earlyDays(t) { return new Date(t * 1000).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }); }
+function earlyReadyTxt(r, what) {
+  if (!r) return '';
+  if (r.have >= r.need) return '';
+  const left = r.days_left == null ? '' : `（いまの増え方で、あと ${Math.max(1, Math.ceil(r.days_left))} 日ほど）`;
+  return `<p class="evalbox" style="margin-top:0">${what}は集計中です: ${r.have.toLocaleString()} / ${r.need.toLocaleString()}${left}。それまでの数字は揺れが大きいので、範囲を目安にしてください。</p>`;
+}
+function earlyRow(k, e, maxU) {
+  const u = spriteUrl(k);
+  const bar = (v, lo, hi) => `<span class="b"><i style="width:${(v / maxU * 100).toFixed(0)}%"></i></span>`;
+  return `<li><a class="plain" href="${linkTo({ v: 'poke', p: k })}">${u ? `<img src="${esc(u)}" width="40" height="40" alt="" loading="lazy">` : ''}`
+    + `<span class="nm">${esc(short(k))}</span></a>`
+    + `<span class="ebar">${bar(e.usage)}<b>${pct(e.usage, 0)}</b><small class="note">${pct(e.usage_ci[0], 0)}〜${pct(e.usage_ci[1], 0)}</small></span>`
+    + `<span class="ebr">${e.bring != null ? `選出 <b>${pct(e.bring, 0)}</b><small class="note">${pct(e.bring_ci[0], 0)}〜${pct(e.bring_ci[1], 0)}</small>` : ''}</span></li>`;
+}
+function renderEarlyEnv() {
+  const E = view.early;
+  const f = view.f;
+  const box = $('early-env');
+  if (!E || !E.available) { box.innerHTML = `<section class="card c12"><p class="empty">${esc(formatLabel(f))} は始まったばかりで、まだ集計できる試合がありません。</p></section>`; return; }
+  const all = Object.entries(E.pokemon);
+  const MIN = 30; // 選出・先発の割合を並べるのは、30 チーム以上に入っているポケモンだけ
+  // .mu の 1 行は「アイコン・名前・数字」の 3 つに分けて並べる
+  const rateLi = (k, v, lo, hi, n) => `<li>${icon(k, 36)}<a class="plain" href="${linkTo({ v: 'poke', p: k })}">${esc(short(k))}</a>`
+    + `<span><b>${pct(v, 0)}</b> <small class="note">${pct(lo, 0)}〜${pct(hi, 0)}・${n}チーム</small></span></li>`;
+  const withB = all.filter(([, e]) => e.bring != null && e.bring_teams >= MIN);
+  const hiB = [...withB].sort((a, b) => b[1].bring - a[1].bring).slice(0, 6);
+  const loB = [...withB].sort((a, b) => a[1].bring - b[1].bring).slice(0, 6);
+  const withL = all.filter(([, e]) => e.lead != null && e.lead_teams >= MIN);
+  const hiL = [...withL].sort((a, b) => b[1].lead - a[1].lead).slice(0, 6);
+  const expB = E.k_bring / 6, expL = E.k_lead / 6;
+  const usage = all.slice(0, 20);
+  const maxU = Math.max(...usage.map(([, e]) => e.usage), 0.01);
+  const none = '<li class="note">まだ件数が足りません</li>';
+  box.innerHTML = `<section class="hero"><div class="k">${dots(esc(formatLabel(f)), `${earlyDays(E.from)}〜${earlyDays(E.to)}`, 'Showdown の公開リプレイ')}</div>`
+    + `<h1>${esc(formatLabel(f))}、<br>何を出してくるか。</h1>`
+    + `<p class="lead">見せ合いのあと、実際に何を選出・先発させているか。Showdown（対戦シミュレーター）の公開リプレイ ${E.samples.toLocaleString()} 回・${E.players.toLocaleString()} 人・${E.teams.toLocaleString()} チームから（同じ人の同じ 6 匹は 1 つと数えています）。ゲーム内のランクバトルとは遊んでいる人の層が違うので、傾向がずれることがあります。</p></section>`
+    + '<div class="grid">'
+    + `<section class="card c12"><h2>選出の傾向 <span class="chip warn">開始直後</span></h2>${earlyReadyTxt(E.ready.bring, '選出率')}`
+    + `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">入れたら、よく出す</div><ul class="mu">${hiB.map(([k, e]) => rateLi(k, e.bring, e.bring_ci[0], e.bring_ci[1], e.bring_teams)).join('') || none}</ul></div>`
+    + `<div class="c6"><div class="k">見せ合いに入れても、出さないことが多い</div><ul class="mu">${loB.map(([k, e]) => rateLi(k, e.bring, e.bring_ci[0], e.bring_ci[1], e.bring_teams)).join('') || none}</ul></div></div>`
+    + `<p class="note">そのポケモンをチームに入れていた人が、実際に選出した割合（チームごとに 1 票）。${E.k_bring} 匹を選ぶので、平均は ${pct(expB, 0)}。小さい数字は 95% 範囲。${MIN} チーム以上に入っているポケモンだけ。</p></section>`
+    + `<section class="card c6"><h2>先発に出やすい</h2><ul class="mu">${hiL.map(([k, e]) => rateLi(k, e.lead, e.lead_ci[0], e.lead_ci[1], e.lead_teams)).join('') || none}</ul>`
+    + `<p class="note">チームに入れていた人が、先発にした割合。平均は ${pct(expL, 0)}。</p></section>`
+    + '<section class="card c6" id="early-induce"><h2>見せると相手の選出が変わる <span class="chip warn">参考値</span></h2><p class="empty">読み込み中…</p></section>'
+    + `<section class="card c12"><h2>選出予想</h2><p>相手の 6 匹を入れると、どれを選出・先発してきそうかを確率で出します。先発が出たあとは、残りの選出に切り替わります。</p>`
+    + `<p><a class="btn" href="${linkTo({ v: 'select' })}">選出予想を開く ›</a></p><p class="note" id="early-select-note"></p></section>`
+    + `<section class="card c12"><h2 class="sub" style="margin-top:0">参考: 使用率（チームに入っていた割合）</h2>`
+    + `<ol class="early-list compact">${usage.map(([k, e]) => earlyRow(k, e, maxU)).join('')}</ol>`
+    + '<p class="note">使用率の順位は、ゲーム内や既存のサイトで、ゲーム内のデータを使って見られます。このサイトでは、上の「実際に出すか」を中心に見てください。勝率は、使う人の腕前の差が混ざるので出していません。</p></section>'
+    + '</div>';
+  // 選出誘導のはっきりした変化（全ポケモンから、●の付いたものを変化の大きい順に）
+  loadInduce().then((ind) => {
+    const el = $('early-induce');
+    if (!el) return;
+    const rows = [];
+    for (const [u, v] of Object.entries(ind?.pokemon || {})) {
+      for (const r of [...(v.up || []), ...(v.down || [])]) if (r.clear) rows.push({ u, ...r, d: r.bring[1] - r.bring[0] });
+    }
+    rows.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    el.innerHTML = '<h2>見せると相手の選出が変わる <span class="chip warn">参考値</span></h2>'
+      + (rows.length ? `<ul class="mu">${rows.slice(0, 6).map((r) => `<li>${icon(r.name, 36)}`
+        + `<span>${esc(short(r.u))} を見せると、<a class="plain" href="${linkTo({ v: 'poke', p: r.name })}">${esc(short(r.name))}</a> の選出が</span>`
+        + `<span><b>${pct(r.bring[0], 0)} → ${pct(r.bring[1], 0)}</b></span></li>`).join('')}</ul>`
+        : '<p class="empty">まだ、はっきりした変化は見つかっていません（試合が増えると出てきます）。</p>')
+      + '<p class="note">相手の見せ合いにそのポケモンがいたとき、こちらの選出率がどれだけ変わったか（偶然の揺れを超えるものだけ）。詳しくは各ポケモンのページ。</p>';
+  });
+  getJSON(`select/${f.id}.json`).then((S) => {
+    const el = $('early-select-note');
+    if (!el) return;
+    if (!S?.available) { el.textContent = `いまは試合が足りず、全体の選出率から計算します（${S?.reason || ''}）。`; return; }
+    const ev = S.eval;
+    el.textContent = `答え合わせ（${ev.test.toLocaleString()} 試合）: 確率の当てはまりは全体の率だけより ${ev.loglik.diff >= 0 ? '+' : ''}${ev.loglik.diff.toFixed(3)}`
+      + `（${ev.loglik.ci[0] > 0 ? 'はっきり良い' : '差ははっきりしない'}）。${S.track?.available ? `前向きの成績表: ${S.track.n} 試合。` : '前向きの成績表は、今日から記録しています。'}`;
+  }).catch(() => {});
+}
+function renderEarlyRank() {
+  const E = view.early;
+  const q = norm($('q').value.trim());
+  $('rank-asof').innerHTML = dots(esc(formatLabel(view.f)), '開始直後', 'Showdown の公開リプレイ', '同じ人の同じチームは 1 つ');
+  if (!E || !E.available) { $('rank-grid').innerHTML = '<li class="empty">まだ集計できる試合がありません。</li>'; return; }
+  const list = Object.entries(E.pokemon).filter(([k]) => !q || norm(ja(k)).includes(q) || norm(k).includes(q));
+  const maxU = Math.max(...list.map(([, e]) => e.usage), 0.01);
+  $('rank-grid').innerHTML = list.map(([k, e], i) => `<li class="early-rank"><span class="no">${i + 1}</span>${earlyRow(k, e, maxU).replace(/^<li>|<\/li>$/g, '')}</li>`).join('');
+}
+function renderEarlyPoke(g) {
+  const E = view.early;
+  const e = E?.pokemon?.[g];
+  const types = (poke(g).types || []).map((t) => `<span class="type t-${t.toLowerCase()}">${TYPE_JA[t] || t}</span>`).join(' ');
+  const home = spriteUrl(g, 'home');
+  $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" width="84" height="84" alt="">` : icon(g, 64)}`
+    + `<div><div class="nm">${esc(ja(g))}</div><div class="meta">${types}${dots(esc(formatLabel(view.f)), '開始直後')}</div></div><div class="nav"></div>`;
+  const cards = [];
+  cards.push(`<section class="card c12"><h2>いまの数字 <span class="chip warn">開始直後</span></h2>${e ? `<div class="kv">`
+    + `<div><span class="k">使用率（チーム）</span><b>${pct(e.usage, 0)}</b><small class="note">${pct(e.usage_ci[0], 0)}〜${pct(e.usage_ci[1], 0)}・${e.teams} チーム</small></div>`
+    + (e.bring != null ? `<div><span class="k">選出率</span><b>${pct(e.bring, 0)}</b><small class="note">${pct(e.bring_ci[0], 0)}〜${pct(e.bring_ci[1], 0)}・${e.bring_teams} チーム</small></div>` : '')
+    + '</div>' : '<p class="empty">まだ入っているチームが少なく、出せません。</p>'}`
+    + '<p class="note">同じ人の同じ 6 匹は 1 つと数えています。技・持ち物・すばやさは、月次統計が出てから（月が終わったあと）表示します。</p></section>');
+  if (view.f.team_select) cards.push('<section class="card c8" id="p-induce"><h2>選出誘導 <span class="chip warn">参考値</span></h2><p class="empty">読み込み中…</p></section>');
+  $('poke-body').innerHTML = cards.join('');
+  if ($('p-induce')) loadInduce().then((ind) => { if ($('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); });
+}
+
 // ── 環境 ────────────────────────────────────────────────
 function renderEnv() {
+  const early = !!view.early || !view.mo;
+  $('early-env').hidden = !early;
+  document.querySelectorAll('#view-env > :not(#early-env)').forEach((el) => { el.hidden = early; });
+  if (early) { renderEarlyEnv(); return; }
   const { f, mo, cores, weekly } = view;
   const month = mo.months.at(-1);
   const prevMonth = mo.months.at(-2);
@@ -474,6 +601,9 @@ function renderEnv() {
     ? gap.higher_at_top.slice(0, 5).map((r) => `<li><a class="plain" href="${linkTo({ v: 'poke', p: r.name })}"><span>${icon(r.name, 28)}${esc(short(r.name))}</span></a><b>+${Math.round(r.diff * 100)}pt</b></li>`).join('')
     : '';
 
+  renderTopCard();
+  renderSetMoves();
+
   const rec = weekly && weekly.available ? weekly.recent : null;
   $('bring-note').textContent = rec
     ? `Showdown に公開されたリプレイ 直近${rec.days}日 · ${rec.n_series.toLocaleString()} シリーズ / ${rec.n_games.toLocaleString()} 戦。Bo3 は 1 シリーズを 1 回と数えています。`
@@ -484,7 +614,7 @@ function renderEnv() {
 }
 
 function drawCharts() {
-  if (!view || $('view-env').hidden) return;
+  if (!view || !view.mo || $('view-env').hidden) return;
   const { mo, track, weekly } = view;
   const month = mo.months.at(-1);
   document.querySelectorAll('[data-trend]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.trend === view.trend)));
@@ -514,6 +644,7 @@ function rankRows() {
 }
 
 function renderRank() {
+  if (!view.mo) { renderEarlyRank(); return; }
   const { f, mo } = view;
   const month = mo.months.at(-1);
   const [y, m] = month.split('-');
@@ -557,6 +688,7 @@ function barList(obj, nameOf, n = 8) {
 const nameIn = (kind) => (id) => { const e = NAMES[kind][id]; return (e && (e.ja || e.en)) || id; };
 
 function renderPoke(g) {
+  if (!view.mo) { renderEarlyPoke(g); return; }
   const { f, mo, track, weekly, detail } = view;
   const rows = rankRows();
   const idx = rows.findIndex((r) => r.k === g);
@@ -588,6 +720,7 @@ function renderPoke(g) {
     + `<div><span class="k">順位</span><b>${row ? `${row.rank}位` : '—'}</b></div>`
     + `<div><span class="k">全体 → ${mo.cutoff_gap.high}+</span><b>${lo != null && hi != null ? `${pct(lo, 0)} → ${pct(hi, 0)}` : '—'}</b></div>`
     + `<div><span class="k">選出率 <span class="chip warn">参考値</span></span><b>${wr ? pct(wr.bring, 0) : '—'}</b></div>`
+    + (view.top?.pokemon?.[g]?.bring ? (() => { const t = view.top.pokemon[g].bring; return `<div><span class="k">選出率（上位 500 人）</span><b>${pct(t.est, 0)}</b><small class="note">${pct(t.ci[0], 0)}〜${pct(t.ci[1], 0)}・ほかの人 ${pct(t.other, 0)}・${t.players}人${t.clear ? '・はっきり差あり' : ''}</small></div>`; })() : '')
     + `</div>${wr ? `<p class="note">公開リプレイ直近28日: 見せ合い ${wr.teams} チーム、選出時の勝率 ${pct(wr.win_shrunk, 0)}（${wr.games} 戦、50% に寄せた値）</p>` : ''}</section>`);
 
   // 姿ごとの型（メガなど複数の姿があれば、使われている順に）
@@ -602,6 +735,7 @@ function renderPoke(g) {
     cards.push(`<section class="card c4"><h2>技</h2>${barList(d.moves, nameIn('moves'), 10)}</section>`);
     cards.push(`<section class="card c4"><h2>持ち物</h2>${barList(d.items, nameIn('items'), 8)}<h2 class="sub">特性</h2>${barList(d.abilities, nameIn('abilities'), 3)}</section>`);
     cards.push(`<section class="card c4"><h2>能力ポイント（性格）</h2>${barList(d.spreads, spreadLabel, 5)}</section>`);
+    if (view.sets?.pokemon?.[k]) cards.push(setTrendCard(view.sets, k));
     cards.push(`<div data-spd-slot="${esc(k)}" hidden></div>`);
     if (j === 0 && d.teammates.length) {
       cards.push(`<section class="card c8"><h2>同じチームに入りやすい</h2><ul class="mates">${d.teammates.map(([b, sh]) => `<li><a href="${linkTo({ p: groupOf(b) })}">${icon(b, 48)}<span>${esc(short(b))}</span><b>${pct(sh, 0)}</b></a></li>`).join('')}</ul></section>`);
@@ -757,7 +891,11 @@ async function renderSpeedView() {
   const S = await loadSpeed();
   const out = $('speed-out');
   const label = formatLabel(view.f);
-  if (!S) { $('speed-asof').innerHTML = dots(esc(label)); out.innerHTML = '<section class="card c12"><p class="empty">このルールは、すばやさのデータがありません。</p></section>'; return; }
+  if (!S) {
+    $('speed-asof').innerHTML = dots(esc(label));
+    out.innerHTML = `<section class="card c12"><p class="empty">${view.mo ? 'このルールは、すばやさのデータがありません。' : 'すばやさ（振り方の分布）は月次統計から計算するので、始まったばかりのこのルールは、月が終わって月次統計が出てから表示します。'}</p></section>`;
+    return;
+  }
   $('speed-asof').innerHTML = dots(esc(label), `Smogon の月次統計 ${esc(S.month)}${S.prev_month ? `（先月 ${esc(S.prev_month)}）` : ''}`, `レート ${S.cutoff} 以上`);
   const forms = Object.entries(S.pokemon).sort((a, b) => b[1].usage - a[1].usage);
   const inp = $('spd-q');
@@ -820,6 +958,63 @@ async function renderSpeedView() {
     + ' こだわりスカーフ・特性・おいかぜ・トリックルーム・まひ・ランク変化は含みません。先制技（アクアジェットなど）は優先度で先に動くので、この比較とは別です。</p></section>';
 }
 
+// ── 型の移り変わり（src/cmeta/analysis/sets.py）: 月 × レート帯。確かさは出さず、大きさだけ ──────
+const SET_NOTE = '月次統計の件数は対戦の数で、同じ人の同じチームが何度も数えられているため、偶然の揺れの大きさ（95% 範囲）は出せません。上位の足切りは人が少なく、少数の人のチームで大きく動くことがあります。';
+function setTrendCard(S, k) {
+  const e = S.pokemon[k];
+  const cols = [[S.prev_month, S.default_cutoff, `先月（${S.default_cutoff}+）`], [S.month, S.default_cutoff, `今月（${S.default_cutoff}+）`],
+    [S.month, S.low_cutoff, `今月・全体`], [S.month, S.high_cutoff, `今月・${S.high_cutoff}+`]].filter(([m]) => m);
+  const big = new Set(S.changes.filter((c) => c.name === k).map((c) => `${c.type}:${c.kind}:${c.key}`));
+  const rows = (kind, label, n) => {
+    const keys = Object.keys(e[kind]).sort((a, b) => (e[kind][b][`${S.month}:${S.default_cutoff}`] || 0) - (e[kind][a][`${S.month}:${S.default_cutoff}`] || 0)).slice(0, n);
+    return keys.map((x) => {
+      const v = e[kind][x];
+      const cell = ([m, c]) => { const y = v[`${m}:${c}`]; return `<td>${y == null ? '—' : pct(y, 0)}</td>`; };
+      const mark = (big.has(`month:${kind}:${x}`) ? ' <small class="note">先月から大きく動いた</small>' : '') + (big.has(`top:${kind}:${x}`) ? ' <small class="note">上位で違う</small>' : '');
+      return `<tr><td>${esc(nameIn(kind)(x))}${mark}</td>${cols.map(cell).join('')}</tr>`;
+    }).join('');
+  };
+  const head = `<tr><th></th>${cols.map(([, , l]) => `<th>${l}</th>`).join('')}</tr>`;
+  return `<section class="card c12"><h2>型の移り変わり（${esc(ja(k))}）</h2><table class="tt set-tbl"><thead>${head}</thead><tbody>`
+    + `<tr><th colspan="${cols.length + 1}" class="k">持ち物</th></tr>${rows('items', '持ち物', 6)}`
+    + `<tr><th colspan="${cols.length + 1}" class="k">技</th></tr>${rows('moves', '技', 8)}</tbody></table>`
+    + `<p class="note">Smogon の月次統計（そのポケモンを入れたチームのうち、その持ち物・技を入れていた割合）。「大きく動いた」は 15pt 以上の差。${SET_NOTE}</p></section>`;
+}
+function renderSetMoves() {
+  const S = view.sets;
+  const sec = $('sec-sets');
+  if (!S || !S.changes?.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const li = (c) => `<li><a class="plain" href="${linkTo({ v: 'poke', p: groupOf(c.name) })}"><span>${icon(c.name, 28)}${esc(short(c.name))}</span></a>`
+    + `<span>${esc(nameIn(c.kind)(c.key))} <b>${pct(c.a, 0)} → ${pct(c.b, 0)}</b></span></li>`;
+  const month = S.changes.filter((c) => c.type === 'month').slice(0, 8);
+  const top = S.changes.filter((c) => c.type === 'top').slice(0, 8);
+  $('sets-out').innerHTML = `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">先月から大きく動いた（${esc(S.prev_month || '')} → ${esc(S.month)}、${S.default_cutoff}+）</div><ul class="mu">${month.map(li).join('') || '<li class="note">なし</li>'}</ul></div>`
+    + `<div class="c6"><div class="k">全体と上位（${S.high_cutoff}+）で違う（${esc(S.month)}）</div><ul class="mu">${top.map(li).join('') || '<li class="note">なし</li>'}</ul></div></div>`
+    + `<p class="note">15pt 以上動いたもの。${SET_NOTE}</p>`;
+}
+
+// ── 上位 500 人の選出（src/cmeta/analysis/toprate.py） ──────────────────
+function renderTopCard() {
+  const T = view.top;
+  const sec = $('sec-top');
+  if (!T || !T.available) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const rows = Object.entries(T.pokemon).filter(([, v]) => v.bring && v.bring.players >= 10)
+    .map(([k, v]) => ({ k, d: v.bring.est - v.bring.other, v: v.bring }));
+  const nClear = rows.filter((r) => r.v.clear).length;
+  const li = (r) => `<li><a class="plain" href="${linkTo({ v: 'poke', p: r.k })}"><span>${icon(r.k, 28)}${esc(short(r.k))}</span></a>`
+    + `<span><b>${pct(r.v.est, 0)}</b> <small class="note">${pct(r.v.ci[0], 0)}〜${pct(r.v.ci[1], 0)}・ほかの人 ${pct(r.v.other, 0)}・${r.v.players}人${r.v.clear ? '・はっきり' : ''}</small></span></li>`;
+  const more = rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
+  const less = rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
+  $('top-out').innerHTML = (nClear ? '' : '<p class="note" style="margin-top:0"><b>今のデータでは、上位の人とほかの人の選出率に、はっきりした差のあるポケモンはありません。</b>下は差の大きい順で、95% 範囲がほかの人の値をまたいでいるものは、偶然の揺れの範囲です。</p>')
+    + `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">上位の人のほうが選出が多い</div><ul class="mu">${more.map(li).join('')}</ul></div>`
+    + `<div class="c6"><div class="k">上位の人のほうが選出が少ない</div><ul class="mu">${less.map(li).join('')}</ul></div></div>`
+    + `<p class="note">ランキング表の上位 500 人（記録 ${T.ladder_days} 日ぶん）が選んだ ${T.samples_top.toLocaleString()} 回（10 人以上から来ているポケモンだけ）と、ほかの ${T.samples_other.toLocaleString()} 回の比較（公開リプレイ）。`
+    + ` 同じ人の選び方は似るので（似かた ${T.icc_bring}）、その分だけ件数を割り引き、ほかの人の選出率に寄せて推定した値と 95% 範囲です。`
+    + `人で半分に分けて確かめると、95% のつもりの範囲に実際に ${pct(T.coverage_bring, 0)} が入りました。偶然の差を除く補正（FDR 5%）もかけています。上位かどうかは今のランキング表で決めています。</p>`;
+}
+
 // ── 選出誘導（src/cmeta/analysis/induce.py） ───────────────────────
 async function loadInduce() {
   if (view.induce === undefined) view.induce = await getJSON(`induce/${view.f.id}.json`).catch(() => null);
@@ -852,6 +1047,13 @@ function induceCard(ind, g) {
     + `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">相手が出しやすくなる</div><ul class="mu">${up.map((r) => induceRow(r, 'bring')).join('') || none}</ul></div>`
     + `<div class="c6"><div class="k">相手が出しにくくなる</div><ul class="mu">${down.map((r) => induceRow(r, 'bring')).join('') || none}</ul></div></div>`
     + (pairs.length ? `<div class="k" style="margin-top:10px">増える相手の先発の組</div><ul class="sets">${pairs.map((r) => `<li><span class="icons">${r.pair.map((k) => icon(k, 36)).join('')}</span><span>${r.pair.map((k) => esc(short(k))).join('・')}</span><b>${pct(r.share[0], 0)} → ${pct(r.share[1], 0)}</b></li>`).join('')}</ul>` : '')
+    + ((() => {
+      const tp = (view.top?.induce?.clear || []).filter((r) => r.opp === g);
+      if (!tp.length) return '';
+      return `<div class="k" style="margin-top:10px">上位 500 人では（はっきりした組だけ）</div><ul class="mu">${tp.map((r) => `<li>${icon(r.name, 36)}<span>${esc(short(r.name))}</span>`
+        + `<span><b>${r.diff >= 0 ? '+' : ''}${Math.round(r.diff * 100)}pt</b> <small class="note">${Math.round(r.ci[0] * 100)}〜${Math.round(r.ci[1] * 100)}pt・${r.players}人</small></span></li>`).join('')}</ul>`
+        + '<p class="note">上位の人だけで、このポケモンがいたときといないときの選出率の差。範囲は人を単位に引き直して求め、たくさんの組を調べる補正（FDR 5%）をかけています。選び出した組なので、差は大きめに出やすい点に注意してください。</p>';
+    })())
     + '<p class="note">「全体での選出率 → このポケモンがいたときの選出率」。同じ見せ合いの繰り返しは 1 回と数え、件数の少ない変化は全体の率に寄せています。'
     + '●は偶然の揺れを超える変化、「相性どおり」はタイプ相性から予想される向きと合っているもの。腕前やチームの組み方の違いも混ざります。</p>';
 }
@@ -892,6 +1094,10 @@ function parseShowdownTeam(text) {
 }
 
 function fillDatalist() {
+  if (!view.mo) {
+    $('poke-names').innerHTML = Object.keys(view.early?.pokemon || {}).map((k) => `<option value="${esc(ja(k))}"></option>`).join('');
+    return;
+  }
   const { mo } = view;
   const ug = mo.usage_grouped[String(mo.default_cutoff)];
   const i = mo.months.length - 1;
@@ -1167,13 +1373,18 @@ async function renderSelect() {
   const odd = ev.odd_cut != null && typ <= ev.odd_cut && ev.bring_odd && ev.bring_odd.model <= ev.bring_odd.baseline + 0.005;
   const oddTxt = odd ? `<p class="evalbox" style="margin-top:0">このチームは、よくある組み合わせから大きく外れています（下位 5%）。こうしたチームでは予想が当たりにくく、答え合わせでは上位 ${kb} 匹の当たりが平均 ${ev.bring_odd ? (ev.bring_odd.model * kb).toFixed(2) : '—'} 匹（全体の率だけ ${ev.bring_odd ? (ev.bring_odd.baseline * kb).toFixed(2) : '—'} 匹）でした。</p>` : '';
   const rateTxt = ev.ratings ? `<br>学習に使った試合のレートは中央値 ${ev.ratings.p50}（1 割〜9 割で ${ev.ratings.p10}〜${ev.ratings.p90}。レートの分かる ${ev.ratings.n.toLocaleString()} 件）。${ev.ratings.p90 < 1500 ? '上位の対戦の公開リプレイは少ないため、上位帯の選び方とは違うことがあります。' : ''}` : '';
+  const tt = ev.temperature;
+  const tempTxt = tt ? (tt.applied
+    ? `<br>確率の補正: 答え合わせで予想の確率が${tt.t < 1 ? '強く出すぎていたので、控えめに' : '弱く出すぎていたので、強めに'}しています（係数 ${tt.t}。区間どうしで確かめて、確率の当てはまりが +${tt.loglik_gain.toFixed(3)}）。当たる順番は変わりません。`
+    : '<br>確率の補正: 答え合わせで補正の効果がはっきりしなかったので、補正していません。') : '';
   const unknown = mine.length === 6 ? '' : `<br>自分の 6 匹を入れると、あなたのチームとの相性も考えます（いまは環境の平均的な相手として計算。答え合わせでは選出 ${n2(ev.bring.unknown_opp, kb)} 匹）。`;
   out.innerHTML = `<h2>相手の選出 <span class="chip warn">参考値</span></h2>${oddTxt}`
     + '<p class="note" style="margin-top:0">相手の先発が出たら「先発に出た」を押すと、残りの選出の確率に切り替わります。</p>'
     + `<ul class="pred">${rows}</ul>`
     + `<div class="grid" style="gap:12px;margin-top:14px"><div class="c6"><div class="k">${kl === 2 ? '先発の組' : '先発'}の候補</div><ul class="sets">${setList(leadSets)}</ul></div>`
     + `<div class="c6"><div class="k">選出の組の候補${seen ? '（先発を見たあと）' : ''}</div><ul class="sets">${setList(bringSets)}</ul></div></div>`
-    + `<div class="evalbox">${mode}${unknown}<br>${evalTxt}${rateTxt}</div>`;
+    + `<div class="evalbox">${mode}${unknown}<br>${evalTxt}${rateTxt}${tempTxt}</div>`
+    + trackCard(SEL.track, kb, kl);
   out.querySelectorAll('[data-seen]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.seen;
     if (SEEN_LEADS.has(k)) SEEN_LEADS.delete(k);
@@ -1182,8 +1393,31 @@ async function renderSelect() {
   }));
 }
 
+// 成績表（src/cmeta/analysis/track.py）: 公開した予想を保存し、そのあとの試合で答え合わせしたもの
+function trackCard(T, kb, kl) {
+  if (!T || !T.available) return T && T.reason ? `<div class="track"><h2 class="sub">予想の成績表</h2><p class="note">${esc(T.reason)}</p></div>` : '';
+  const day = (t) => new Date(t * 1000).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+  const sig = (c) => (c.ci[0] > 0 ? '<b class="up-t">はっきり良い</b>' : c.ci[1] < 0 ? '<b class="dn-t">はっきり悪い</b>' : '差ははっきりしない');
+  const n2 = (x, k) => (x * k).toFixed(2);
+  const rows = T.by_day.slice(-10).map(([d, n, m, b]) => `<tr><td>${esc(d.slice(5).replace('-', '/'))}</td><td>${n}</td><td>${n2(m, kb)}</td><td>${n2(b, kb)}</td></tr>`).join('');
+  return `<div class="track"><h2 class="sub">予想の成績表 <span class="chip">前向きの答え合わせ</span></h2>`
+    + `<p class="note" style="margin-top:0">毎日、その時点の予想を保存しておき、<b>そのあとに起きた試合</b>で当たり外れを数えたものです（結果を見てから予想を作る余地がありません）。`
+    + ` 1 試合につき、その試合より前に保存した一番新しい予想（${T.max_age_days} 日以内）を 1 つだけ使っています。${day(T.from)}〜${day(T.to)}の ${T.n.toLocaleString()} 試合。</p>`
+    + `<div class="kv"><div><span class="k">選出: 上位 ${kb} 匹の当たり</span><b>${n2(T.bring.model, kb)} 匹</b><small class="note">全体の率だけ ${n2(T.bring.baseline, kb)} 匹・${sig(T.bring)}</small></div>`
+    + `<div><span class="k">先発: 上位 ${kl} 匹の当たり</span><b>${n2(T.lead.model, kl)} 匹</b><small class="note">全体の率だけ ${n2(T.lead.baseline, kl)} 匹・${sig(T.lead)}</small></div>`
+    + `<div><span class="k">確率の当てはまり</span><b>${T.loglik.diff >= 0 ? '+' : ''}${T.loglik.diff.toFixed(3)}</b><small class="note">全体の率だけとの差・${sig(T.loglik)}</small></div></div>`
+    + `<table class="tt" style="margin-top:10px"><thead><tr><th>予想を保存した日</th><th>試合</th><th>選出の当たり</th><th>全体の率だけ</th></tr></thead><tbody>${rows}</tbody></table>`
+    + (T.seeded_until ? `<p class="note">${esc(T.seeded_until.slice(5).replace('-', '/'))} までの予想は、成績表を始める前の日について、その日までの試合と、その時点で公開済みの月次統計だけで作り直したものです（確率の補正は入っていません）。</p>` : '')
+    + '</div>';
+}
+
 // ── チーム診断 ───────────────────────────────────────────
 async function renderDiag() {
+  if (!view.mo) {
+    $('diag-asof').innerHTML = dots(esc(formatLabel(view.f)), '開始直後');
+    $('diag-out').innerHTML = '<section class="card c12"><p class="empty">チーム診断は、月次統計（よく使われる技・すばやさ）が出てから使えます。このルールは始まったばかりで、月次統計は月が終わってから公開されます。それまでは、ひとつ前のレギュレーションを選ぶと診断できます。</p></section>';
+    return;
+  }
   await loadToolData();
   const D = view.diag;
   const label = formatLabel(view.f);

@@ -456,9 +456,31 @@ def typicality(team: list[str], usage: dict[str, float]) -> float:
     return sum(math.log(max(usage.get(k, 0.0), 1e-4)) for k in team) / len(team)
 
 
-def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, speed_of=None, usage=None) -> dict:
+def _nll_t(data_w, t: float) -> float:
+    """温度 t（重みを t 倍）のときの負の対数尤度の合計。data_w: [(X, y, w)]。"""
+    tot = 0.0
+    for X, y, w in data_w:
+        z = X @ (w * t)
+        zmax = z.max()
+        tot += zmax + math.log(np.exp(z - zmax).sum()) - z[y]
+    return tot
+
+
+def fit_temperature(data_w) -> float:
+    """確率の補正: 重みに掛ける 1 つの係数（1 未満なら確率を控えめに、1 より大きければ強めにする）。順番は変わらない。"""
+    from scipy.optimize import minimize_scalar
+    return float(minimize_scalar(lambda t: _nll_t(data_w, t), bounds=(0.2, 3.0), method="bounded").x)
+
+
+def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, speed_of=None, usage=None,
+          evaluate_blocks: bool = True) -> dict:
     """答え合わせ（重ならない区間を新しい順に最大 EVAL_BLOCKS 個。各区間はその直前 TRAIN_DAYS 日で学ぶ）をまとめ、
-    公開用に直近 TRAIN_DAYS 日で学び直す。画面側は weights と材料の表から同じ確率を計算する。"""
+    公開用に直近 TRAIN_DAYS 日で学び直す。画面側は weights と材料の表から同じ確率を計算する。
+    確率の補正: 区間ごとに、ほかの区間で決めた温度を当てて対数尤度が良くなるか確かめ（交差検証）、はっきり良ければ
+    全区間で決めた温度を公開する重みに掛ける。
+    evaluate_blocks=False: 答え合わせを省いて、公開用の予想だけ作る（成績表のために過去の日の予想を作り直すとき）。"""
+    if not evaluate_blocks:
+        return _publish(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of, None, 1.0, None)
     blocks = []
     for b in range(EVAL_BLOCKS):
         r = run(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of=speed_of, block=b)
@@ -467,7 +489,7 @@ def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, spe
         kb, kl = r["k"]
         w = fit(r["train"])
         d_avg = _dataset(r["test_x"], r["feat"], kb, kl, opp=avg_opponent(r["train_x"]))  # 自分のチームが分からないとき
-        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl)))
+        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl), w))
     if not blocks:
         r = run(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of=speed_of)
         if not r["available"]:
@@ -475,7 +497,7 @@ def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, spe
         kb, kl = r["k"]
         w = fit(r["train"])
         d_avg = _dataset(r["test_x"], r["feat"], kb, kl, opp=avg_opponent(r["train_x"]))
-        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl)))
+        blocks.append((r, evaluate(r["test"], w, kb, kl), evaluate(r["test"], baseline_w(), kb, kl), evaluate(d_avg, w, kb, kl), w))
     r = blocks[0][0]
     ems, ebs, eas = [b[1] for b in blocks], [b[2] for b in blocks], [b[3] for b in blocks]
     per_m = [p for e in ems for p in e["_per"]]
@@ -522,10 +544,45 @@ def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, spe
     # 予想を出すのは、確率の質（対数尤度）が全体の率だけよりはっきり良いときだけ
     usable = ev["loglik"]["ci"][0] > 0
 
+    # 確率の補正（温度）: 区間ごとの交差検証
+    temp = 1.0
+    if len(blocks) >= 2:
+        per_t, per_1, cal = [], [], defaultdict(lambda: [0.0, 0.0, 0])
+        for i, blk in enumerate(blocks):
+            others = [(X, y, b[4]) for j, b in enumerate(blocks) if j != i for X, y, _, _ in b[0]["test"]]
+            t_i = fit_temperature(others)
+            ev_t = evaluate(blk[0]["test"], blk[4] * t_i, kb, kl)
+            per_t += ev_t["_per"]
+            per_1 += blk[1]["_per"]
+            for pred, act, n in ev_t["calibration"]:
+                c = cal[min(int(pred * 10), 9)]
+                c[0] += pred * n
+                c[1] += act * n
+                c[2] += n
+        m, lo, hi = bootstrap_diff(per_t, per_1, 2)
+        t_all = fit_temperature([(X, y, b[4]) for b in blocks for X, y, _, _ in b[0]["test"]])
+        ev["temperature"] = {"t": _r(t_all, 3), "loglik_gain": _r(m), "ci": [_r(lo), _r(hi)], "applied": bool(lo > 0),
+                             "calibration": [[round(c[0] / c[2], 3), round(c[1] / c[2], 3), c[2]]
+                                             for _, c in sorted(cal.items()) if c[2]]}
+        if lo > 0:
+            temp = t_all
+    return _publish(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of, ev, temp, usable, r["xs"])
+
+
+def _publish(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of, ev, temp, usable, xs_all=None) -> dict:
+    """公開用の予想: 直近 TRAIN_DAYS 日で学び直した重み（× 温度）と材料の表。"""
+    kb, kl = (4, 2) if doubles else (3, 1)
+    if xs_all is None:
+        xs_all = dedupe(sorted(samples(rows, group_of), key=lambda x: x["t"]))
+    if not xs_all:
+        return {"available": False, "reason": "リプレイがない"}
     # 公開用: 直近 TRAIN_DAYS 日で学び直す（交差適合で重み、同じ期間の集計で材料）
-    xs = [x for x in r["xs"] if x["t"] >= r["xs"][-1]["t"] - TRAIN_DAYS * 86400]
+    xs = [x for x in xs_all if x["t"] >= xs_all[-1]["t"] - TRAIN_DAYS * 86400]
     roles = _roles(detail, rows, group_of, sd, stone, mega_types, speed_of)
-    w_pub = fit(_crossfit(xs, roles, sd, kb, kl))
+    data_pub = _crossfit(xs, roles, sd, kb, kl)
+    if len(data_pub) < MIN_TRAIN:
+        return {"available": False, "reason": f"標本が足りない（{len(data_pub)}）"}
+    w_pub = fit(data_pub) * temp
     feat = _featurizer(xs, roles, sd, kb)
     st = feat.stats
     keep_roles = {}
@@ -548,7 +605,7 @@ def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, spe
     pub = Featurizer(st, _unround(keep_roles), sd, kb)
     avg = [(k, _r(v, 3)) for k, v in avg_opponent(xs)]
     examples = []
-    for x in r["test_x"][:3]:
+    for x in xs[-3:]:
         opts = options(x["team"], kb, kl)
         for opp in (x["opp"], avg):
             p = probs(pub.matrix(x["team"], opp, opts), np.array([_r(v) for v in w_pub]))
@@ -556,7 +613,7 @@ def build(rows, group_of, sd, detail, stone, doubles: bool, mega_types=None, spe
             examples.append({"team": x["team"], "opp": opp if opp is x["opp"] else "avg",
                              "bring": {k: _r(v) for k, v in b.items()}, "lead": {k: _r(v) for k, v in l_.items()}})
     return {
-        "available": True, "model": "joint", "usable": bool(usable),
+        "available": True, "model": "joint", "usable": None if usable is None else bool(usable), "temperature": _r(temp, 3),
         "k_bring": kb, "k_lead": kl, "m": M, "features": [n for n, _ in FEATURES],
         "weights": [_r(v) for v in w_pub],
         "g_bring": _r(st["g_bring"], 5), "g_lead": _r(st["g_lead"], 5),

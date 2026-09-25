@@ -72,3 +72,14 @@ def run(formats: list[str], log=print) -> None:
             continue
         snapshot(fmt, top)
         crawl_top(fmt, top, n_users=TOP_USERS_SINGLES if "championsbss" in fmt else TOP_USERS, log=log)
+
+
+def top_players(fmt: str) -> dict[str, float]:
+    """記録したランキング表に一度でも載った人（ボットの目印が無い人）の {ハッシュ: 記録の中で一番高いレート}。
+    試合のレート欄は試合時点の値で、シーズン序盤の試合では今の実力より低く出るため、人で上位かを見る。"""
+    out: dict[str, float] = {}
+    for snap in load_snapshots(fmt).values():
+        for u in snap.get("players", []):
+            if not u.get("bot"):
+                out[u["h"]] = max(out.get(u["h"], 0.0), u.get("r") or 0.0)
+    return out

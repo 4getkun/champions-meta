@@ -18,6 +18,7 @@ SMOGON_DIR = DATA / "smogon"
 TOP_ITEMS = 10
 TOP_MOVES = 12
 TOP_SPREADS = 3
+SETS_MIN_USAGE = 0.01  # 標準以外の足切りでも、これ以上のポケモンは持ち物・技・特性を残す（レート帯ごとの型の比較のため）
 TEAMMATE_MIN_USAGE = CORE_MIN_WEIGHT_SHARE * 6  # これ未満のポケモンはコアの網に入らないので、味方の表を持たない
 
 
@@ -65,7 +66,7 @@ def _top(d: dict, weight: float, n: int) -> dict[str, float]:
 
 
 def condense(chaos: dict, month: str, full: bool = True) -> dict:
-    """full=False なら使用率まわりだけ残す（標準の足切り以外は、型や味方の表を使わないので）。"""
+    """full=False なら使用率まわりと、使用率 SETS_MIN_USAGE 以上のポケモンの持ち物・技・特性だけ残す（振り方・味方の表は標準の足切りだけ）。"""
     info = chaos["info"]
     data = chaos["data"]
     weights = {name: sum(p["Abilities"].values()) for name, p in data.items()}
@@ -79,6 +80,12 @@ def condense(chaos: dict, month: str, full: bool = True) -> dict:
         if w <= 0:
             continue
         entry = {"usage": round(p["usage"], 6), "raw": p["Raw count"], "weight": round(w, 3)}
+        if not full and p["usage"] >= SETS_MIN_USAGE:
+            entry.update({
+                "abilities": _top(p["Abilities"], w, 5),
+                "items": _top(p["Items"], w, TOP_ITEMS),
+                "moves": _top(p["Moves"], w, TOP_MOVES),
+            })
         if full:
             entry.update({
                 "abilities": _top(p["Abilities"], w, 5),

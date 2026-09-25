@@ -36,6 +36,7 @@
 
   <!-- ═══ 環境 ═══ -->
   <main id="view-env" data-view-panel="env">
+    <div id="early-env" hidden></div>
     <section class="hero" id="sec-env">
       <div class="k" id="asof"></div>
       <h1>いまの環境、<br>ひと目で。</h1>
@@ -77,6 +78,14 @@
         <h2>選出率 × 使用率 <span class="chip warn">参考値</span></h2>
         <div class="chart" id="scatter"></div>
         <p class="note" id="bring-note"></p>
+      </section>
+      <section class="card c12" id="sec-sets" hidden>
+        <h2>型の動き</h2>
+        <div id="sets-out"></div>
+      </section>
+      <section class="card c12" id="sec-top" hidden>
+        <h2>上位 500 人の選出 <span class="chip warn">参考値</span></h2>
+        <div id="top-out"></div>
       </section>
     </div>
   </main>

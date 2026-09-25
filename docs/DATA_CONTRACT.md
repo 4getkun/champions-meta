@@ -30,6 +30,8 @@
     "game_type": "doubles",       // "doubles" | "singles"
     "track": "vgc2026",           // tracks/<track>.json の名前
     "team_select": true,          // 見せ合いから選出するルールか（BSS・VGC・4v4）。false なら select/ と induce/ は予想を出さない
+    "early": false,               // 月次統計がまだ無い（始まったばかりの）ルール。true なら monthly/・pokemon/・speed/・sets/ などは無く、early/ を使う
+    "started": "2026-09-25",      // early のときだけ: 最初の公開リプレイの日
     "months": ["2026-06", "2026-07", "2026-08"],   // monthly/ にある月（無ければ []）
     "replay_days": 12             // リプレイがある日数（0 なら weekly/ は無い）
   }],
@@ -212,12 +214,23 @@
     "loglik": { "model": -4.45, "baseline": -4.52, "diff": 0.07, "ci": [0.03, 0.11] },
     "bring_set_top1": { "model": 0.09, "baseline": 0.08 }, "lead_set_top3": { … },
     "calibration": [[予想の平均, 実際の割合, 件数], …],
+    "temperature": { "t": 0.72, "loglik_gain": 0.018, "ci": [0.004, 0.031], "applied": true,   // 確率の補正の確かめ
+                     "calibration": [[…]] },    // 区間ごとに、ほかの区間で決めた係数を当てたときの較正
     "odd_cut": -5.37,            // 「変わったチーム」のしきい（6 匹の月次使用率の対数の平均の下位 5%。画面側も同じ式で計算する）
     "bring_odd": { "n": 51, "model": 0.52, "baseline": 0.53 },       // 答え合わせのうち変わったチームの選出の当たり
     "bring_typical": { "n": 1151, "model": 0.57, "baseline": 0.53 },
     "ratings": { "n": 8897, "of": 9480, "p10": 1018, "p50": 1128, "p90": 1315 }   // 学習に使った試合のレート（分かるものだけ）
   },
-  "examples": [{ "team": [...], "opp": [...] | "avg", "bring": { "名前": 確率 }, "lead": { … } }]   // 画面側の計算の確認用
+  "examples": [{ "team": [...], "opp": [...] | "avg", "bring": { "名前": 確率 }, "lead": { … } }],  // 画面側の計算の確認用
+  "temperature": 0.72,           // weights に掛け済みの確率の補正の係数（1 なら補正なし）。画面側は weights をそのまま使う
+  "track": {                     // 成績表（前向きの答え合わせ）。available が false なら reason だけ
+    "available": true, "n": 345, "snapshots": 23, "from": 1788468100, "to": 1790236651,
+    "seeded_until": "2026-09-24" | null,   // この日までの保存は、あとから作り直したもの（その日までのデータだけ）
+    "max_age_days": 7,
+    "bring": { "model": 0.536, "baseline": 0.524, "diff": 0.013, "ci": [-0.013, 0.040] }, "lead": { … }, "loglik": { … },
+    "by_day": [["2026-09-03", 67, 0.50, 0.53]],   // [保存した日, 試合, 選出の当たり（予想）, 全体の率だけ]
+    "calibration": [[予想の平均, 実際の割合, 件数], …]
+  }
 }
 ```
 **予想の計算**（`src/cmeta/analysis/joint.py` の `Featurizer.matrix()` と `probs()` と同じ。画面側はこれを実装する）:
@@ -260,6 +273,60 @@
 - 実数値 = `trunc((種族値 + 能力ポイント + 20) × 性格補正)`（上昇 110/100・下降 90/100 を整数で切り捨て。レベル 50・個体値 31 固定。Showdown の `data/mods/champions/scripts.ts`）。
 - 統計には持ち物と振り方の組み合わせが無い。スカーフは分布に混ぜず、線として出す（「スカーフを持つ個体の振り方」は分からない）。
 - 環境の割合（画面の「環境で先に動ける」）は、姿ごとに `usage` で重み付けて、同速は 1/2 と数える。
+
+## top/&lt;format&gt;.json — 上位 500 人の選出率（見せ合いから選出するルールだけ）
+```jsonc
+{
+  "format": "…", "available": true, "ladder_days": 1,   // 使ったランキング表の記録の日数
+  "top_players": 499, "samples_top": 1485, "samples_other": 5414,
+  "icc_bring": 0.139, "icc_lead": 0.108,     // 同じ人の選出の似かた（級内相関）
+  "m_bring": 81.9, "m_lead": 28.0,           // ほかの人の選出率に寄せる強さ（件数ぶん）
+  "coverage_bring": 0.961, "coverage_lead": 0.98,   // 人で半分に分けたとき、95% の予測範囲に入った割合
+  "pokemon": { "Floette-Eternal": { "bring": {
+      "n": 90, "n_eff": 39.4, "players": 25,       // 上位の人の見せ合い・人ごとに重みを付けた有効件数・人数
+      "est": 0.44, "ci": [0.31, 0.57],            // 上位の人の選出率（部分プーリング）と 95% 範囲
+      "other": 0.66, "other_ci": [..], "other_n": 1340,
+      "clear": true },                             // 差がはっきりしている（BH 法 FDR 5%、10 人以上から来ているものだけ）
+    "lead": { … } } },
+  "induce": { "compared": 307,                    // 上位の人の選出誘導（相手に opp がいるといないで、name の選出率の差）
+    "clear": [{ "opp": "Raichu", "name": "Garchomp", "diff": 0.29, "ci": [0.17, 0.41], "p": 1e-5, "players": 129, "n_with": 240 }] }
+    // 人を単位に引き直した範囲・p 値に BH 法（FDR 5%）をかけ、はっきりした組だけ。選び出したぶん差は大きめに出やすい
+}
+```
+- 上位の人 = 記録したランキング表に一度でも載った人（ボットの目印なし）。今の順位で決めているので、昔の試合の時点では上位でなかったこともある。
+- 人ごとの重み w_i = n_i / (1 + (n_i − 1) ρ)（ρ は似かた）。1 人がたくさん戦っても、その人の癖で全体が動かないようにする。
+
+## early/&lt;format&gt;.json — 開始直後の環境（月次統計がまだ無いルールだけ）
+```jsonc
+{
+  "format": "gen9championsbssregmc", "available": true,
+  "samples": 120, "teams": 80, "players": 60,     // 標本（重なりを除いた 1 側）・チーム（同じ人の同じ 6 匹は 1 つ）・人
+  "from": 1790300000, "to": 1790330000, "teams_per_day": 45.0,   // 直近 3 日に初めて見たチームの数 / 日
+  "ready": { "usage": { "need": 700, "have": 80, "days_left": 13.8 },     // 一般向けに出す目安までの残り
+             "bring": { "need": 400, "have": 30, "days_left": 20.0, "note": "…" } },
+  "pokemon": { "Garchomp": { "teams": 30, "usage": 0.375, "usage_ci": [0.27, 0.48],
+                             "bring": 0.6, "bring_ci": [0.43, 0.76], "bring_teams": 25 } }   // 10 チーム以上に入っているもの
+}
+```
+- 同じ人の同じ 6 匹は 1 チームと数える（始まったばかりは少数の人がたくさん戦うため）。選出率はチームごとに 1 票。勝率は出さない。
+- 画面は、件数が ready の目安に届くまで「集計中（あと何日ほど）」と出す。
+
+## sets/&lt;format&gt;.json — 型（持ち物・技）の移り変わり（月 × レート帯）
+```jsonc
+{
+  "format": "…", "month": "2026-08", "prev_month": "2026-07", "cutoffs": [0, 1500, 1630, 1760],
+  "default_cutoff": 1630, "low_cutoff": 0, "high_cutoff": 1760,
+  "pokemon": { "Primarina": {                      // 標準の足切りで使用率 3% 以上の姿
+      "n": { "2026-08:1630": 1234.5, … },           // 重みの合計（月:足切り）
+      "items": { "sitrusberry": { "2026-07:1630": 0.57, "2026-08:1630": 0.35, "2026-08:0": 0.41, "2026-08:1760": 0.25, … } },
+      "moves": { … } } },                           // どこかで 5% 以上の持ち物・技
+  "changes": [{ "name": "Primarina", "kind": "items", "key": "sitrusberry", "type": "month" | "top",
+                "a": 0.57, "b": 0.35, "diff": -0.22 }],   // 15pt 以上動いたもの（month: 先月→今月、top: 全体→一番高い足切り）
+  "compared": 869
+}
+```
+- **95% 範囲や「はっきり」は付けない。** 月次統計の件数は対戦の数で、同じ人の同じチームが何度も数えられていて、人の情報が無い。
+  独立として検定すると、比べたものの半分以上が「はっきり」になってしまう。一番高い足切りは、重みの合計が 100 未満の姿は比べない。
 
 ## induce/&lt;format&gt;.json — 選出誘導
 見せ合いから選出するルールだけ。ポケモン u を見せ合いに入れたとき、相手の選出・先発がどう変わるか。

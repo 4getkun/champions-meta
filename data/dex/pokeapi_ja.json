@@ -1369,6 +1369,10 @@
   "ja": "ふくろだたき",
   "slug": "beat-up"
  },
+ "move:belch": {
+  "ja": "ゲップ",
+  "slug": "belch"
+ },
  "move:bellydrum": {
   "ja": "はらだいこ",
   "slug": "belly-drum"
@@ -1909,6 +1913,10 @@
   "ja": "もろはのずつき",
   "slug": "head-smash"
  },
+ "move:healbell": {
+  "ja": "いやしのすず",
+  "slug": "heal-bell"
+ },
  "move:healingwish": {
   "ja": "いやしのねがい",
   "slug": "healing-wish"
@@ -2024,6 +2032,10 @@
  "move:infestation": {
   "ja": "まとわりつく",
   "slug": "infestation"
+ },
+ "move:ingrain": {
+  "ja": "ねをはる",
+  "slug": "ingrain"
  },
  "move:instruct": {
   "ja": "さいはい",
@@ -3011,6 +3023,11 @@
   "pid": 24,
   "slug": "arbok"
  },
+ "species:arboliva": {
+  "ja": "オリーヴァ",
+  "pid": 930,
+  "slug": "arboliva"
+ },
  "species:arcanine": {
   "ja": "ウインディ",
   "pid": 59,
@@ -3774,6 +3791,13 @@
   "pid": 876,
   "slug": "indeedee"
  },
+ "species:indeedeef": {
+  "form_ja": "メスのすがた",
+  "ja": "イエッサン（メス）",
+  "pid": 10186,
+  "slug": "indeedee-female",
+  "species_ja": "イエッサン"
+ },
  "species:infernape": {
   "ja": "ゴウカザル",
   "pid": 392,
@@ -4042,6 +4066,11 @@
   "pid": 877,
   "slug": "morpeko"
  },
+ "species:mrmime": {
+  "ja": "バリヤード",
+  "pid": 122,
+  "slug": "mr-mime"
+ },
  "species:mrrime": {
   "ja": "バリコオル",
   "pid": 866,
@@ -4133,6 +4162,13 @@
   "pid": 279,
   "slug": "pelipper"
  },
+ "species:persianalola": {
+  "form_ja": "アローラのすがた",
+  "ja": "ペルシアン（アローラ）",
+  "pid": 10108,
+  "slug": "persian-alola",
+  "species_ja": "ペルシアン"
+ },
  "species:pidgeot": {
   "ja": "ピジョット",
   "pid": 18,
@@ -4149,6 +4185,11 @@
   "ja": "ピカチュウ",
   "pid": 25,
   "slug": "pikachu"
+ },
+ "species:pincurchin": {
+  "ja": "バチンウニ",
+  "pid": 871,
+  "slug": "pincurchin"
  },
  "species:pinsir": {
   "ja": "カイロス",
@@ -4647,6 +4688,13 @@
   "pid": 849,
   "slug": "toxtricity"
  },
+ "species:toxtricitylowkey": {
+  "form_ja": "ローなすがた",
+  "ja": "ストリンダー（ローなすがた）",
+  "pid": 10184,
+  "slug": "toxtricity-low-key",
+  "species_ja": "ストリンダー"
+ },
  "species:trevenant": {
   "ja": "オーロット",
   "pid": 709,
@@ -4771,6 +4819,11 @@
   "ja": "エルフーン",
   "pid": 547,
   "slug": "whimsicott"
+ },
+ "species:wigglytuff": {
+  "ja": "プクリン",
+  "pid": 40,
+  "slug": "wigglytuff"
  },
  "species:wyrdeer": {
   "ja": "アヤシシ",

@@ -419,3 +419,21 @@ a.tile:hover { transform: translateY(-2px); }
 .spd-tbl td, .spd-tbl th { text-align: center; }
 .tt .ok { color: var(--up); }
 h2 .more { margin-left: auto; float: right; font-size: 13px; font-weight: 700; color: var(--accent); }
+.set-tbl td, .set-tbl th { text-align: center; }
+.set-tbl td:first-child { text-align: left; }
+.track { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* 開始直後の環境 */
+.early-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; counter-reset: e; }
+.early-list li, .rank-grid li.early-rank { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 10px; border-radius: 14px; background: var(--accent-soft); font-size: 13px; }
+.rank-grid li.early-rank { grid-template-columns: 28px minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1fr); }
+.rank-grid li.early-rank .no { font-family: 'Inter Tight', sans-serif; font-weight: 700; color: var(--muted); }
+.early-list a, .early-rank a { display: flex; align-items: center; gap: 6px; }
+.early-list .nm, .early-rank .nm { font-weight: 700; }
+.ebar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.ebar .b { height: 8px; border-radius: 4px; background: var(--card); position: relative; }
+.ebar .b i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--accent); }
+.ebar small, .ebr small { grid-column: 1 / -1; display: block; }
+@media (max-width: 720px) { .early-list li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .early-list .ebr { grid-column: 1 / -1; } }
+.early-list.compact li { padding: 4px 10px; }
+.btn { display: inline-block; padding: 8px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 700; text-decoration: none; }

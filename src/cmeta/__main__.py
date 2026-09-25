@@ -3,8 +3,10 @@
     python -m cmeta fetch-replays [--max N] [--format ID …] [--backfill DAYS]
                                           --backfill: 過去 DAYS 日の取りこぼしを埋める（ボットの試合は取らない）
                                           --refetch: 手番の記録（order）が無い試合を取り直す
-    python -m cmeta fetch-ladder          上位 500 人を記録し、上位の人のリプレイを狙って取る（シングル・ダブル）
+    python -m cmeta fetch-ladder [--format ID …]  上位 500 人を記録し、上位の人のリプレイを狙って取る（シングル・ダブル）
     python -m cmeta build [--no-names]    out/ を作り直す（--no-names: PokeAPI に問い合わせない）
+    python -m cmeta seed-predlog [--format ID …] [--start YYYY-MM-DD]
+                                          成績表を始める前の日の予想を、その日までのデータだけで作り直して保存する
     python -m cmeta all                   上の三つを順に
 """
 
@@ -56,9 +58,13 @@ def main(argv=None) -> int:
     fr.add_argument("--format", action="append")
     fr.add_argument("--backfill", type=int, metavar="DAYS")
     fr.add_argument("--refetch", action="store_true")
-    sub.add_parser("fetch-ladder")
+    fl = sub.add_parser("fetch-ladder")
+    fl.add_argument("--format", action="append")
     b = sub.add_parser("build")
     b.add_argument("--no-names", action="store_true")
+    sp = sub.add_parser("seed-predlog")
+    sp.add_argument("--format", action="append")
+    sp.add_argument("--start")
     a = sub.add_parser("all")
     a.add_argument("--max", type=int, default=REPLAY_MAX_PER_RUN)
     args = ap.parse_args(argv)
@@ -83,7 +89,11 @@ def _run(args) -> None:
                 replays.crawl(fid, max_n=args.max)
     if args.cmd in ("fetch-ladder", "all"):
         # 上位の人を狙うのは、ゲーム内のランクバトルと同じルール（シングル = BSS、ダブル = VGC）だけ
-        ladder.run([f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f])
+        ladder.run(getattr(args, "format", None) if args.cmd == "fetch-ladder" and getattr(args, "format", None)
+                   else [f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f])
+    if args.cmd == "seed-predlog":
+        export.seed_predlog(args.format or [f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f],
+                            start=args.start)
     if args.cmd in ("build", "all"):
         export.build(fetch_names=not getattr(args, "no_names", False))
 
