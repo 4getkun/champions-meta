@@ -356,7 +356,6 @@ a.tile:hover { transform: translateY(-2px); }
 .team-in .slot.bad { outline: 2px solid var(--down); }
 .team-in .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .team-in .tools button { font: inherit; font-size: 12px; font-weight: 700; border: 0; border-radius: 10px; padding: 7px 12px; background: var(--accent-soft); color: var(--ink); cursor: pointer; }
-.team-in textarea { width: 100%; min-height: 120px; margin-top: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: 12px/1.6 ui-monospace, monospace; padding: 10px; }
 .pred { list-style: none; padding: 0; display: grid; gap: 8px; }
 .pred li { display: grid; grid-template-columns: 48px minmax(0, 1fr) 150px; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 16px; background: var(--accent-soft); }
 .pred li.fix { background: color-mix(in srgb, var(--accent) 22%, var(--card)); }

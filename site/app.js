@@ -1207,20 +1207,6 @@ function nameIndex() {
 }
 const resolveName = (text) => (text ? nameIndex().get(norm(text.trim())) || null : null);
 
-// Showdown の書き出し（「ニックネーム (種族) (M) @ 持ち物」など）から種族を取る
-function parseShowdownTeam(text) {
-  const out = [];
-  for (const block of text.replace(/\r/g, '').split(/\n\s*\n/)) {
-    let line = block.split('\n').map((l) => l.trim()).find(Boolean);
-    if (!line) continue;
-    line = line.replace(/\s+@.*$/, '').replace(/\s+\((M|F)\)\s*$/, '');
-    const m = line.match(/\(([^()]+)\)\s*$/);
-    const g = resolveName(m ? m[1] : line) || resolveName(line);
-    if (g) out.push(g);
-  }
-  return out.slice(0, 6);
-}
-
 function fillDatalist() {
   if (!view.mo) {
     $('poke-names').innerHTML = Object.keys(view.early?.pokemon || {}).map((k) => `<option value="${esc(ja(k))}"></option>`).join('');
@@ -1254,7 +1240,7 @@ function renderTeamInputs() {
         + `<input list="poke-names" data-role="${role}" data-i="${i}" value="${g ? esc(ja(g)) : ''}" placeholder="${i + 1}匹目" autocomplete="off"></label>`;
     }).join('');
     box.innerHTML = `<div class="slots">${slots}</div><div class="tools">`
-      + `<button type="button" data-paste="${role}">Showdown のチームを貼り付け</button><button type="button" data-clear="${role}">消す</button></div>`;
+      + `<button type="button" data-clear="${role}">消す</button></div>`;
   });
 }
 
@@ -1287,20 +1273,6 @@ function setupTeamInputs() {
       onTeamChanged();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
-    }
-    const p = ev.target.closest('[data-paste]');
-    if (p) {
-      const box = p.closest('.team-in');
-      let ta = box.querySelector('textarea');
-      if (ta) { ta.remove(); return; }
-      ta = document.createElement('textarea');
-      ta.placeholder = 'Showdown の「Export」のテキストを貼り付けてください';
-      ta.addEventListener('input', () => {
-        const got = parseShowdownTeam(ta.value);
-        if (got.length) { TEAM[p.dataset.paste].splice(0, 6, ...got, ...Array(6 - got.length).fill('')); onTeamChanged(); }
-      });
-      box.appendChild(ta);
-      ta.focus();
     }
   });
 }
