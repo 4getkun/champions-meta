@@ -375,8 +375,8 @@ function renderPills() {
     const a = ev.target.closest('[data-view]');
     if (a) {
       ev.preventDefault();
-      // すばやさは月次統計から計算するので、始まったばかりのルールでは、同じ系統の月次統計のあるルール（前のレギュレーション）を開く
-      const f = a.dataset.view === 'speed' ? speedFormatFor(route.f) : route.f;
+      // すばやさとチーム診断は月次統計から計算するので、始まったばかりのルールでは、同じ系統の月次統計のあるルール（前のレギュレーション）を開く
+      const f = ['speed', 'diag'].includes(a.dataset.view) ? speedFormatFor(route.f) : route.f;
       go({ v: a.dataset.view, p: null, f });
       window.scrollTo({ top: 0 });
       return;
@@ -1187,8 +1187,9 @@ function induceCard(ind, g) {
 // ── チームの入力（選出予想・チーム診断で共通） ───────────────────────
 // 入れたチームは、この端末だけに保存する（次に開いたときのため）。保存できなくても使える
 // シングルとダブルでチームは別（ダブルのチームをシングルのデータで見ないように）
-const TEAMS = { singles: { opp: Array(6).fill(''), mine: Array(6).fill('') }, doubles: { opp: Array(6).fill(''), mine: Array(6).fill('') } };
+const TEAMS = { singles: { opp: Array(6).fill(''), mine: Array(6).fill(''), sampled: {} }, doubles: { opp: Array(6).fill(''), mine: Array(6).fill(''), sampled: {} } };
 try { const saved = JSON.parse(localStorage.getItem('cm-teams2') || '{}'); for (const k of Object.keys(TEAMS)) Object.assign(TEAMS[k], saved[k] || {}); } catch (e) { /* 保存がなくても動く */ }
+for (const t of Object.values(TEAMS)) if (!t.sampled || typeof t.sampled !== 'object') t.sampled = {};
 let TEAM = TEAMS.singles;
 const useTeamFor = (f) => { TEAM = TEAMS[f.game_type === 'doubles' ? 'doubles' : 'singles']; };
 const saveTeams = () => { try { localStorage.setItem('cm-teams2', JSON.stringify(TEAMS)); } catch (e) { /* 保存できなくてもよい */ } };
@@ -1275,6 +1276,16 @@ function setupTeamInputs() {
   document.addEventListener('click', (ev) => {
     const c = ev.target.closest('[data-clear]');
     if (c) { TEAM[c.dataset.clear].fill(''); onTeamChanged(); return; }
+    const sb = ev.target.closest('[data-sample]');
+    if (sb && view.samples?.teams) {
+      const t = view.samples.teams[+sb.dataset.sample].team;
+      const role = sb.dataset.sampleRole;
+      TEAM[role] = [...t, ...Array(6).fill('')].slice(0, 6);
+      TEAM.sampled[role] = t.join('|');
+      onTeamChanged();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const p = ev.target.closest('[data-paste]');
     if (p) {
       const box = p.closest('.team-in');
@@ -1418,6 +1429,35 @@ async function loadToolData() {
   if (!DEX) DEX = await getJSON('dex.json');
   if (!view.sel) view.sel = f.replay_days ? await getJSON(`select/${f.id}.json`).catch(() => null) : null;
   if (!view.diag) view.diag = await getJSON(`diag/${f.id}.json`).catch(() => null);
+  if (view.samples === undefined) view.samples = f.team_select ? await getJSON(`samples/${f.id}.json`).catch(() => null) : null;
+}
+
+// ── 見本のチーム（samples/<ルール>.json: 3 人以上がまったく同じ 6 匹を使っていたもの） ─────────
+// まだ一度も入れていない欄にだけ、見本を入れておく（消したあとに勝手に入れ直さない）。自分は 1 番目、相手は 2 番目の見本
+const SAMPLE_ROLE_JA = { mine: '自分', opp: '相手' };
+function applySamples(roles) {
+  const teams = view.samples?.teams || [];
+  if (!teams.length) return;
+  let changed = false;
+  for (const role of roles) {
+    if (TEAM[role].some(Boolean) || TEAM.sampled[role]) continue;
+    const t = teams[role === 'opp' && teams.length > 1 ? 1 : 0].team;
+    TEAM[role] = [...t, ...Array(6).fill('')].slice(0, 6);
+    TEAM.sampled[role] = t.join('|');
+    changed = true;
+  }
+  if (changed) { saveTeams(); renderTeamInputs(); }
+}
+const isSample = (role) => TEAM.sampled[role] && TEAM.sampled[role] === TEAM[role].filter(Boolean).join('|');
+function sampleCard(roles) {
+  const S = view.samples;
+  if (!S?.teams?.length) return '';
+  const now = roles.filter(isSample).map((r) => SAMPLE_ROLE_JA[r]);
+  return '<section class="card c12 diag-sample"><h2>見本のチーム</h2>'
+    + (now.length ? `<p>いまは見本として、よく使われているチームを「${now.join('」と「')}」に入れてあります。上の欄を書き換えると、あなたの入力で計算し直します。</p>` : '')
+    + `<ul class="diag-samples">${S.teams.map((t, i) => `<li><span class="mons">${t.team.map((k) => icon(k, 32)).join('')}</span>`
+      + `<span class="note">${t.players} 人が使用</span><span class="btns">${roles.map((r) => `<button type="button" class="pill" data-sample="${i}" data-sample-role="${r}">${SAMPLE_ROLE_JA[r]}に入れる</button>`).join('')}</span></li>`).join('')}</ul>`
+    + `<p class="note">直近 ${S.days} 日の Showdown の公開リプレイで、まったく同じ 6 匹を使っていた人の数が多いもの（${S.min_players} 人以上）。</p></section>`;
 }
 
 let SEEN_LEADS = new Set(); // 先発に出たポケモン（押して選ぶ）
@@ -1426,6 +1466,8 @@ const selSlot = (p) => (p >= 0.8 ? ['fix', 'ほぼ出す'] : p <= 0.3 ? ['bench'
 async function renderSelect() {
   await loadToolData();
   SEL = view.sel;
+  applySamples(['opp', 'mine']);
+  $('select-samples').innerHTML = sampleCard(['opp', 'mine']);
   const label = formatLabel(view.f);
   const day = (t) => new Date(t * 1000).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
   $('select-asof').innerHTML = dots(esc(label), 'Showdown の公開リプレイ', SEL?.trained ? `${day(SEL.trained.from)}〜${day(SEL.trained.to)}` : '');
@@ -1548,10 +1590,11 @@ async function renderDiag() {
   const D = view.diag;
   const label = formatLabel(view.f);
   $('diag-asof').innerHTML = dots(esc(label), `レート${view.mo.default_cutoff}以上の月次統計`, 'Showdown の公開リプレイ');
-  const team = TEAM.mine.filter(Boolean);
   const out = $('diag-out');
-  if (!team.length) { out.innerHTML = '<section class="card c12"><p class="empty">自分の 6 匹を入れてください。</p></section>'; return; }
   if (!D) { out.innerHTML = '<section class="card c12"><p class="empty">このルールは診断の材料がありません。</p></section>'; return; }
+  applySamples(['mine']);
+  const team = TEAM.mine.filter(Boolean);
+  if (!team.length) { out.innerHTML = '<section class="card c12"><p class="empty">自分の 6 匹を入れてください。</p></section>' + sampleCard(['mine']); return; }
   const cards = [];
 
   // 1) 環境でよく使われる攻撃のタイプへの弱点
@@ -1653,9 +1696,9 @@ async function renderDiag() {
       + '</section>');
   }
 
+  cards.push(sampleCard(['mine']));
   out.innerHTML = cards.join('');
 }
-
 // ── テーマ ──────────────────────────────────────────────
 function setupTheme() {
   const btn = $('theme');

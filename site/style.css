@@ -493,3 +493,7 @@ h2 .more { margin-left: auto; float: right; font-size: 13px; font-weight: 700; c
 .spd-mon { display: inline-flex; align-items: center; gap: 4px; }
 .spd-mon small { margin-left: 2px; }
 .spd-rows td:last-child small { display: block; }
+.diag-samples { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.diag-samples li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 14px; background: var(--accent-soft); }
+.diag-samples .mons { display: flex; gap: 2px; }
+.diag-samples .btns { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }

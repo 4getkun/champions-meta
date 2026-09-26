@@ -218,6 +218,14 @@ def build(fetch_names: bool = True, log=print) -> dict:
                 names_pokemon.update(sel["base"])
                 names_pokemon.update(sel["roles"])
 
+            # 見本のチーム（選出予想・チーム診断の最初の入力。3 人以上がまったく同じ 6 匹を使っていたもの）
+            if f["team_select"]:
+                smp = diag.sample_teams(rows, group_of)
+                _write(f"samples/{fid}.json", {"format": fid, "days": diag.SAMPLE_DAYS,
+                                                "min_players": diag.SAMPLE_MIN_PLAYERS, "teams": smp})
+                for s_ in smp:
+                    names_pokemon.update(s_["team"])
+
             # 開始直後の環境（月次統計がまだ無いルール）: 同じ人の同じチームを 1 つとして数える
             if not mo and f["team_select"]:
                 ea = early.build(rows, group_of, 4 if doubles else 3, 2 if doubles else 1)

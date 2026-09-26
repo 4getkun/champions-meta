@@ -4,12 +4,17 @@
 - ポケモンどうしの勝率: リプレイで「A を出した側」と「B を出した側」が当たった試合の勝ち数（まとめた名前）。
   同じポケモンどうし（ミラー）は数えない。件数 MIN_GAMES 未満の組は書き出さない。
   腕前の差が混ざる（VGC にはレートが無い）ので、画面では 50% に向けて縮めた値と件数を出す。
+- 見本のチーム（sample_teams。export が samples/<ルール>.json に書く）: 直近 SAMPLE_DAYS 日のリプレイで、同じ 6 匹（まとめた名前）を使っていた人の数が多い順に SAMPLE_N 個。
+  SAMPLE_MIN_PLAYERS 人以上が使っていたものだけ（1 人のチームを出さないため。人はハッシュで数えるだけで、名前は出さない）。
 """
 
 from collections import Counter, defaultdict
 
 MIN_GAMES = 15
 TOP_N = 40
+SAMPLE_DAYS = 30
+SAMPLE_MIN_PLAYERS = 3
+SAMPLE_N = 3
 
 
 def attack_types(detail: dict, move_info: dict) -> dict[str, float]:
@@ -49,6 +54,30 @@ def pair_winrates(rows: list[dict], group_of) -> dict:
         if row:
             out[a] = row
     return out
+
+
+def sample_teams(rows: list[dict], group_of) -> list[dict]:
+    if not rows:
+        return []
+    t1 = max(r["t"] for r in rows)
+    players: dict[frozenset, set] = defaultdict(set)
+    games: Counter = Counter()
+    seen: Counter = Counter()
+    for r in rows:
+        if r["t"] < t1 - SAMPLE_DAYS * 86400:
+            continue
+        for s in (0, 1):
+            team = [group_of(x) for x in r["teams"][s]]
+            seen.update(team)
+            key = frozenset(team)
+            if len(key) != 6:
+                continue
+            players[key].add((r.get("players") or [None, None])[s])
+            games[key] += 1
+    ok = [(k, len(p)) for k, p in players.items() if len(p) >= SAMPLE_MIN_PLAYERS]
+    ok.sort(key=lambda kv: (-kv[1], -games[kv[0]], sorted(kv[0])))
+    # 並びは、そのルールでよく見る順（先頭がいちばん多い）
+    return [{"team": sorted(k, key=lambda x: (-seen[x], x)), "players": n, "games": games[k]} for k, n in ok[:SAMPLE_N]]
 
 
 def build(detail: dict | None, rows: list[dict], group_of, move_info: dict, usage_grouped: dict, month_index: int) -> dict:
