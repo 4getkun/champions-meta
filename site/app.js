@@ -517,7 +517,7 @@ function renderEarlyEnv() {
     if (!el) return;
     const rows = [];
     for (const [u, v] of Object.entries(ind?.pokemon || {})) {
-      for (const r of [...(v.up || []), ...(v.down || [])]) if (r.clear) rows.push({ u, ...r, d: r.bring[1] - r.bring[0] });
+      for (const r of [...(v.up || []), ...(v.down || [])]) if (r.clear && r.type_ok === true) rows.push({ u, ...r, d: r.bring[1] - r.bring[0] });
     }
     rows.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
     el.innerHTML = '<h2>見せると相手の選出が変わる <span class="chip warn">参考値</span></h2>'
@@ -525,7 +525,7 @@ function renderEarlyEnv() {
         + `<span>${esc(short(r.u))} を見せると、<a class="plain" href="${linkTo({ v: 'poke', p: r.name })}">${esc(short(r.name))}</a> の選出が</span>`
         + `<span><b>${pct(r.bring[0], 0)} → ${pct(r.bring[1], 0)}</b></span></li>`).join('')}</ul>`
         : '<p class="empty">まだ、はっきりした変化は見つかっていません（試合が増えると出てきます）。</p>')
-      + '<p class="note">相手の見せ合いにそのポケモンがいたとき、こちらの選出率がどれだけ変わったか（偶然の揺れを超えるものだけ）。詳しくは各ポケモンのページ。</p>';
+      + '<p class="note">相手の見せ合いにそのポケモンがいたとき、こちらの選出率がどれだけ変わったか。偶然の揺れを超え、しかもタイプ相性どおりの向きのものだけ。詳しくは各ポケモンのページ。</p>';
   });
   getJSON(`select/${f.id}.json`).then((S) => {
     const el = $('early-select-note');
@@ -1288,10 +1288,12 @@ const WEATHERS = ['rain', 'sun', 'sand', 'snow'];
 const ROLE_KEYS = ['fakeout', 'intimidate', 'redirect', 'tailwind', 'hazard', 'sash'];
 
 let SEL = null;
-function selRate(e, which, prior) {
+// 縮めの強さ SEL.m: { base_bring, base_lead, vs }（データから決めたもの。古い形は 1 つの数）
+function selRate(e, which, prior, key) {
   if (!e) return prior;
   const [n, hit] = which === 'bring' ? [e[0], e[1]] : [e[2], e[3]];
-  return (hit + SEL.m * prior) / (n + SEL.m);
+  const m = typeof SEL.m === 'number' ? SEL.m : SEL.m[key];
+  return (hit + m * prior) / (n + m);
 }
 // メガストーンを持つ確率が高いポケモンは、メガの姿のタイプで相性を見る
 const selTypes = (k) => SEL.roles[k]?.types || typesOf(k);
@@ -1300,13 +1302,13 @@ const selSpeed = (k) => SEL.roles[k]?.speed || 80;
 // opp: 名前の配列、または [名前, 重み] の配列（自分のチームが分からないときの平均的な相手。重みの合計 6）
 function selMember(k, opp) {
   const oppW = opp.length && typeof opp[0] === 'string' ? opp.map((u) => [u, 1]) : opp;
-  const pb = selRate(SEL.base[k], 'bring', SEL.g_bring);
-  const pl = selRate(SEL.base[k], 'lead', SEL.g_lead);
+  const pb = selRate(SEL.base[k], 'bring', SEL.g_bring, 'base_bring');
+  const pl = selRate(SEL.base[k], 'lead', SEL.g_lead, 'base_lead');
   const lk = logitP(pb);
   const vsk = SEL.vs[k] || {};
   let vs = 0;
   for (const [u, w] of [...oppW].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
-    if (vsk[u]) vs += w * (logitP(selRate(vsk[u], 'bring', pb)) - lk);
+    if (vsk[u]) vs += w * (logitP(selRate(vsk[u], 'bring', pb, 'vs')) - lk);
   }
   const kt = selTypes(k);
   let hit = 0, hurt = 0, tw = 0, sp = 0;
@@ -1677,7 +1679,9 @@ async function renderDiag() {
     // 誘導の強さが偶然の揺れと区別できるメンバーだけ（0pt のメンバーの変化は揺れ）。重なりの足し算はせず、一番大きい変化
     for (const k of got.filter((x) => (ind.pokemon[x].strength.bring ?? 0) >= 0.005)) {
       for (const r of ind.pokemon[k].up) {
-        if (team.includes(r.name) || r.bring[1] <= r.bring[0]) continue;
+        // 偶然の揺れを超え（●）、しかもタイプ相性で説明がつく（相手のタイプ一致技がこのメンバーに効果抜群。特性で受けるものは除く）変化だけ。
+        // 1 匹ずつの比較には、チームのほかのメンバーや時期・人の違いが混ざり、相性と逆向きや無関係の組も「はっきり」に出てしまうため
+        if (team.includes(r.name) || r.bring[1] <= r.bring[0] || !r.clear || r.type_ok !== true) continue;
         const e = up.get(r.name) || [r.bring[0], 0, []];
         e[1] = Math.max(e[1], r.bring[1] - r.bring[0]);
         e[2].push(k);
@@ -1690,8 +1694,10 @@ async function renderDiag() {
       + (got.length
         ? `<p class="note" style="margin-top:0">誘導の強さ: ${strong.map(([k, s]) => `${esc(short(k))} <b>${(s * 100).toFixed(1)}pt</b>`).join('・')}`
           + `${team.length > got.length ? `（ほかは件数不足）` : ''}</p>`
-          + (top.length ? `<div class="k">相手が出しやすくなる</div><ul class="mu">${top.map(([n, [p, d, by]]) => `<li>${icon(n, 36)}<span>${esc(short(n))} <small class="note">${by.map((k) => esc(short(k))).join('・')}を見て</small></span><span><b>+${(d * 100).toFixed(0)}pt</b> <small class="note">全体 ${pct(p, 0)}</small></span></li>`).join('')}</ul>` : '')
-          + '<p class="note">誘導の強さが 0.5pt 以上のメンバーについて、1 匹ずつ調べた変化のうち一番大きいもの（組み合わせの効果は考えていない目安）。0pt 近くのメンバーは、見せても相手の選出がほとんど変わりません。詳しくは各ポケモンのページ。</p>'
+          + (top.length ? `<div class="k">相手が出しやすくなる（タイプ相性どおりのものだけ）</div><ul class="mu">${top.map(([n, [p, d, by]]) => `<li>${icon(n, 36)}<span>${esc(short(n))} <small class="note">${by.map((k) => esc(short(k))).join('・')}を見て</small></span><span><b>+${(d * 100).toFixed(0)}pt</b> <small class="note">全体 ${pct(p, 0)}</small></span></li>`).join('')}</ul>` : '')
+          + (top.length ? '' : '<p class="empty">タイプ相性で説明のつく、はっきりした変化は見つかりませんでした。</p>')
+          + '<p class="note">誘導の強さが 0.5pt 以上のメンバーについて、1 匹ずつ調べた変化のうち、偶然の揺れを超え、しかも<b>相手のタイプ一致技がそのメンバーに効果抜群</b>（ふゆう などの特性で受けるものは除く）のものだけを出しています。'
+          + '1 匹ずつの比較には、チームのほかのメンバーや、時期・遊ぶ人の違いが混ざるため、相性で説明のつかない組は出していません。組み合わせの効果は考えていない目安です。</p>'
         : '<p class="empty">このチームのポケモンは、まだ件数が足りません。</p>')
       + '</section>');
   }

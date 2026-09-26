@@ -1,7 +1,9 @@
 """解析を回して out/ に JSON を書く。形は docs/DATA_CONTRACT.md が正本。"""
 
+import hashlib
 import json
 from datetime import datetime
+from pathlib import Path
 
 from . import ladder, smogon
 from .analysis import changepoint, cores, diag, induce, joint, matchup, monthly, select, speed, toprate, weekly
@@ -20,6 +22,23 @@ def _write(rel: str, obj) -> None:
     p = OUT / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), "utf-8")
+
+
+# ── 変わっていないルールの計算を飛ばす（GitHub Actions の使用時間を抑えるため） ─────────────
+# リプレイから作る結果（週次・選出予想・誘導・上位・見本など）は、リプレイの件数と最後の時刻・月次の月・解析のコードが
+# 前回と同じなら、書き出し済みのものをそのまま使う。コードを変えたら、全部のルールを計算し直す。
+INPUTS_PATH = OUT / "build_inputs.json"
+
+
+def _code_hash() -> str:
+    h = hashlib.sha256()
+    for p in sorted(Path(__file__).parent.rglob("*.py")):
+        h.update(p.read_bytes())
+    return h.hexdigest()[:12]
+
+
+def _replay_sig(rows: list[dict], mo: dict | None, code: str) -> str:
+    return f"{len(rows)}:{max(r['t'] for r in rows)}:{','.join(mo['months']) if mo else '-'}:{code}"
 
 
 def _month_of(ts: int) -> str:
@@ -109,6 +128,14 @@ def build(fetch_names: bool = True, log=print) -> dict:
 
     per_format = {}
     cores_by_format: dict[str, dict] = {}
+    prev_inputs = json.loads(INPUTS_PATH.read_text("utf-8")) if INPUTS_PATH.exists() else {}
+    inputs, skipped, code = {}, set(), _code_hash()
+    # 飛ばしたルールの名前も残るように、前回の名前を足しておく（多くても害はない）
+    old_names = json.loads((OUT / "names.json").read_text("utf-8")) if (OUT / "names.json").exists() else {}
+    names_pokemon.update(old_names.get("pokemon", {}))
+    names_items.update(old_names.get("items", {}))
+    names_moves.update(old_names.get("moves", {}))
+    names_abilities.update(old_names.get("abilities", {}))
     for f in formats:
         fid = f["id"]
         mo = monthly.analyze_format(data, fid, group_of)
@@ -166,6 +193,14 @@ def build(fetch_names: bool = True, log=print) -> dict:
         rows = load_rows(fid) if (REPLAY_DIR / fid).exists() else []
         if rows:
             entry["replay_days"] = len({jst_day(r["t"]) for r in rows})
+            inputs[fid] = _replay_sig(rows, mo, code)
+            if prev_inputs.get(fid) == inputs[fid] and (OUT / f"weekly/{fid}.json").exists():
+                if not mo and f["team_select"]:
+                    entry["started"] = early.started(rows)
+                skipped.add(fid)
+                log(f"build {fid}: リプレイも月次も前回と同じなので、リプレイからの計算は飛ばす")
+                fmt_meta.append(entry)
+                continue
             wk = weekly.analyze(rows, group_of, doubles=f["game_type"] == "doubles")
             if wk.get("available"):
                 days, n, counts = weekly.daily_counts(rows, group_of)
@@ -273,7 +308,7 @@ def build(fetch_names: bool = True, log=print) -> dict:
     # P2 チーム診断の材料（月次がある形式だけ）
     for f in formats:
         mo = per_format.get(f["id"])
-        if not mo:
+        if not mo or (f["id"] in skipped and (OUT / f"diag/{f['id']}.json").exists()):
             continue
         rows = load_rows(f["id"]) if (REPLAY_DIR / f["id"]).exists() else []
         det_path = OUT / f"pokemon/{f['id']}.json"
@@ -355,5 +390,6 @@ def build(fetch_names: bool = True, log=print) -> dict:
         "warnings": warnings,
     }
     _write("meta.json", meta)
+    _write(INPUTS_PATH.name, inputs)  # 次の作り直しで、変わっていないルールを飛ばすため
     log(f"build: {len(formats)} ルール、名前 {len(names['pokemon'])} 匹、PokeAPI への問い合わせ {ja.fetched} 回")
     return meta

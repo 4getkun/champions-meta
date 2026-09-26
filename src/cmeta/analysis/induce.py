@@ -3,14 +3,12 @@
 - 標本: 1 試合の 1 側（相手の見せ合い = u を含むかどうか）。**同じ見せ合いどうし（同じ 6 匹と同じ相手の 6 匹）は 1 回と数える**
   （Bo3 の 2・3 戦目や同じ人の連戦が全体の約半分あり、数えると偶然の偏りが大きく見えるため）。
 - 相手の各ポケモン k について、基準 p_k（k を見せ合いに入れた全体での選出率）と、相手に u がいたときの q_k を比べる。
-  変化 d = q_k − p_k。件数の少ないものは基準に向けて縮めて出す（強さ M）。95% の範囲も付ける。
+  変化 d = q_k − p_k。件数の少ないものは基準に向けて縮めて出す（強さはデータから決める: select.fit_m）。95% の範囲も付ける。
 - 誘導の強さ S_u: d² から偶然の揺れ p(1−p)/n を引いた「偏りのない 2 乗」を件数で重み付けて平均し、平方根（ポイント）。
 - タイプ相性での裏付け: k のタイプ一致技で u に効果抜群を取れるなら「増えるはず」、u が k に取れるなら「減るはず」。
   向きが合っているかを印にする（誘導が偶然の揺れでないことの補助的な確認）。
 - **シングルとダブルは混ぜない**（ルールごとに別々に集計する）。選ぶ数が違う（ダブル 6→4、シングル 6→3）ので、
   率の差（ポイント）は比べられない。ルールをまたいで比べるときは、対数オッズの変化（strength_logit）を使う。
-- 件数の少ないポケモンは、**同じルールの中で同じタイプを持つポケモン**の変化の平均を事前の目安にして縮める
-  （部分的な寄せ集め。例: フェアリーを見せると、はがね・どくの選出が増えやすい）。シングルは件数が少ないので効く。
 - ダブルは先発が 2 匹なので、相手の先発の組の変化（lead_pairs）も出す。
 - 経験則「メガシンカするポケモンは誘導が強い」の検証: メガストーンを持つ確率 0.5 以上とそれ以外で S の平均を比べ、
   並べ替え検定（印をでたらめに入れ替えて同じ以上の差が出る割合）を付ける。
@@ -20,15 +18,20 @@ import math
 import random
 from collections import Counter, defaultdict
 
-from .select import dedupe
+from .select import dedupe, fit_m
 
 M = 10.0
 MIN_K = 15
 MIN_U = 60  # ダブル
 MIN_U_SINGLES = 25  # シングルは件数が少ないので下げ、そのぶんタイプの目安に強く寄せる
-M_TYPE = 20.0  # タイプの目安に寄せる強さ
 TOP = 6
 PERMUTATIONS = 5000
+# 特性でそのタイプの技を受けないもの（ポケモンの特性が全部これなら、相性の上では効果抜群でも「取れない」とみなす）
+IMMUNE_ABILITY = {
+    "Levitate": "Ground", "Earth Eater": "Ground", "Flash Fire": "Fire", "Well-Baked Body": "Fire",
+    "Water Absorb": "Water", "Storm Drain": "Water", "Dry Skin": "Water", "Volt Absorb": "Electric",
+    "Lightning Rod": "Electric", "Motor Drive": "Electric", "Sap Sipper": "Grass",
+}
 
 
 def _tables(xs, k_bring):
@@ -55,20 +58,6 @@ def _logit(p: float) -> float:
     return math.log(p / (1 - p))
 
 
-def _type_prior(base, vs, sd, idx):
-    """{(タイプ, k): 平均の変化}。同じタイプを持つ見せたポケモン u 全体での、k の選出率の変化（件数で重み付け）。"""
-    num, den = defaultdict(float), defaultdict(float)
-    for u, row in vs.items():
-        for t in sd.types(u):
-            for k, e in row.items():
-                if k == u or not base[k][0]:
-                    continue
-                p = base[k][idx] / base[k][0]
-                num[(t, k)] += e[idx] - e[0] * p
-                den[(t, k)] += e[0]
-    return {key: num[key] / den[key] for key in num if den[key] > 0}
-
-
 def _lead_pairs(xs, target):
     """ダブル: 相手に target がいたときといないときの、相手の先発の組の割合。"""
     all_c, hit_c = Counter(), Counter()
@@ -89,9 +78,33 @@ def build(xs: list[dict], k_bring: int, sd, stone: dict[str, float], doubles: bo
     """xs: select.samples() の標本（1 つのルールだけ）。stone: {まとめた名前: メガストーンを持つ確率}。"""
     xs = dedupe(xs)
     base, vs, seen = _tables(xs, k_bring)
-    se = lambda a, b: any(sd.effectiveness(t, sd.types(b)) >= 2 for t in sd.types(a))  # noqa: E731
+    def immune(b, t):
+        abil = list(((sd.species(b) or {}).get("abilities") or {}).values())
+        return bool(abil) and all(IMMUNE_ABILITY.get(a) == t for a in abil)
+
+    # a のタイプ一致技で b に効果抜群を取れるか（b の特性で受けないタイプは除く。例: ふゆうのサザンドラにじめん）
+    se = lambda a, b: any(sd.effectiveness(t, sd.types(b)) >= 2 and not immune(b, t) for t in sd.types(a))  # noqa: E731
     min_u = MIN_U if doubles else MIN_U_SINGLES
-    tprior = {1: _type_prior(base, vs, sd, 1), 2: _type_prior(base, vs, sd, 2)}
+
+    def prior_of(u, k, p):
+        """選出率の寄せ先: k の全体の選出率（シングル・ダブルとも）。
+        以前はシングルだけ「同じタイプを見せたときの平均の変化」も足していたが、データから決めた強さ（シングルは上限近く）では
+        寄せ先のずれがそのまま「はっきり」に見えてしまうので、全体の率に寄せる（2026-09-27）。"""
+        return p
+
+    # 縮めの強さをデータから決める（select.fit_m。ベータ二項の周辺尤度）。固定（ダブル 10・シングル 20）より、
+    # 前半の試合で推定した変化が後半の試合の変化に近く（二乗誤差 6〜24% 減）、「はっきり」の印が後半でも同じ向きに出る割合が
+    # 64〜83% → 92〜100% に上がった（2026-09、BSS・VGC の M-B・M-C で前後半に分けて確認）
+    fit_b, fit_l = [], []
+    for u in vs:
+        if seen[u] < min_u:
+            continue
+        for k, e in vs[u].items():
+            if e[0] < MIN_K or k == u or not base[k][0]:
+                continue
+            fit_b.append((e[0], e[1], prior_of(u, k, base[k][1] / base[k][0])))
+            fit_l.append((e[0], e[2], base[k][2] / base[k][0]))
+    m_bring, m_lead = fit_m(fit_b), fit_m(fit_l)
 
     out, agree_tot = {}, Counter()
     for u in sorted(vs):
@@ -114,14 +127,11 @@ def build(xs: list[dict], k_bring: int, sd, stone: dict[str, float], doubles: bo
                 lnum += n * ((_logit((e[idx] + 0.5) / (n + 1)) - _logit(p)) ** 2 - 1 / max(n * p * (1 - p), 1e-6))
                 lden += n
                 if which == "bring":
-                    # 事前の目安 = 基準 + 同じタイプを持つポケモンを見せたときの平均の変化
-                    tp = [tprior[1].get((t, k)) for t in sd.types(u)]
-                    tp = [v for v in tp if v is not None]
-                    prior = min(max(p + (sum(tp) / len(tp) if tp else 0.0), 0.01), 0.99)
-                    q = (e[idx] + M_TYPE * prior) / (n + M_TYPE) if not doubles else (e[idx] + M * p) / (n + M)
-                    half = 1.96 * math.sqrt(max(q * (1 - q), 1e-6) / (n + M))
+                    prior = prior_of(u, k, p)
+                    q = (e[idx] + m_bring * prior) / (n + m_bring)
+                    half = 1.96 * math.sqrt(max(q * (1 - q), 1e-6) / (n + m_bring))
                     pl = b[2] / b[0]
-                    ql = (e[2] + M * pl) / (n + M)
+                    ql = (e[2] + m_lead * pl) / (n + m_lead)
                     up, down = se(k, u), se(u, k)
                     expect = "up" if up and not down else "down" if down and not up else None
                     clear = abs(q - p) > half
@@ -172,6 +182,7 @@ def build(xs: list[dict], k_bring: int, sd, stone: dict[str, float], doubles: bo
     return {
         "available": bool(out), "samples": len(xs), "min_u": min_u, "min_k": MIN_K,
         "game_type": "doubles" if doubles else "singles", "k_bring": k_bring,
+        "m": {"bring": m_bring, "lead": m_lead},  # データから決めた縮めの強さ
         "pokemon": out, "mega_test": tests,
         "type_check": {"agree": agree_tot["agree"], "disagree": agree_tot["disagree"],
                        "rate": round(agree_tot["agree"] / tot, 4) if tot else None},

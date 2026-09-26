@@ -11,7 +11,8 @@
 import math
 from collections import defaultdict
 
-M = 10.0  # 縮めの強さ
+M = 10.0  # 縮めの強さ（固定のときの値。いまは fit_ms でデータから決める）
+M_BOUNDS = (0.5, 2000.0)
 MIN_PAIR = 5
 MIN_BASE = 5
 
@@ -85,3 +86,41 @@ def dedupe(xs: list[dict]) -> list[dict]:
             seen.add(key)
             out.append(x)
     return out
+
+
+# ── 縮めの強さをデータから決める ───────────────────────────────
+# 率 h/n を事前の率 p へ (h + m p) / (n + m) と縮めるときの m を、ベータ二項の周辺尤度が最大になるように選ぶ
+# （Beta(m p, m (1 − p)) を事前分布とした経験ベイズ）。ばらつきが件数の揺れで説明できるほど m は大きく（強く寄せる）、
+# 本当の違いが大きいほど小さくなる。
+
+
+def fit_m(pairs: list[tuple[int, int, float]]) -> float:
+    """pairs: [(件数 n, 当たり h, 事前の率 p)]。"""
+    from scipy import optimize
+    from scipy.special import betaln
+
+    pairs = [(n, h, min(max(p, 1e-3), 1 - 1e-3)) for n, h, p in pairs if n > 0]
+    if len(pairs) < 5:
+        return M
+
+    def nll(logm):
+        m = math.exp(logm)
+        return -sum(betaln(h + m * p, n - h + m * (1 - p)) - betaln(m * p, m * (1 - p)) for n, h, p in pairs)
+
+    lo, hi = (math.log(x) for x in M_BOUNDS)
+    return round(math.exp(optimize.minimize_scalar(nll, bounds=(lo, hi), method="bounded").x), 2)
+
+
+def fit_ms(stats: dict) -> dict:
+    """fit_stats の結果から、3 か所の縮めの強さ: base_bring（全体の選出率へ）・base_lead（全体の先発率へ）・
+    vs（相手に u がいたときの選出率を、そのポケモンの選出率へ）。"""
+    gb, gl = stats["g_bring"], stats["g_lead"]
+    base = stats["base"]
+    mb = fit_m([(e[0], e[1], gb) for e in base.values()])
+    ml = fit_m([(e[2], e[3], gl) for e in base.values()])
+    pairs = []
+    for k, row in stats["vs"].items():
+        e = base.get(k)
+        pk = (e[1] + mb * gb) / (e[0] + mb) if e else gb
+        pairs += [(v[0], v[1], pk) for v in row.values()]
+    return {"base_bring": mb, "base_lead": ml, "vs": fit_m(pairs)}

@@ -22,9 +22,12 @@ from collections import Counter, defaultdict
 import numpy as np
 from scipy.optimize import minimize
 
-from .select import dedupe, fit_stats, logit, samples
+from .select import dedupe, fit_ms, fit_stats, logit, samples
 
 M = 10.0
+# 縮めの強さを学習の試合から決めるか（select.fit_ms）。答え合わせ（2026-09、BSS・VGC の M-B・M-C、各 600〜1,200 試合）では
+# 選出・先発の当たりが良くならず（BSS M-C の先発を見たあとの残りは −1.4pt）、確率の確かさもはっきりとは変わらなかったので、固定のまま
+FIT_M = False
 L2 = 1.0
 HOLDOUT_DAYS = 7
 MIN_TEST = 300  # 直近 7 日で足りなければ、この件数になるまで答え合わせの期間をさかのぼる（シングルは公開リプレイが少ない）
@@ -132,12 +135,16 @@ class Featurizer:
         self.gb, self.gl = g["g_bring"], g["g_lead"]
         # 同時に選出されやすさ（両方がチームにいたとき、両方とも選出された割合の、独立の場合からのずれ）
         self.cob = stats.get("cobring", {})
+        # 縮めの強さ（select.fit_ms でデータから決めたもの。古い保存は 1 つの数）
+        m = stats.get("m", M)
+        self.m = m if isinstance(m, dict) else {"base_bring": m, "base_lead": m, "vs": m}
 
-    def _rate(self, e, which, prior):
+    def _rate(self, e, which, prior, key):
         if not e:
             return prior
         n, h = (e[0], e[1]) if which == "bring" else (e[2], e[3])
-        return (h + M * prior) / (n + M)
+        m = self.m[key]
+        return (h + m * prior) / (n + m)
 
     def _types(self, k):
         """メガストーンを持つ確率が高ければ、メガの姿のタイプ。"""
@@ -148,11 +155,11 @@ class Featurizer:
     def per_member(self, k, team, opp):
         """opp: 相手の名前のリスト、または (名前, 重み) のリスト（重みの合計 6。自分のチームが分からないときの平均的な相手）。"""
         opp_w = [(u, 1.0) for u in opp] if opp and isinstance(opp[0], str) else list(opp)
-        pb = self._rate(self.stats["base"].get(k), "bring", self.gb)
-        pl = self._rate(self.stats["base"].get(k), "lead", self.gl)
+        pb = self._rate(self.stats["base"].get(k), "bring", self.gb, "base_bring")
+        pl = self._rate(self.stats["base"].get(k), "lead", self.gl, "base_lead")
         lk = logit(pb)
         vsk = self.stats["vs"].get(k, {})
-        vs = sum(w * (logit(self._rate(vsk[u], "bring", pb)) - lk) for u, w in sorted(dict(opp_w).items()) if u in vsk)
+        vs = sum(w * (logit(self._rate(vsk[u], "bring", pb, "vs")) - lk) for u, w in sorted(dict(opp_w).items()) if u in vsk)
         kt = self._types(k)
         eff = self.sd.effectiveness
         hit = sum(w for u, w in opp_w if any(eff(t, self._types(u)) >= 2 for t in kt)) / 6
@@ -373,6 +380,8 @@ def _crossfit(xs, roles, sd, k_bring, k_lead):
         part = [x for j, x in enumerate(xs) if j % FOLDS == i]
         rest = [x for j, x in enumerate(xs) if j % FOLDS != i]
         st = fit_stats(rest, k_bring)
+        if FIT_M:
+            st["m"] = fit_ms(st)
         add_cobring(st, rest, k_bring)
         data += _dataset(part, Featurizer(st, roles, sd, k_bring), k_bring, k_lead)
     return data
@@ -380,6 +389,8 @@ def _crossfit(xs, roles, sd, k_bring, k_lead):
 
 def _featurizer(xs, roles, sd, k_bring):
     stats = fit_stats(xs, k_bring)
+    if FIT_M:
+        stats["m"] = fit_ms(stats)
     add_cobring(stats, xs, k_bring)
     return Featurizer(stats, roles, sd, k_bring)
 
@@ -614,7 +625,7 @@ def _publish(rows, group_of, sd, detail, stone, doubles, mega_types, speed_of, e
                              "bring": {k: _r(v) for k, v in b.items()}, "lead": {k: _r(v) for k, v in l_.items()}})
     return {
         "available": True, "model": "joint", "usable": None if usable is None else bool(usable), "temperature": _r(temp, 3),
-        "k_bring": kb, "k_lead": kl, "m": M, "features": [n for n, _ in FEATURES],
+        "k_bring": kb, "k_lead": kl, "m": st.get("m", M), "features": [n for n, _ in FEATURES],
         "weights": [_r(v) for v in w_pub],
         "g_bring": _r(st["g_bring"], 5), "g_lead": _r(st["g_lead"], 5),
         "base": st["base"], "vs": st["vs"],

@@ -16,17 +16,25 @@ import contextlib
 import os
 import sys
 import time
+from datetime import datetime, timedelta
 
 from . import dist, export, ladder, replays, smogon
-from .config import EXTRA_REPLAY_FORMATS, REPLAY_MAX_PER_RUN
+from .config import JST
+from .config import EXTRA_REPLAY_FORMATS, LADDER_EVERY_DAYS, REPLAY_CAP, REPLAY_MAX_PER_RUN
 
 
 def _replay_targets() -> list[str]:
-    data = smogon.load_all()
-    if not data:
-        return sorted(EXTRA_REPLAY_FORMATS)
-    latest = max(m for (m, _f, _c) in data)
-    return sorted({f for (m, f, _c) in data if m == latest} | set(EXTRA_REPLAY_FORMATS))
+    """リプレイを取るルール: 今のレギュレーションだけ（config.EXTRA_REPLAY_FORMATS）。"""
+    return sorted(EXTRA_REPLAY_FORMATS)
+
+
+def _ladder_due(fid: str) -> bool:
+    """ランキング表の記録が LADDER_EVERY_DAYS 日以上前（または無い）なら、記録し直す。"""
+    snaps = ladder.load_snapshots(fid)
+    if not snaps:
+        return True
+    last = datetime.strptime(max(snaps), "%Y-%m-%d").replace(tzinfo=JST)
+    return datetime.now(JST) - last >= timedelta(days=LADDER_EVERY_DAYS - 0.5)
 
 
 @contextlib.contextmanager
@@ -87,12 +95,20 @@ def _run(args) -> None:
                 replays.refetch(fid, max_n=args.max)
             elif getattr(args, "backfill", None):
                 replays.backfill(fid, args.backfill, max_n=args.max)
+            elif args.cmd == "all" and fid in REPLAY_CAP:
+                replays.crawl(fid, max_n=REPLAY_CAP[fid], sample=True)  # 毎日の実行: 上限を超えたら抜き取り
             else:
                 replays.crawl(fid, max_n=args.max)
     if args.cmd in ("fetch-ladder", "all"):
         # 上位の人を狙うのは、ゲーム内のランクバトルと同じルール（シングル = BSS、ダブル = VGC）だけ
-        ladder.run(getattr(args, "format", None) if args.cmd == "fetch-ladder" and getattr(args, "format", None)
-                   else [f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f])
+        if args.cmd == "fetch-ladder" and getattr(args, "format", None):
+            ladder.run(args.format)
+        else:
+            # 毎日の実行では、前の記録から LADDER_EVERY_DAYS 日たったルールだけ
+            due = [f for f in _replay_targets() if ("championsbss" in f or "championsvgc" in f)
+                   and (args.cmd == "fetch-ladder" or _ladder_due(f))]
+            if due:
+                ladder.run(due)
     if args.cmd == "seed-predlog":
         export.seed_predlog(args.format or [f for f in _replay_targets() if "championsbss" in f or "championsvgc" in f],
                             start=args.start)

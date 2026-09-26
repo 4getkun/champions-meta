@@ -22,7 +22,8 @@ python -m cmeta build               # out/ を作り直す（--no-names で Poke
 python -m cmeta all                 # 上の四つ
 python -m pytest -q
 ```
-定期実行は `.github/workflows/update.yml`（毎日と毎月 3 日）。
+定期実行は `.github/workflows/update.yml`（3 日に 1 回と毎月 3 日）。GitHub Actions の使用時間を抑えるため、リプレイを取るのは今のレギュレーションだけ
+（`config.EXTRA_REPLAY_FORMATS`。ダブルは `REPLAY_CAP` を超えたら抜き取り）、ランキング表は週 1 回、リプレイも月次も変わっていないルールの計算は飛ばす（`out/build_inputs.json`）。
 
 ## 公開
 - 公開先: https://champions.fourgetkun.com/ （Cloudflare Pages のプロジェクト `champions-meta` に割り当てたサブドメイン）。

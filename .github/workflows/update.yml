@@ -2,7 +2,9 @@ name: update data
 
 on:
   schedule:
-    - cron: "0 19 * * *"   # 毎日 JST 04:00: リプレイの取得と再計算
+    # 3 日に 1 回 JST 04:00: リプレイの取得と再計算。GitHub Actions の使用時間（アカウント全体で月 2,000 分）を抑えるため、
+    # 取るのは今のレギュレーションだけ・ダブルは抜き取り・ランキング表は週 1 回・変わっていないルールの計算は飛ばす（config.py・export.py）
+    - cron: "0 19 */3 * *"
     - cron: "30 20 3 * *"  # 毎月 3 日 JST 05:30: Smogon の前月分（1〜2 日に出る）
   workflow_dispatch:
 

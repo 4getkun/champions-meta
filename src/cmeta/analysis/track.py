@@ -52,7 +52,7 @@ def load(fmt: str) -> list[dict]:
 
 
 def _featurizer(snap: dict, sd) -> Featurizer:
-    stats = {"g_bring": snap["g_bring"], "g_lead": snap["g_lead"], "base": snap["base"], "vs": snap["vs"],
+    stats = {"g_bring": snap["g_bring"], "g_lead": snap["g_lead"], "base": snap["base"], "vs": snap["vs"], "m": snap.get("m", 10.0),
              "cobring": {tuple(k.split("|")): v for k, v in snap["cobring"].items()}}
     return Featurizer(stats, _unround(snap["roles"]), sd, snap["k_bring"])
 

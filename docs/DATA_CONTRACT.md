@@ -334,6 +334,7 @@
 {
   "format": "…", "available": true, "samples": 2060, "min_u": 60, "min_k": 15,
   "game_type": "doubles", "k_bring": 4,
+  "m": { "bring": 125.0, "lead": 14.2 },       // 縮めの強さ（ベータ二項の周辺尤度でデータから決める。大きいほど強く寄せる）
   "pokemon": { "Floette-Eternal": {
     "n": 243,                                   // u を見せ合いに入れた回数（同じ見せ合いの繰り返しは 1 回）
     "strength": { "bring": 0.012, "lead": 0.0 }, // 誘導の強さ（率の変化の 2 乗平均から偶然の揺れを引いた平方根。0 は揺れと区別できない）

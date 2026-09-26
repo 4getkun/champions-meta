@@ -317,13 +317,18 @@ def list_new(fmt: str, since: int) -> list[dict]:
     return out
 
 
-def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print) -> int:
-    """新しいリプレイを古い順に max_n 件まで取り、日ごとのファイルに足す。取った件数を返す。"""
+def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print, sample: bool = False) -> int:
+    """新しいリプレイを古い順に max_n 件まで取り、日ごとのファイルに足す。取った件数を返す。
+    sample=True: max_n を超えたら、期間全体から等間隔に max_n 件を抜き取り、残りは取らない（次回に持ち越さない）。"""
     state = _load_state()
     since = state.get(fmt, {}).get("last", int(time.time()) - REPLAY_BACKFILL_DAYS * 86400)
     new = list_new(fmt, since)
     todo = new[:max_n]
-    if len(new) > max_n:
+    if len(new) > max_n and sample:
+        step = len(new) / max_n
+        todo = [new[int(i * step)] for i in range(max_n)]
+        log(f"replays {fmt}: 新しいものが {len(new)} 件。等間隔に {max_n} 件を抜き取る")
+    elif len(new) > max_n:
         log(f"replays {fmt}: 新しいものが {len(new)} 件。古い順に {max_n} 件だけ取り、残りは次回")
     if not todo:
         log(f"replays {fmt}: 新しいものなし")
@@ -348,6 +353,8 @@ def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print) -> int:
         existing = read_day(fmt, day)
         seen = {x["id"] for x in existing}
         write_day(fmt, day, existing + [x for x in rows if x["id"] not in seen])
+    if sample and len(new) > max_n:
+        last = max(last, new[-1]["uploadtime"])  # 抜き取らなかったものは取らない
     state[fmt] = {"last": last}
     _save_state(state)
     n = sum(len(v) for v in by_day.values())
