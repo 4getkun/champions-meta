@@ -128,6 +128,8 @@ a { color: inherit; }
 .lead { font-size: 17px; color: var(--sub); max-width: 640px; line-height: 1.7; }
 
 /* ベントー */
+/* hidden 属性を display の指定より優先する（.grid の display: grid が勝って、隠したはずの空の枠が出ていた） */
+[hidden] { display: none !important; }
 .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; margin-top: 30px; }
 .c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; }
 .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
@@ -437,3 +439,43 @@ h2 .more { margin-left: auto; float: right; font-size: 13px; font-weight: 700; c
 @media (max-width: 720px) { .early-list li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .early-list .ebr { grid-column: 1 / -1; } }
 .early-list.compact li { padding: 4px 10px; }
 .btn { display: inline-block; padding: 8px 16px; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 700; text-decoration: none; }
+
+/* すばやさ調整の画面（入力 → 答え → ライン表 → ミラー） */
+.spd-form { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px 28px; align-items: center; }
+.spd-who { display: flex; gap: 12px; align-items: center; }
+.spd-ctl { display: grid; gap: 10px; font-size: 13px; }
+.spd-ctl .k { display: inline-block; min-width: 9em; }
+.spd-sp { display: flex; align-items: center; gap: 10px; }
+.spd-sp input[type=range] { flex: 1; max-width: 320px; accent-color: var(--accent); }
+.spd-sp b { font-family: 'Inter Tight', sans-serif; font-size: 18px; min-width: 2ch; text-align: right; }
+.spd-chk { display: flex; flex-wrap: wrap; gap: 16px; }
+.spd-chk .chk { display: flex; gap: 6px; align-items: center; }
+.spd-stat { text-align: right; }
+.spd-stat b { display: block; font-family: 'Inter Tight', sans-serif; font-size: 44px; letter-spacing: -.03em; line-height: 1.1; }
+.kv.kv3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kv.kv4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kv small { display: block; }
+.spd-next { margin: 14px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.spd-next b { font-family: 'Inter Tight', sans-serif; font-size: 20px; color: var(--accent); }
+.spd-next small { width: 100%; }
+.tt-wrap { overflow-x: auto; }
+.spd-rows { width: 100%; font-size: 13px; }
+.spd-rows th, .spd-rows td { text-align: left; }
+.spd-rows td:first-child { font-family: 'Inter Tight', sans-serif; font-weight: 700; text-align: right; width: 4em; }
+.spd-rows td a { display: inline-flex; align-items: center; gap: 6px; }
+.spd-rows b.up { color: var(--up); }
+.spd-rows b.down { color: var(--down, #c2410c); }
+.spd-rows tr.you td { background: var(--accent); color: var(--on-accent, #fff); font-weight: 700; }
+.spd-mirror { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 720px) {
+  .spd-form { grid-template-columns: minmax(0, 1fr); }
+  .spd-stat { text-align: left; }
+  .kv.kv3 { grid-template-columns: minmax(0, 1fr); }
+  .kv.kv4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .spd-mirror { grid-template-columns: minmax(0, 1fr); }
+  .spd-ctl .k { min-width: 0; }
+}
+.spd-who-list { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.spd-mon { display: inline-flex; align-items: center; gap: 4px; }
+.spd-mon small { margin-left: 2px; }
+.spd-rows td:last-child small { display: block; }
