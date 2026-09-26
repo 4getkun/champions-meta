@@ -13,3 +13,17 @@ def test_sample_teams_needs_three_players():
     got = sample_teams(rows, lambda x: x)
     assert [s["team"] for s in got] == [A]
     assert got[0]["players"] == 3 and got[0]["games"] == 4
+
+
+def test_offline_names_use_cache(tmp_path, monkeypatch):
+    import json
+
+    from cmeta import dex
+    p = tmp_path / "ja.json"
+    p.write_text(json.dumps({"species:salamence": {"ja": "ボーマンダ", "slug": "salamence", "pid": 373}}), "utf-8")
+    monkeypatch.setattr(dex, "JA_PATH", p)
+    ja = dex.JaNames(dex.Showdown(), offline=True)
+    assert ja.species("Salamence") == "ボーマンダ"
+    assert ja.pokemon_id("Salamence") == 373
+    assert ja.species("Garchomp") is None  # 控えに無いものは問い合わせずに None
+    assert "species:garchomp" not in ja.cache

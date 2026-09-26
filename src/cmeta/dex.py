@@ -198,8 +198,11 @@ def _ja(names: list[dict]) -> str | None:
 class JaNames:
     """日本語名の控え。キーは 'species:<showdown id>' など。値が None は「PokeAPI に無かった」。"""
 
-    def __init__(self, sd: Showdown):
+    def __init__(self, sd: Showdown, offline: bool = False):
+        """offline=True: PokeAPI に問い合わせず、控え（data/dex/pokeapi_ja.json）と手書きの指定だけを使う。
+        控えに無いものは None を返す（控えには何も書かない。次に問い合わせできるときに取る）。"""
         self.sd = sd
+        self.offline = offline
         self.cache: dict[str, dict | None] = json.loads(JA_PATH.read_text("utf-8")) if JA_PATH.exists() else {}
         self.overrides: dict[str, str] = (
             json.loads(OVERRIDES_PATH.read_text("utf-8")) if OVERRIDES_PATH.exists() else {}
@@ -229,6 +232,8 @@ class JaNames:
         if key in self.cache and (self.cache[key] is not None or not retry_missing):
             v = self.cache[key]
             return v and v["ja"]
+        if self.offline:
+            return None
         self.cache[key] = self._fetch_species(sid, e)
         self.dirty = True
         v = self.cache[key]
@@ -245,6 +250,8 @@ class JaNames:
             return self.overrides[f"sprite:{to_id(sid)}"]
         key = f"species:{to_id(sid)}"
         if key not in self.cache:
+            if self.offline:
+                return None
             # 日本語名を手書きで指定したポケモンは species() が控えを作らないので、ここで取る
             self.cache[key] = self._fetch_species(sid, e)
             self.dirty = True
@@ -252,6 +259,8 @@ class JaNames:
         if not v or not v.get("slug"):
             return None
         if "pid" not in v:
+            if self.offline:
+                return None
             try:
                 poke = self._get(f"pokemon/{v['slug']}")
             except http.NotFound:
@@ -302,6 +311,8 @@ class JaNames:
         if key in self.cache:
             v = self.cache[key]
             return v and v["ja"]
+        if self.offline:
+            return None
         v = None
         if en:
             try:

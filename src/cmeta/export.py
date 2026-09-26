@@ -292,20 +292,20 @@ def build(fetch_names: bool = True, log=print) -> dict:
         _write(f"tracks/{t}.json", obj)
 
     # 名前（日本語は PokeAPI、取ったものは控える）
-    ja = JaNames(sd)
+    ja = JaNames(sd, offline=not fetch_names)  # fetch_names=False でも控えの日本語名・画像は使う
     warnings = []
     names = {"pokemon": {}, "items": {}, "moves": {}, "abilities": {}}
     for n in sorted(names_pokemon):
         e = sd.species(n)
         names["pokemon"][n] = {
-            "ja": ja.species(n) if fetch_names else None,
+            "ja": ja.species(n),
             "group": group_of(n),
             "mega": sd.is_mega(n),
             "types": sd.types(n) or None,
             "num": e.get("num") if e else None,
             "base_stats": (e.get("baseStats") or ((sd.species(e["baseSpecies"]) or {}).get("baseStats")
                                                    if e.get("baseSpecies") else None)) if e else None,
-            "sprite": sprite_urls(ja.pokemon_id(n)) if fetch_names else None,
+            "sprite": sprite_urls(ja.pokemon_id(n)),
         }
     for kind, ids, en_of, ja_of in (
         ("items", names_items, sd.item_names, ja.item),
@@ -315,8 +315,12 @@ def build(fetch_names: bool = True, log=print) -> dict:
         for i in sorted(ids):
             if i in ("", "nothing", "noability"):
                 continue
-            names[kind][i] = {"en": en_of.get(i), "ja": ja_of(i) if fetch_names else None}
+            names[kind][i] = {"en": en_of.get(i), "ja": ja_of(i)}
     ja.save()
+    # 日本語名がほとんど無いまま書き出さない（2026-09-26 に、名前の無い names.json を公開してしまった）
+    no_ja = sum(1 for v in names["pokemon"].values() if not v["ja"])
+    if names["pokemon"] and no_ja > len(names["pokemon"]) * 0.2:
+        raise SystemExit(f"日本語名の無いポケモンが {no_ja} / {len(names['pokemon'])} あります。控え（data/dex/pokeapi_ja.json）を確かめてください")
     for kind, d in names.items():
         missing = [k for k, v in d.items() if not v["ja"]]
         if kind == "pokemon" and fetch_names:
