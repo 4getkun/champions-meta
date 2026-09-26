@@ -5,3 +5,6 @@
   Cache-Control: public, max-age=300
 /*.css
   Cache-Control: public, max-age=300
+# 書体は名前に中身のハッシュが入っているので、長く控えてよい
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

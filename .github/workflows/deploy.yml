@@ -39,7 +39,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: PYTHONPATH=src python -c "from cmeta import dist; dist.build()"  # 依存なしで動く（config だけ読む）
+      # 書体を使う文字だけに絞って自前で配る（src/cmeta/fonts.py）。元の書体は .cache/fonts に控える
+      - uses: actions/cache@v4
+        with:
+          path: .cache/fonts
+          key: fonts-v1
+      - run: pip install fonttools brotli
+      - run: PYTHONPATH=src python -c "from cmeta import dist; dist.build()"  # fonttools が無ければ Google Fonts のまま出す
       - name: Deploy
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: |

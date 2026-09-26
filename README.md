@@ -48,4 +48,6 @@ python -m pytest -q
 - Smogon usage statistics — https://www.smogon.com/stats/
 - Pokémon Showdown（データとリプレイ、コードは MIT）— https://github.com/smogon/pokemon-showdown
 - PokeAPI（BSD-3-Clause）— https://pokeapi.co/ 。取ったものは `data/dex/` に控え、同じものを取りに行かない。
+- 書体: Inter・Inter Tight・Noto Sans JP・M PLUS 2（いずれも SIL Open Font License 1.1、google/fonts）。公開用（`python -m cmeta dist`）では、
+  使う文字だけに絞って自前で配る（`src/cmeta/fonts.py`。書体の中の著作権・ライセンスの表示は残す）。元の書体は `.cache/fonts/` に控える。
 - ポケモンの画像は PokeAPI の画像（PokeAPI/sprites）を CDN（jsDelivr）から表示する。ファイルはこのリポジトリに複製しない。画像の権利は任天堂などにある。
