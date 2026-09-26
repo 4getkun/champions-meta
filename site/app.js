@@ -1277,6 +1277,7 @@ function setupTeamInputs() {
   document.addEventListener('click', (ev) => {
     const c = ev.target.closest('[data-clear]');
     if (c) { TEAM[c.dataset.clear].fill(''); onTeamChanged(); return; }
+    if (ev.target.closest('[data-sel-run]')) { runSelect(); return; }
     const sb = ev.target.closest('[data-sample]');
     if (sb && view.samples?.teams) {
       const t = view.samples.teams[+sb.dataset.sample].team;
@@ -1429,7 +1430,7 @@ async function loadToolData() {
   const f = view.f;
   if (!DEX) DEX = await getJSON('dex.json');
   if (!view.sel) view.sel = f.replay_days ? await getJSON(`select/${f.id}.json`).catch(() => null) : null;
-  if (!view.diag) view.diag = await getJSON(`diag/${f.id}.json`).catch(() => null);
+  if (view.diag === undefined) view.diag = view.mo ? await getJSON(`diag/${f.id}.json`).catch(() => null) : null; // 月次の無いルールには無い
   if (view.samples === undefined) view.samples = f.team_select ? await getJSON(`samples/${f.id}.json`).catch(() => null) : null;
 }
 
@@ -1464,11 +1465,30 @@ function sampleCard(roles) {
 let SEEN_LEADS = new Set(); // 先発に出たポケモン（押して選ぶ）
 const selSlot = (p) => (p >= 0.8 ? ['fix', 'ほぼ出す'] : p <= 0.3 ? ['bench', '出にくい'] : ['flex', '相手しだい']);
 
+let SEL_RUN = null; // 解析した時点のルールとチーム（変わったら結果を隠す）
+const selSig = () => `${view.f.id}|${TEAM.opp.join(',')}|${TEAM.mine.join(',')}`;
+const SEL_STEPS = ['見せ合いの実績を読み込んでいます', '相手の 6 匹から選出の組み合わせを数えています', 'あなたのチームを見たときの傾向を足しています', '確率をまとめています'];
+async function runSelect() {
+  const out = $('select-out');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  out.innerHTML = `<div class="sel-scan" aria-live="polite"><div class="bar"><i></i></div><ol>${SEL_STEPS.map((t) => `<li>${t}</li>`).join('')}</ol></div>`;
+  const items = out.querySelectorAll('.sel-scan li');
+  for (let i = 0; i < items.length; i++) {
+    items[i].classList.add('on');
+    if (!reduce) await new Promise((r) => setTimeout(r, 280));
+    items[i].classList.add('done');
+  }
+  SEL_RUN = selSig();
+  await renderSelect();
+  out.classList.remove('sel-in');
+  void out.offsetWidth; // 結果を出すたびに動きを最初から
+  out.classList.add('sel-in');
+}
 async function renderSelect() {
   await loadToolData();
   SEL = view.sel;
   applySamples(['opp', 'mine']);
-  $('select-samples').innerHTML = sampleCard(['opp', 'mine']);
+  $('select-samples').innerHTML = sampleCard(['mine', 'opp']);
   const label = formatLabel(view.f);
   const day = (t) => new Date(t * 1000).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
   $('select-asof').innerHTML = dots(esc(label), 'Showdown の公開リプレイ', SEL?.trained ? `${day(SEL.trained.from)}〜${day(SEL.trained.to)}` : '');
@@ -1480,6 +1500,13 @@ async function renderSelect() {
     return;
   }
   if (opp.length < 6) { out.innerHTML = '<h2>予想</h2><p class="empty">相手の 6 匹を入れてください。</p>'; return; }
+  // 「解析する」を押すまで結果は出さない。チームかルールを変えたら、もう一度押す
+  if (SEL_RUN !== selSig()) {
+    out.innerHTML = '<div class="sel-go"><div><h2 style="margin:0">解析の準備ができました</h2>'
+      + `<p class="note" style="margin:4px 0 0">相手 ${opp.length} 匹${mine.length === 6 ? '・自分 6 匹' : '（自分のチームなし: 環境の平均的な相手として計算）'}</p></div>`
+      + '<button type="button" class="btn sel-run" data-sel-run>解析する</button></div>';
+    return;
+  }
   if (new URLSearchParams(location.search).get('check')) selSelfCheck();
   const kb = SEL.k_bring, kl = SEL.k_lead;
   // 予想が全体の率より良くならないルールでは、全体の率だけ（weights の base と lead_base だけ 1）で計算する

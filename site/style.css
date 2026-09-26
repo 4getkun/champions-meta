@@ -497,3 +497,21 @@ h2 .more { margin-left: auto; float: right; font-size: 13px; font-weight: 700; c
 .diag-samples li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 14px; background: var(--accent-soft); }
 .diag-samples .mons { display: flex; gap: 2px; }
 .diag-samples .btns { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* 選出予想: 「解析する」と、結果が出るまでの演出 */
+.sel-go { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.btn.sel-run { font-size: 16px; padding: 12px 28px; border: 0; cursor: pointer; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
+.btn.sel-run:hover { transform: translateY(-1px); }
+.sel-scan .bar { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; }
+.sel-scan .bar i { display: block; height: 100%; width: 40%; border-radius: 3px; background: var(--accent); animation: sel-scan 0.9s ease-in-out infinite; }
+@keyframes sel-scan { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.sel-scan ol { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.sel-scan li { opacity: .35; transition: opacity .2s; }
+.sel-scan li.on { opacity: 1; color: var(--ink); }
+.sel-scan li.on::before { content: '… '; }
+.sel-scan li.done::before { content: '✓ '; color: var(--up); }
+#select-out.sel-in > * { animation: sel-in .45s ease-out both; }
+#select-out.sel-in > *:nth-child(2) { animation-delay: .05s; }
+#select-out.sel-in > *:nth-child(3) { animation-delay: .1s; }
+@keyframes sel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sel-scan .bar i, #select-out.sel-in > * { animation: none; } }
