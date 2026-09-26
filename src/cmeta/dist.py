@@ -3,6 +3,7 @@
 画面は既定で ./data/ を読む（app.js の BASE）。dist/ はコミットしない（毎回作り直す）。
 """
 
+import hashlib
 import json
 import shutil
 from datetime import datetime
@@ -17,6 +18,12 @@ def build(log=print) -> None:
         shutil.rmtree(DIST)
     shutil.copytree(SITE, DIST)
     shutil.copytree(OUT, DIST / "data")
+    # 画面の JS・CSS は中身ごとに URL を変える（?v=<中身のハッシュ>）。更新したらすぐ新しいものが読まれる
+    html = (DIST / "index.html").read_text("utf-8")
+    for name in ("app.js", "style.css"):
+        h = hashlib.sha256((DIST / name).read_bytes()).hexdigest()[:10]
+        html = html.replace(f'"{name}"', f'"{name}?v={h}"')
+    (DIST / "index.html").write_text(html, "utf-8")
     meta = json.loads((OUT / "meta.json").read_text("utf-8"))
     day = (meta.get("generated_at") or datetime.now(JST).isoformat())[:10]
     # 画面はハッシュ（#v=…）で切り替えるので、URL は 1 つだけ
