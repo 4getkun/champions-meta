@@ -3460,6 +3460,11 @@
   "slug": "falinks-mega",
   "species_ja": "タイレーツ"
  },
+ "species:farfetchd": {
+  "ja": "カモネギ",
+  "pid": 83,
+  "slug": "farfetchd"
+ },
  "species:farigiraf": {
   "ja": "リキキリン",
   "pid": 981,
@@ -3623,6 +3628,11 @@
   "pid": 472,
   "slug": "gliscor"
  },
+ "species:gogoat": {
+  "ja": "ゴーゴート",
+  "pid": 673,
+  "slug": "gogoat"
+ },
  "species:golisopod": {
   "ja": "グソクムシャ",
   "pid": 768,
@@ -3662,6 +3672,13 @@
   "pid": 711,
   "slug": "gourgeist"
  },
+ "species:gourgeistlarge": {
+  "form_ja": "おおきいサイズ",
+  "ja": "パンプジン（おおきいサイズ）",
+  "pid": 10031,
+  "slug": "gourgeist-large",
+  "species_ja": "パンプジン"
+ },
  "species:gourgeistsmall": {
   "form_ja": "ちいさいサイズ",
   "ja": "パンプジン（ちいさいサイズ）",
@@ -3680,6 +3697,11 @@
   "ja": "オトスパス",
   "pid": 853,
   "slug": "grapploct"
+ },
+ "species:greattusk": {
+  "ja": "イダイナキバ",
+  "pid": 984,
+  "slug": "great-tusk"
  },
  "species:greninja": {
   "ja": "ゲッコウガ",
@@ -3840,6 +3862,11 @@
   "pid": 983,
   "slug": "kingambit"
  },
+ "species:kingdra": {
+  "ja": "キングドラ",
+  "pid": 230,
+  "slug": "kingdra"
+ },
  "species:kleavor": {
   "ja": "バサギリ",
   "pid": 900,
@@ -3932,6 +3959,11 @@
   "pid": 10126,
   "slug": "lycanroc-midnight",
   "species_ja": "ルガルガン"
+ },
+ "species:mabosstiff": {
+  "ja": "マフィティフ",
+  "pid": 943,
+  "slug": "mabosstiff"
  },
  "species:machamp": {
   "ja": "カイリキー",
@@ -4161,6 +4193,11 @@
   "ja": "ペリッパー",
   "pid": 279,
   "slug": "pelipper"
+ },
+ "species:perrserker": {
+  "ja": "ニャイキング",
+  "pid": 863,
+  "slug": "perrserker"
  },
  "species:persianalola": {
   "form_ja": "アローラのすがた",
@@ -4552,6 +4589,13 @@
   "pid": 442,
   "slug": "spiritomb"
  },
+ "species:squawkabilly": {
+  "ja": "イキリンコ",
+  "pid": 931,
+  "slug": "squawkabilly"
+ },
+ "species:squawkabillywhite": null,
+ "species:squawkabillyyellow": null,
  "species:staraptor": {
   "ja": "ムクホーク",
   "pid": 398,
@@ -4600,6 +4644,11 @@
   "slug": "stunfisk-galar",
   "species_ja": "マッギョ"
  },
+ "species:swalot": {
+  "ja": "マルノーム",
+  "pid": 317,
+  "slug": "swalot"
+ },
  "species:swampert": {
   "ja": "ラグラージ",
   "pid": 260,
@@ -4647,6 +4696,11 @@
   "pid": 10250,
   "slug": "tauros-paldea-combat-breed",
   "species_ja": "ケンタロス"
+ },
+ "species:thievul": {
+  "ja": "フォクスライ",
+  "pid": 828,
+  "slug": "thievul"
  },
  "species:tinkaton": {
   "ja": "デカヌチャン",
