@@ -1,0 +1,49 @@
+name: deploy site
+
+# 公開: Cloudflare Pages のプロジェクト champions-meta（https://champions.fourgetkun.com/ を割り当てる）。
+# site/ と out/ を dist/ にまとめて（python -m cmeta dist）Direct Upload する。リポジトリは private のまま。
+# いつ動くか:
+#   - 毎日のデータ更新（update data）が終わったあと。あちらの push は GITHUB_TOKEN なので push では起動しない
+#   - 画面（site/）や out/ を手元から push したとき
+#   - 手で（workflow_dispatch）
+# 必要なリポジトリの secrets: CLOUDFLARE_API_TOKEN（Account > Cloudflare Pages > Edit）と CLOUDFLARE_ACCOUNT_ID。
+# 無いあいだは何もしない。プロジェクトが無ければ最初の実行で作る。
+on:
+  workflow_run:
+    workflows: ["update data"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["site/**", "out/**", "src/cmeta/dist.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main  # workflow_run のときも、データ更新のコミットを含む最新を出す
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: PYTHONPATH=src python -c "from cmeta import dist; dist.build()"  # 依存なしで動く（config だけ読む）
+      - name: Deploy
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          if ! npx --yes wrangler@latest pages project list | grep -qw "champions-meta"; then
+            npx --yes wrangler@latest pages project create champions-meta --production-branch=main
+          fi
+          npx --yes wrangler@latest pages deploy dist --project-name=champions-meta --branch=main --commit-dirty=true

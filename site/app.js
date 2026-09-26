@@ -2,7 +2,8 @@
 // データの場所: 既定は ./data/（hub に置くとき out/ をここへ写す）。手元では ?data=../out/ で repo の out/ を読む。
 'use strict';
 
-const BASE = new URLSearchParams(location.search).get('data') || './data/';
+// ?data= は同じサイトの中の相対パスだけ受け付ける（ほかのサイトの JSON を読ませて表示させないため）
+const BASE = ((d) => (d && /^\.{0,2}\/?[\w./-]*\/$/.test(d) && !d.includes('//') ? d : './data/'))(new URLSearchParams(location.search).get('data'));
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (v, d = 1) => (v == null ? '—' : `${(v * 100).toFixed(d)}%`);
@@ -437,7 +438,7 @@ async function onRoute() {
     select: `選出予想（${label}）— チャンピオンズ メタ`,
     diag: `チーム診断（${label}）— チャンピオンズ メタ`,
     speed: `すばやさ調整${route.p ? `・${short(route.p)}` : ''}（${label}）— チャンピオンズ メタ`,
-  }[shown] || `チャンピオンズ メタ（${label}）— 使用率・並び・選出率の推移`;
+  }[shown] || `チャンピオンズ メタ（${label}）— 選出の傾向・選出予想・すばやさ`;
 }
 
 // ── 開始直後の環境（月次統計がまだ無いルール。src/cmeta/analysis/early.py） ─────────────

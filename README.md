@@ -8,7 +8,7 @@
 
 ## 構成
 - **機能部** `src/cmeta/`: 取得・解析・`out/` への書き出し。画面のことは知らない。
-- **デザイン部** `site/`（未着手）: `out/` を読んで描くだけ。
+- **デザイン部** `site/`: `out/` を読んで描くだけ。
 - `data/`: リポジトリに入れる縮めたデータ（Smogon の月次統計、リプレイの 1 試合 1 行、日本語名の控え）。
 - `.cache/`: 生のファイル（git 管理外）。
 
@@ -23,6 +23,17 @@ python -m cmeta all                 # 上の四つ
 python -m pytest -q
 ```
 定期実行は `.github/workflows/update.yml`（毎日と毎月 3 日）。
+
+## 公開
+- 公開先: https://champions.fourgetkun.com/ （Cloudflare Pages のプロジェクト `champions-meta` に割り当てたサブドメイン）。
+  fourgetkun.com のハブ（fourgetkun-hub）には、トップのカード用の名札 `public/champions-meta/` だけを置いている。
+- `python -m cmeta dist` で `dist/`（`site/` の中身 + `out/` を `data/` として + `sitemap.xml`）を作り、
+  `.github/workflows/deploy.yml` が Direct Upload する。リポジトリは private のまま。
+  毎日のデータ更新のあと・`site/` か `out/` を push したとき・手で起動したときに動く。
+- 必要なリポジトリの secrets: `CLOUDFLARE_API_TOKEN`（Account > Cloudflare Pages > Edit）と `CLOUDFLARE_ACCOUNT_ID`。
+  無いあいだはデプロイだけ飛ばす。
+- 手元で公開用のものを見る: `python -m cmeta dist` のあと `python -m http.server 8788 --directory dist`。
+  `site/` のまま見るときは、リポジトリ直下で `python -m http.server` を立てて `/site/?data=../out/`。
 
 ## 手で直すファイル
 - `data/name_overrides.json`: 名前の対応が取れないとき。キーは次のとおり。

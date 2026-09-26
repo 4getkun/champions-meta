@@ -1,0 +1,14 @@
+{
+  "name": "チャンピオンズ メタ",
+  "short_name": "Champions Meta",
+  "description": "ポケモンチャンピオンズ（Pokémon Showdown）の選出の傾向・選出予想・すばやさ・使用率の非公式データサイト",
+  "start_url": "/",
+  "display": "browser",
+  "lang": "ja",
+  "background_color": "#f6f4fb",
+  "theme_color": "#f6f4fb",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

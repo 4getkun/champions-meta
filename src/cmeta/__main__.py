@@ -8,6 +8,7 @@
     python -m cmeta seed-predlog [--format ID …] [--start YYYY-MM-DD]
                                           成績表を始める前の日の予想を、その日までのデータだけで作り直して保存する
     python -m cmeta all                   上の三つを順に
+    python -m cmeta dist                  公開用の dist/ を作る（site/ + out/ を data/ として）
 """
 
 import argparse
@@ -16,7 +17,7 @@ import os
 import sys
 import time
 
-from . import export, ladder, replays, smogon
+from . import dist, export, ladder, replays, smogon
 from .config import EXTRA_REPLAY_FORMATS, REPLAY_MAX_PER_RUN
 
 
@@ -65,6 +66,7 @@ def main(argv=None) -> int:
     sp = sub.add_parser("seed-predlog")
     sp.add_argument("--format", action="append")
     sp.add_argument("--start")
+    sub.add_parser("dist")
     a = sub.add_parser("all")
     a.add_argument("--max", type=int, default=REPLAY_MAX_PER_RUN)
     args = ap.parse_args(argv)
@@ -96,6 +98,8 @@ def _run(args) -> None:
                             start=args.start)
     if args.cmd in ("build", "all"):
         export.build(fetch_names=not getattr(args, "no_names", False))
+    if args.cmd == "dist":
+        dist.build()
 
 
 if __name__ == "__main__":

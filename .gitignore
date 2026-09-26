@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 .pytest_cache/
 data/replays/.fetch.lock
+dist/

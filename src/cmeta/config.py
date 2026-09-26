@@ -7,6 +7,9 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
 CACHE = ROOT / ".cache"
 OUT = ROOT / "out"
+SITE = ROOT / "site"
+DIST = ROOT / "dist"
+SITE_URL = "https://champions.fourgetkun.com/"  # 公開先（Cloudflare Pages の champions-meta に、このサブドメインを割り当てる）
 
 JST = timezone(timedelta(hours=9))
 
