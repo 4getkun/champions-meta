@@ -52,7 +52,8 @@ function nameParts(n) {
 // ── 名前と画像 ────────────────────────────────────────────
 const poke = (n) => (NAMES && NAMES.pokemon[n]) || {};
 const ja = (n) => poke(n).ja || n;
-const short = (n) => ja(n).split('（')[0];
+// 短い名前: 姿の違いは別のポケモンとして数えているので、括弧の中は残して縮める（キュウコン（アローラ）→ キュウコン(アローラ)）
+const short = (n) => ja(n).replace(/（([^）]+)）/, (_, x) => `(${x.replace(/パルデア・|のすがた|なすがた|サイズ|種$|のはな|のかた/g, '')})`);
 function spriteUrl(n, kind = 'front') {
   const s = poke(n).sprite;
   return s ? s[kind] || s.front : null;
@@ -1200,7 +1201,7 @@ function nameIndex() {
   NAME_INDEX = new Map();
   for (const [k, v] of Object.entries(NAMES.pokemon)) {
     const g = v.group || k;
-    for (const s of [k, g, v.ja, v.ja && v.ja.split('（')[0]]) if (s && !NAME_INDEX.has(norm(s))) NAME_INDEX.set(norm(s), g);
+    for (const s of [k, g, v.ja, short(k), v.ja && v.ja.split('（')[0]]) if (s && !NAME_INDEX.has(norm(s))) NAME_INDEX.set(norm(s), g);
   }
   return NAME_INDEX;
 }
