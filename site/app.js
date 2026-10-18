@@ -1071,8 +1071,8 @@ async function spdOpenShare(S, k) {
   dialog.className = 'speed-share-dialog';
   dialog.setAttribute('aria-labelledby', 'speed-share-title');
   dialog.innerHTML = `<div class="speed-share-heading"><h2 id="speed-share-title">調整結果を共有</h2><button type="button" class="pill" data-close aria-label="共有画面を閉じる">閉じる</button></div>`
-    + '<p class="note">画像を保存して、Xの投稿画面に添付できます。対応する端末では画像を直接共有できます。</p><div class="speed-share-preview"><p>結果画像を作成中…</p></div>'
-    + `<div class="speed-share-actions"><a class="btn" data-save hidden>画像を保存</a><button type="button" class="pill" data-native hidden>画像を共有</button><a class="btn" href="${esc(intent.href)}" target="_blank" rel="noopener noreferrer">Xで投稿を作成</a></div>`
+    + '<p class="note">「画像をコピー」→「Xで投稿を作成」→ 投稿欄に貼り付け（Ctrl+V／Macは⌘V）。画像を保存せずに添付できます。</p><div class="speed-share-preview"><p>結果画像を作成中…</p></div>'
+    + `<div class="speed-share-actions"><button type="button" class="btn" data-copy-image disabled>画像をコピー</button><a class="btn" href="${esc(intent.href)}" target="_blank" rel="noopener noreferrer">Xで投稿を作成</a><a class="pill" data-save hidden>画像を保存</a><button type="button" class="pill" data-native hidden>画像を共有</button></div>`
     + `<label class="k" for="speed-share-url">同じ調整を開くリンク</label><div class="speed-share-link"><input id="speed-share-url" type="text" readonly value="${esc(url)}"><button type="button" class="pill" data-copy>コピー</button></div><p class="note">リンク先の結果は、統計の更新によって変わる場合があります。</p><p class="note" role="status" data-share-status></p>`;
   document.body.append(dialog);
   let objectURL;
@@ -1086,6 +1086,8 @@ async function spdOpenShare(S, k) {
   dialog.showModal();
   try {
     const blob = await window.SpeedShare.render({ name: ja(k), signLabel: SIGN_JA[state.sign], points: state.sp,
+      sprite: spriteUrl(k, 'home'), spriteFallback: spriteUrl(k),
+      onImageError: () => { if (dialog.isConnected) dialog.querySelector('[data-share-status]').textContent = 'ポケモンの画像を読み込めなかったため、結果のみの画像を作成しました。'; },
       bare, effective: spdMineAt(e, state.sp), scarf: state.scarf, tw: state.tw, ...p,
       format: formatLabel(view.f), month: S.month, cutoff: S.cutoff, url });
     if (!dialog.isConnected) return;
@@ -1095,6 +1097,23 @@ async function spdOpenShare(S, k) {
     const save = dialog.querySelector('[data-save]');
     const filename = `speed-${k.replace(/[^a-z0-9-]/gi, '-')}-${state.sp}.png`;
     save.href = objectURL; save.download = filename; save.hidden = false;
+    const copyImage = dialog.querySelector('[data-copy-image]');
+    if (navigator.clipboard?.write && window.ClipboardItem && (!ClipboardItem.supports || ClipboardItem.supports('image/png'))) {
+      copyImage.disabled = false;
+      copyImage.onclick = async () => {
+        const status = dialog.querySelector('[data-share-status]');
+        // 生成済みBlobをクリック直後に渡し、Safariなどのユーザー操作条件を満たす。
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          status.textContent = '画像をコピーしました。Xの投稿欄で Ctrl+V（Macは⌘V）を押して貼り付けてください。';
+        } catch {
+          status.textContent = '画像をコピーできませんでした。ブラウザーのコピー権限を確認するか、「画像を保存」をご利用ください。';
+        }
+      };
+    } else {
+      copyImage.title = 'このブラウザーは画像コピーに対応していません。画像を保存して添付してください。';
+      dialog.querySelector('[data-share-status]').textContent = copyImage.title;
+    }
     const file = new File([blob], filename, { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) {
       const native = dialog.querySelector('[data-native]'); native.hidden = false;

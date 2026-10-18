@@ -1,4 +1,4 @@
-/* すばやさミラーの共有画像。外部画像・ライブラリに依存しない。 */
+/* すばやさミラーの共有画像。画像が取得できなくても調整結果を生成する。 */
 (() => {
   const WIDTH = 1200;
   const HEIGHT = 675;
@@ -25,7 +25,20 @@
     return size;
   }
 
-  function render(data = {}) {
+  function loadSprite(url) {
+    if (!url) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.crossOrigin = 'anonymous'; // PNG書き出し・クリップボード用にCanvasを汚染させない。
+      const finish = (value) => { clearTimeout(timer); image.onload = image.onerror = null; resolve(value); };
+      const timer = setTimeout(() => finish(null), 4500);
+      image.onload = () => finish(image.naturalWidth ? image : null);
+      image.onerror = () => finish(null);
+      image.src = url;
+    });
+  }
+
+  function render(data = {}, sprite = null) {
     const canvas = document.createElement('canvas');
     canvas.width = WIDTH; canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
@@ -49,12 +62,18 @@
 
     // Main matchup heading
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = C.muted; ctx.font = `600 16px ${FONT}`;
-    ctx.fillText('すばやさミラー', 78, 153);
+    const headingX = sprite ? 254 : 78;
+    if (sprite) {
+      const scale = Math.min(154 / sprite.naturalWidth, 154 / sprite.naturalHeight);
+      const w = sprite.naturalWidth * scale, h = sprite.naturalHeight * scale;
+      ctx.drawImage(sprite, 78 + (154 - w) / 2, 126 + (154 - h) / 2, w, h);
+    }
+    ctx.fillText('すばやさミラー', headingX, 153);
     const name = text(data.name);
-    const nameSize = fitted(ctx, name, 740, 43, 27, 700);
-    ctx.font = `700 ${nameSize}px ${FONT}`; ctx.fillStyle = C.ink; ctx.fillText(name, 78, 208);
+    const nameSize = fitted(ctx, name, 818 - headingX, 43, 21, 700);
+    ctx.font = `700 ${nameSize}px ${FONT}`; ctx.fillStyle = C.ink; ctx.fillText(name, headingX, 208);
     ctx.font = `500 18px ${FONT}`; ctx.fillStyle = C.muted;
-    ctx.fillText('実際に使われている配分全体と比較', 80, 242);
+    ctx.fillText('実際に使われている配分全体と比較', headingX, 242);
 
     // First-move result card
     rounded(ctx, 842, 136, 268, 126, 20, '#eff6ff');
@@ -109,8 +128,14 @@
     return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('PNG画像を生成できませんでした')), 'image/png'));
   }
 
-  window.SpeedShare = { render: async (data) => {
-    if (document.fonts?.ready) await document.fonts.ready;
-    return render(data);
+  window.SpeedShare = { render: async (data = {}) => {
+    // フォントと画像は独立して取得し、描画直前に両方を待つ。
+    const [, sprite] = await Promise.all([document.fonts?.ready, (async () => {
+      const primary = await loadSprite(data.sprite);
+      if (primary) return primary;
+      return data.spriteFallback && data.spriteFallback !== data.sprite ? loadSprite(data.spriteFallback) : null;
+    })()]);
+    if (!sprite && data.sprite) data.onImageError?.();
+    return render(data, sprite);
   } };
 })();
