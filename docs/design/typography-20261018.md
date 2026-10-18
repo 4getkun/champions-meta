@@ -27,3 +27,13 @@ Lighthouse13.5・モバイルsimulate・cold cache・localhostで各3回の中�
 
 ラボ計測であり実ユーザーのCore Web Vitalsではない。既存の動的読み込みによる大きなCLSは残り、今回の書体変更での改善対象にはしていない。
 記録はdiagnostics/font-qa-baseline/とdiagnostics/font-qa-post/。
+
+## 文字サイズを維持した視認性の改善
+
+補助文字の色をライトでは`#64748b`から`#526176`、ダークでは`#a3b2c8`から`#b3c0d3`へ変更。
+注記・小さなラベル・入力欄を500にし、グラフ目盛りも500、最新値の文字は濃い本文色の600に統一。
+非表示の系列は文字全体を半透明にせず、破線と取り消し線で状態を示す。入力のプレースホルダーも濃さを保つ。
+文字サイズと行高は変更しない。Macの文字描画はOS標準のアンチエイリアスに任せる。
+
+6画面×PC／スマホ×明暗の24条件で横はみ出し・JavaScript例外0件。変更前と同条件の12画面で対象要素のfont-size／line-height差分0件。
+フォント要求は4件のまま。記録はdiagnostics/readability-baseline/とdiagnostics/readability-post/。

@@ -6,7 +6,7 @@
   --line: #e8edf4;
   --ink: #172b4d;
   --sub: #475569;
-  --muted: #64748b;
+  --muted: #526176;
   --accent: #2563eb;
   --accent-soft: #eff6ff;
   --context: #cbd5e1;
@@ -32,7 +32,7 @@
   :root:where(:not([data-theme="light"])) {
     --bg: #101827; --card: #182235; --tab-bg: #182235;
     --edge: #314058; --line: #2a384e;
-    --ink: #edf2fa; --sub: #c5d0e0; --muted: #a3b2c8;
+    --ink: #edf2fa; --sub: #c5d0e0; --muted: #b3c0d3;
     --accent: #82b0ff; --accent-soft: #203453; --context: #465873;
     --up: #65d4bf; --down: #ff9a92;
     --lime: #203e36; --lime-ink: #8edfc0;
@@ -46,7 +46,7 @@
 :root[data-theme="dark"] {
   --bg: #101827; --card: #182235; --tab-bg: #182235;
   --edge: #314058; --line: #2a384e;
-  --ink: #edf2fa; --sub: #c5d0e0; --muted: #a3b2c8;
+  --ink: #edf2fa; --sub: #c5d0e0; --muted: #b3c0d3;
   --accent: #82b0ff; --accent-soft: #203453; --context: #465873;
   --up: #65d4bf; --down: #ff9a92;
   --lime: #203e36; --lime-ink: #8edfc0;
@@ -57,6 +57,14 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, .1);
 }
 body { background: var(--bg); font-size: 14px; line-height: 1.8; letter-spacing: .015em; }
+/* 小さな文字はサイズを維持し、濃さと線の太さで読みやすくする。 */
+body { -webkit-font-smoothing: auto; -moz-osx-font-smoothing: auto; }
+.note, .k, .chart-note, .team-caption, .team-count, .rank-count,
+.data-status, .foot .src, .mirror-verdict small, .mirror-side small,
+.top-player-meta, .top-player-values small { font-weight: 500; }
+input::placeholder { color: var(--muted); opacity: 1; }
+.team-in .slot input, .search input { font-weight: 500; }
+.foot .maker { opacity: 1; }
 .page { max-width: 1440px; padding: 24px 36px 48px; }
 h1, h2, h3, .h1 { font-family: var(--f-body); font-feature-settings: normal; }
 h1, .h1 { font-size: 28px; line-height: 1.5; letter-spacing: .015em; font-weight: 700; }
@@ -120,7 +128,8 @@ h3 { font-size: 14px; font-weight: 700; }
 .meta-chart-legend-item img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
 .meta-chart-legend-name { min-width: 0; font-size: 11px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
 .meta-chart-legend-value { font: 700 15px/1.4 var(--f-num); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.meta-chart-legend-item[aria-pressed="false"] { opacity: .5; background: var(--bg); border-left-color: var(--context); }
+.meta-chart-legend-item[aria-pressed="false"] { opacity: 1; color: var(--muted); background: var(--bg); border-style: dashed; border-left-color: var(--context); }
+.meta-chart-legend-item[aria-pressed="false"] img { filter: grayscale(1); }
 .meta-chart-legend-item[aria-pressed="false"] .meta-chart-legend-name { text-decoration: line-through; }
 .meta-chart-legend-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .meta-chart-data { margin-top: 12px; font-size: 12px; }

@@ -49,7 +49,10 @@
 
   function chartBase(el) {
     const ink = color(el, '--ink', '#211d32');
-    if (Chart.defaults?.font) Chart.defaults.font.family = color(el, '--f-body', 'system-ui, sans-serif');
+    if (Chart.defaults?.font) {
+      Chart.defaults.font.family = color(el, '--f-body', 'system-ui, sans-serif');
+      Chart.defaults.font.weight = '500';
+    }
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -246,13 +249,13 @@
           labels.forEach((label, i) => { label.target = Math.max(area.top + 10, label.y, i ? labels[i - 1].target + 21 : 0); });
           for (let i = labels.length - 1; i >= 0; i--) labels[i].target = Math.min(labels[i].target, i === labels.length - 1 ? area.bottom - 10 : labels[i + 1].target - 21);
           const ctx = chart.ctx;
-          ctx.save(); ctx.font = `500 11px ${color(el, '--f-body', 'system-ui, sans-serif')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.save(); ctx.font = `600 11px ${color(el, '--f-body', 'system-ui, sans-serif')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           for (const label of labels) {
             const left = area.right + 9;
             ctx.strokeStyle = rgba(label.ink, .38); ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(label.x + 4, label.y); ctx.lineTo(left, label.target); ctx.stroke();
             ctx.fillStyle = rgba(label.ink, .1); ctx.beginPath(); ctx.roundRect(left, label.target - 9, 48, 18, 6); ctx.fill();
-            ctx.fillStyle = label.ink; ctx.fillText(pct(label.value), left + 24, label.target);
+            ctx.fillStyle = color(el, '--ink', '#172b4d'); ctx.fillText(pct(label.value), left + 24, label.target);
           }
           ctx.restore();
         },
