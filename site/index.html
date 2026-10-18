@@ -34,21 +34,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Inter+Tight:wght@600;700;800;900&family=M+PLUS+2:wght@700;800;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- fonts:end -->
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
 <div class="page">
   <header class="top">
-    <a class="logo" href="#" data-view="env">Champions<b>Meta</b></a>
+    <a class="logo" href="#" data-view="env"><svg class="brand-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true"><rect width="28" height="28" rx="7" fill="currentColor"/><path d="M7 19V14M14 19V8M21 19V11" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>Champions<b>Meta</b></a>
     <nav class="views" aria-label="画面">
-      <a href="#" data-view="env">環境</a>
-      <a href="#" data-view="rank">ランキング</a>
-      <a href="#" data-view="select">選出予想</a>
-      <a href="#" data-view="diag">チーム診断</a>
-      <a href="#" data-view="speed">すばやさ</a>
+      <a href="#" data-view="env"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>環境</a>
+      <a href="#" data-view="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 16V9h4v7M10 16V4h4v12M14 16v-4h4v4"/></svg>ランキング</a>
+      <a href="#" data-view="select"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>選出予想</a>
+      <a href="#" data-view="diag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>チーム診断</a>
+      <a href="#" data-view="speed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19a9 9 0 1 1 14 0M12 12l5-5"/><circle cx="12" cy="12" r="2"/></svg>すばやさ</a>
     </nav>
     <button class="pill theme" id="theme" type="button" aria-label="明るさを切り替える">◐</button>
-    <nav class="formats" id="formats" aria-label="ルール"></nav>
-    <span class="formats-hint">ルールの続きは左右にスクロール</span>
+    <div class="format-bar"><span class="format-label">ルール</span><nav class="formats" id="formats" aria-label="ルール"></nav></div>
   </header>
   <p id="data-status" class="data-status" role="status"></p>
 
@@ -57,18 +57,18 @@
     <div id="early-env" hidden></div>
     <section class="hero" id="sec-env">
       <div class="k" id="asof"></div>
-      <h1>環境を知って、<br>次の選出を考える。</h1>
-      <p class="lead">使用率・選出の傾向・よくある並びをまとめて確認。Smogonの月次統計とShowdownの公開リプレイを、3日に1回更新しています。</p>
+      <h1>対戦環境のダッシュボード</h1>
+      <p class="lead">使用率、選出の傾向、よくある並びをまとめて確認。気になるポケモンから、次のチームと選出を考えましょう。</p>
     </section>
 
     <!-- スマホ: 今月の総評（A5） -->
     <section class="card summary" id="summary" aria-label="今月の総評"></section>
 
     <div class="grid">
-      <div class="card c3 tile ink" id="t-div"></div>
-      <div class="card c3 tile" id="t-turn"></div>
       <a class="card c3 tile tile-top" id="t-top" href="#"></a>
+      <div class="card c3 tile ink" id="t-div"></div>
       <div class="card c3 tile" id="t-battles"></div>
+      <div class="card c3 tile" id="t-turn"></div>
 
       <section class="card c8" id="sec-trend">
         <div class="head">
@@ -79,6 +79,7 @@
           </div>
         </div>
         <div class="chart" id="trend"></div>
+        <p class="chart-note">凡例で表示を切り替えられます。破線はレギュレーションの変更です。</p>
         <details class="table"><summary>表で見る</summary><div id="trend-table"></div></details>
       </section>
       <section class="card c4" id="sec-movers">
@@ -95,6 +96,7 @@
       <section class="card c7" id="sec-bring">
         <h2>選出率 × 使用率 <span class="chip warn">参考値</span></h2>
         <div class="chart" id="scatter"></div>
+        <p class="chart-note">点を押すとポケモンの詳細へ。正確な数値と95%範囲は「表で見る」で確認できます。</p>
         <p class="note" id="bring-note"></p>
       </section>
       <section class="card c12" id="sec-sets" hidden>
@@ -118,6 +120,7 @@
       <label class="search"><span aria-hidden="true">⌕</span>
         <input id="q" aria-label="ランキングをポケモンの名前で絞り込み" type="search" placeholder="ポケモンの名前で絞り込み" autocomplete="off"></label>
     </div>
+    <p class="rank-count" id="rank-count" aria-live="polite"></p>
     <ol class="rank-grid" id="rank-grid"></ol>
   </main>
 
@@ -144,8 +147,8 @@
       <p class="lead">まず相手の6匹を入力して、選出と先発の予想を確認。自分の6匹も入れると、相手がこちらのチームを見て選ぶ傾向を加えられます。</p>
     </div></div>
     <div class="grid">
-      <section class="card c6"><h2>自分の6匹 <span class="chip">任意</span></h2><div class="team-in" data-team="mine"></div></section>
-      <section class="card c6"><h2>相手の6匹 <span class="chip">ここから入力</span></h2><div class="team-in" data-team="opp"></div></section>
+      <section class="card c6"><h2>自分の6匹 <span class="chip">任意</span></h2><p class="team-caption">入力すると、相手がこちらを見て選ぶ傾向も加味します。</p><div class="team-in" data-team="mine"></div></section>
+      <section class="card c6"><h2>相手の6匹 <span class="chip">予想するチーム</span></h2><p class="team-caption">見せ合いの6匹を入力して、選出と先発を予想します。</p><div class="team-in" data-team="opp"></div></section>
       <section class="card c12" id="select-out"></section>
       <div class="c12" id="select-samples"></div>
     </div>
@@ -159,7 +162,7 @@
       <p class="lead">自分の 6 匹を入れると、環境でよく使われる攻撃への弱点、上位のポケモンとの相性（リプレイの勝敗）、すばやさ、よく一緒に使われる並びとの重なりを出します。</p>
     </div></div>
     <div class="grid">
-      <section class="card c12"><h2>自分の 6 匹</h2><div class="team-in" data-team="mine"></div></section>
+      <section class="card c12"><h2>自分の6匹</h2><p class="team-caption">環境に多い攻撃への弱点と、相性・すばやさを確認します。</p><div class="team-in" data-team="mine"></div></section>
       <div class="c12 grid sub-grid" id="diag-out"></div>
     </div>
   </main>
@@ -198,6 +201,8 @@
 </nav>
 <datalist id="poke-names"></datalist>
 <div class="tip" id="tip" role="status" hidden></div>
+<script src="vendor/chart.umd.min.js" defer></script>
+<script src="charts.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

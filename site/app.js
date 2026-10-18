@@ -114,6 +114,9 @@ function breaks(segments) {
 }
 
 function trendChart(el, track, width) {
+  if (window.Chart && window.MetaCharts) {
+    return window.MetaCharts.trend(el, track, { name: ja, short });
+  }
   const months = track.months;
   const usage = track.usage_grouped;
   const last = (k) => usage[k][months.length - 1] || 0;
@@ -237,6 +240,10 @@ function moversChart(el, movers, width) {
 }
 
 function scatterChart(el, weekly, width) {
+  window.MetaCharts?.destroy(el);
+  if (window.Chart && window.MetaCharts && weekly?.available && weekly?.recent) {
+    return window.MetaCharts.scatter(el, weekly, { name: ja, short, link: (n) => go({ v: 'poke', p: groupOf(n) }), href: (n) => linkTo({ v: 'poke', p: groupOf(n) }) });
+  }
   if (!weekly || !weekly.available || !weekly.recent || !Object.keys(weekly.recent.pokemon).length) {
     el.innerHTML = '<p class="empty">このルールはリプレイがまだ足りません。</p>';
     return;
@@ -294,6 +301,7 @@ function bindTips(el) {
 
 // ── 順位の推移（バンプチャート） ──────────────────────────────
 function bumpChart(el, track, width) {
+  window.MetaCharts?.destroy(el);
   const months = track.months;
   const usage = track.usage_grouped;
   const n = 10;
@@ -443,6 +451,7 @@ async function load(fid, revision = routeRevision) {
 
 async function onRoute() {
   const revision = ++routeRevision;
+  globalThis.MetaCharts?.destroyAll();
   const r = readHash();
   route.f = r.f && META.formats.some((x) => x.id === r.f) ? r.f : currentFormats()[0].id;
   route.v = ['env', 'rank', 'poke', 'select', 'diag', 'speed'].includes(r.v) ? r.v : 'env';
@@ -633,7 +642,7 @@ function renderEnv() {
   document.querySelectorAll('.cut').forEach((e) => { e.textContent = cut; });
 
   $('t-div').innerHTML = `<div class="k">実効的なポケモン数</div><div class="big">${div ? div.q1.toFixed(1) : '—'}</div>`
-    + `<div class="note">${dots(divPrev ? `前月 ${(div.q1 - divPrev.q1 >= 0 ? '+' : '')}${(div.q1 - divPrev.q1).toFixed(1)}` : '', '多いほど多様')}</div>`;
+    + `<div class="note">${dots(divPrev ? `前月 ${(div.q1 - divPrev.q1 >= 0 ? '+' : '')}${(div.q1 - divPrev.q1).toFixed(1)}` : '', '使われ方の偏りを考えた多様さ')}</div>`;
   $('t-turn').innerHTML = `<div class="k">前月からの入れ替わり</div><div class="big">${turn != null ? pct(turn) : '—'}</div>`
     + `<div class="note">${turn == null ? '前の月がありません' : turn < 0.03 ? '落ち着いた月' : turn < 0.06 ? 'やや動いた月' : '大きく動いた月'}</div>`;
   const home = spriteUrl(top, 'home');
@@ -648,8 +657,9 @@ function renderEnv() {
   const turnTxt = turn == null ? '' : `入れ替わりは ${pct(turn)} と${turn < 0.03 ? '小さく、上位の顔ぶれは固まりつつある' : '大きく、環境が動いている'}。`;
   $('summary').innerHTML = `${home ? `<img src="${esc(home)}" width="140" height="140" alt="">` : ''}`
     + `<div class="k">今月の総評 · ${+m}月 · ${esc(label)}</div>`
-    + `<h1><span>${esc(short(top))}</span>が<br>使用率1位</h1>`
-    + `<p>${turnTxt}${risers.length ? `${risers.map(esc).join('と')}が大きく伸びた。` : ''}</p>`;
+    + `<h2><span>${esc(short(top))}</span>が使用率1位</h2>`
+    + `<p>${turnTxt}${risers.length ? `${risers.map(esc).join('と')}が大きく伸びた。` : 'ポケモンを押すと、型や一緒に使われる並びを確認できます。'}</p>`
+    + `<div class="summary-actions"><a href="${linkTo({ v: 'select' })}">選出を予想する</a><a href="${linkTo({ v: 'speed', f: speedFormatFor(view.f.id) })}">すばやさを調整する</a></div>`;
 
   // 並び（名前を押すと詳細へ）
   const cm = cores && cores.months[month];
@@ -685,7 +695,16 @@ function drawCharts() {
     ? bumpChart($('trend'), track, $('trend').clientWidth || 700)
     : trendChart($('trend'), track, $('trend').clientWidth || 700);
   trendTable($('trend-table'), track, top);
-  moversChart($('movers'), mo.movers[month], $('movers').clientWidth || 380);
+  $('trend-table').closest('details').hidden = !!(window.Chart && window.MetaCharts && view.trend !== 'rank');
+  $('sec-trend').querySelector('.chart-note').hidden = !(window.Chart && window.MetaCharts && view.trend !== 'rank');
+  const movers = mo.movers[month];
+  $('sec-movers').querySelector('h2').textContent = movers ? '先月から伸びた・落ちた' : '今月の使用率トップ5';
+  if (movers) moversChart($('movers'), movers, $('movers').clientWidth || 380);
+  else {
+    const usage = track.usage_grouped;
+    const rows = Object.keys(usage).sort((a, b) => (usage[b].at(-1) || 0) - (usage[a].at(-1) || 0)).slice(0, 5);
+    $('movers').innerHTML = `<ul class="usage-list">${rows.map((k) => `<li><a href="${linkTo({ v: 'poke', p: k })}">${icon(k, 28)}<span>${esc(short(k))}</span><b>${pct(usage[k].at(-1))}</b></a><div class="usage-track"><i style="width:${Math.min(100, Math.max(0, (usage[k].at(-1) || 0) * 100))}%"></i></div></li>`).join('')}</ul><p class="note">同じルールの前月データがないため、今月の上位を表示しています。</p>`;
+  }
   scatterChart($('scatter'), weekly, $('scatter').clientWidth || 600);
 }
 
@@ -713,6 +732,7 @@ function renderRank() {
   $('rank-asof').innerHTML = dots(`${y}年${+m}月`, esc(formatLabel(f)), `レート${mo.default_cutoff}以上`, 'メガは元の姿にまとめています');
   const q = norm($('q').value.trim());
   const rows = rankRows().filter((r) => !q || norm(ja(r.k)).includes(q) || norm(r.k).includes(q));
+  $('rank-count').textContent = `${rows.length}匹${q ? 'が見つかりました' : 'を使用率順に表示'} ・ 数値はチームに入っていた割合`;
   $('rank-grid').innerHTML = rows.length ? rows.map((r) => {
     const d = r.prev ? r.prev - r.rank : null;
     const delta = d == null ? '<small class="up-t">NEW</small>' : d > 0 ? `<small class="up-t">▲${d}</small>` : d < 0 ? `<small class="dn-t">▼${-d}</small>` : '<small class="eq-t">―</small>';
@@ -750,6 +770,7 @@ function barList(obj, nameOf, n = 8) {
 const nameIn = (kind) => (id) => { const e = NAMES[kind][id]; return (e && (e.ja || e.en)) || id; };
 
 function renderPoke(g) {
+  globalThis.MetaCharts?.destroy($('p-trend'));
   if (!view.mo) { renderEarlyPoke(g); return; }
   const { f, mo, track, weekly, detail } = view;
   const rows = rankRows();
@@ -1363,10 +1384,10 @@ function renderTeamInputs() {
     const slots = TEAM[role].map((g, i) => {
       const u = g ? spriteUrl(g) : null;
       return `<label class="slot">${u ? `<img src="${esc(u)}" width="40" height="40" alt="">` : '<span class="ph"></span>'}`
-        + `<input list="poke-names" data-role="${role}" data-i="${i}" value="${g ? esc(ja(g)) : ''}" placeholder="${i + 1}匹目" autocomplete="off"></label>`;
+        + `<input list="poke-names" data-role="${role}" data-i="${i}" value="${g ? esc(ja(g)) : ''}" placeholder="${i + 1}匹目" aria-label="${role === 'mine' ? '自分' : '相手'}の${i + 1}匹目" autocomplete="off"></label>`;
     }).join('');
     box.innerHTML = `<div class="slots">${slots}</div><div class="tools">`
-      + `<button type="button" data-clear="${role}">消す</button></div>`;
+      + `<span class="team-count">${TEAM[role].filter(Boolean).length} / 6匹を入力済み</span><button type="button" data-clear="${role}">クリア</button></div>`;
   });
 }
 
@@ -1740,6 +1761,12 @@ async function renderDiag(revision = routeRevision) {
   // 1) 環境でよく使われる攻撃のタイプへの弱点
   const types = Object.entries(D.attack_types).slice(0, 10);
   const maxShare = Math.max(...types.map(([, v]) => v), 0.01);
+  const concerns = types.filter(([t]) => {
+    const weak = team.filter((k) => effect(t, typesOf(k)) >= 2).length;
+    const res = team.filter((k) => effect(t, typesOf(k)) <= 0.5).length;
+    return weak >= 3 || (weak >= 2 && res === 0);
+  }).map(([t]) => TYPE_JA[t] || t);
+  cards.push(`<section class="card c12 diag-overview"><div><h2>${team.length}匹のチーム診断</h2><p>環境で多い上位10タイプの攻撃のうち、${concerns.length ? `<b>${concerns.length}タイプ</b>に弱点が重なっています。` : '弱点が重なるタイプはありません。'}</p><p class="note">3匹以上が弱点、または2匹以上が弱点で半減以下の味方がいないタイプを確認しています。特性・持ち物は含みません。</p></div>${concerns.length ? `<div class="diag-concerns">${concerns.map((t) => `<span class="chip warn">${esc(t)}</span>`).join('')}</div>` : ''}</section>`);
   const trow = types.map(([t, share]) => {
     const weak = team.filter((k) => effect(t, typesOf(k)) >= 2).length;
     const res = team.filter((k) => effect(t, typesOf(k)) <= 0.5).length;
@@ -1848,11 +1875,20 @@ function setupTheme() {
   const btn = $('theme');
   const isDark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
   const sync = () => { btn.textContent = isDark() ? '☀' : '◐'; btn.setAttribute('aria-label', isDark() ? '明るい表示にする' : '暗い表示にする'); };
+  const redraw = () => {
+    if (!view) return;
+    drawCharts();
+    if (route.v === 'poke' && route.p) renderPoke(route.p);
+  };
   btn.addEventListener('click', () => {
     const next = isDark() ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem('theme', next); } catch (e) { /* 保存できなくても表示は切り替わる */ }
     sync();
+    redraw();
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!document.documentElement.dataset.theme) { sync(); redraw(); }
   });
   sync();
 }
@@ -1867,6 +1903,10 @@ async function main() {
     return;
   }
   renderPills();
+  document.querySelectorAll('.tabbar a').forEach((a) => {
+    const svg = document.querySelector(`.views a[data-view="${a.dataset.view}"] svg`);
+    if (svg) a.querySelector('b').replaceChildren(svg.cloneNode(true));
+  });
   setupTeamInputs();
   normalizeTeams();
   renderTeamInputs();
