@@ -17,7 +17,7 @@
 pip install -e ".[dev]"
 python -m cmeta fetch-smogon        # まだ持っていない月の Smogon 統計
 python -m cmeta fetch-replays       # 新しい公開リプレイ（1 ルール 1,500 件まで）
-python -m cmeta fetch-ladder        # 上位 500 人を記録し、上位 200 人のリプレイを狙って取る（シングル・ダブル）
+python -m cmeta fetch-ladder        # 上位 500 人を記録し、25人ずつリプレイを狙って取る（シングル・ダブル）
 python -m cmeta build               # out/ を作り直す（--no-names で PokeAPI に問い合わせない）
 python -m cmeta all                 # 上の四つ
 python -m pytest -q
@@ -33,9 +33,9 @@ python -m pytest -q
 - 公開先: https://champions.fourgetkun.com/ （Cloudflare Pages のプロジェクト `champions-meta` に割り当てたサブドメイン）。
   fourgetkun.com のハブ（fourgetkun-hub）には、トップのカード用の名札 `public/champions-meta/` だけを置いている。
 - `python -m cmeta dist` で `dist/`（`site/` の中身 + `out/` を `data/` として + `sitemap.xml`）を作り、
-  Windowsの更新タスクが検証後にDirect Uploadする。GitHubの `.github/workflows/deploy.yml` もコード・画面のpushと手動公開用に残す。
-- 必要なリポジトリの secrets: `CLOUDFLARE_API_TOKEN`（Account > Cloudflare Pages > Edit）と `CLOUDFLARE_ACCOUNT_ID`。
-  無いあいだはデプロイだけ飛ばす。
+  Windowsの更新タスクが検証後にDirect Uploadする。ハブで使用中のWranglerのOAuth認証を利用する。
+- GitHub Actionsは2026年10月31日（JST）まで使用しない。取得・デプロイのworkflowは停止済みで、復旧用に設定だけを残す。
+  11月以降も自動では再開せず、利用可能状態と運用方針を確認してから切り替える。
 
 ## 運用と復旧
 
@@ -57,7 +57,7 @@ python -m pytest -q
   登録内容だけを確認する `-WhatIf`、取得を省く `scripts/run-update.ps1 -SkipFetch`、公開を省く `-SkipDeploy` を利用できる。
   PCの電源が入り、登録したユーザーがログインしている間に実行する。未実行分は実行可能になったときに開始する。
   取得→集計→検証→公開は順序依存のため直列実行し、同時実行はタスク設定とmutexで防ぐ。
-  通常の詳細取得上限は1ルール300件（ルール別上限が小さい場合はそちら）。`-MaxReplays`で変更できる。
+  通常の詳細取得上限は従来どおり1ルール1,500件（ルール別上限が小さい場合はそちら）。`-MaxReplays`で変更できる。
   OAuthはハブの既存Wranglerを利用する。更新タスクはGit操作をせず、取得済みデータをこのPCに保存して公開する。
 
 ## 手で直すファイル

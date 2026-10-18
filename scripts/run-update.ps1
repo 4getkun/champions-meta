@@ -1,12 +1,15 @@
 [CmdletBinding()]
 param(
     [string] $PythonExe,
-    [ValidateRange(1, 1500)][int] $MaxReplays = 300,
+    [ValidateRange(1, 1500)][int] $MaxReplays = 1500,
     [switch] $SkipFetch,
     [switch] $SkipDeploy
 )
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = [Console]::OutputEncoding
+$env:PYTHONIOENCODING = 'utf-8'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $logRoot = Join-Path $repoRoot 'logs'
 New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
