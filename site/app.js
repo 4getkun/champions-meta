@@ -65,6 +65,13 @@ function spriteUrl(n, kind = 'front') {
   const s = poke(n).sprite;
   return s ? s[kind] || s.front : null;
 }
+document.addEventListener('error', (event) => {
+  const image = event.target;
+  const fallback = image?.dataset?.spriteFallback;
+  if (!fallback) return;
+  delete image.dataset.spriteFallback;
+  if (image.getAttribute('src') !== fallback) image.src = fallback;
+}, true);
 function icon(n, px = 28) {
   const u = spriteUrl(n);
   return u ? `<img class="spr" src="${esc(u)}" width="${px}" height="${px}" loading="lazy" decoding="async" alt="">` : '';
@@ -607,8 +614,8 @@ function renderEarlyPoke(g) {
   const E = view.early;
   const e = E?.pokemon?.[g];
   const types = (poke(g).types || []).map((t) => `<span class="type t-${t.toLowerCase()}">${TYPE_JA[t] || t}</span>`).join(' ');
-  const home = spriteUrl(g, 'home');
-  $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" width="84" height="84" alt="">` : icon(g, 64)}`
+  const home = spriteUrl(g, 'artwork');
+  $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" data-sprite-fallback="${esc(home.replace(/other\/official-artwork\//, ''))}" width="84" height="84" alt="">` : icon(g, 64)}`
     + `<div><h1 class="nm">${esc(ja(g))}</h1><div class="meta">${types}${dots(esc(formatLabel(view.f)), '開始直後')}</div></div><div class="nav"></div>`;
   const cards = [];
   cards.push(`<section class="card c12"><h2>いまの数字 <span class="chip warn">開始直後</span></h2>${e ? `<div class="kv">`
@@ -648,9 +655,9 @@ function renderEnv() {
     + `<div class="note">${dots(divPrev ? `前月 ${(div.q1 - divPrev.q1 >= 0 ? '+' : '')}${(div.q1 - divPrev.q1).toFixed(1)}` : '', '使われ方の偏りを考えた多様さ')}</div>`;
   $('t-turn').innerHTML = `<div class="k">前月からの入れ替わり</div><div class="big">${turn != null ? pct(turn) : '—'}</div>`
     + `<div class="note">${turn == null ? '前の月がありません' : turn < 0.03 ? '落ち着いた月' : turn < 0.06 ? 'やや動いた月' : '大きく動いた月'}</div>`;
-  const home = spriteUrl(top, 'home');
+  const home = spriteUrl(top, 'artwork');
   $('t-top').href = linkTo({ v: 'poke', p: top });
-  $('t-top').innerHTML = `${home ? `<img src="${esc(home)}" width="140" height="140" alt="">` : ''}`
+  $('t-top').innerHTML = `${home ? `<img src="${esc(home)}" data-sprite-fallback="${esc(home.replace(/other\/official-artwork\//, ''))}" width="140" height="140" alt="">` : ''}`
     + `<div class="k">使用率 1位</div><div class="big name">${esc(short(top))}</div>`
     + `<div class="note">${pct(ug[top][i])}${topDelta != null ? `<span class="chip">${topDelta >= 0 ? '▲' : '▼'}${Math.abs(topDelta * 100).toFixed(1)}</span>` : ''}</div>`;
   $('t-battles').innerHTML = `<div class="k">集計した対戦数</div><div class="big">${battles != null ? (battles >= 10000 ? `${Math.round(battles / 10000)}万` : battles.toLocaleString()) : '—'}</div><div class="note">Smogon 月次統計</div>`;
@@ -658,7 +665,7 @@ function renderEnv() {
   // スマホの総評（A5）: 1位と、伸びたポケモンを文にする
   const risers = (mo.movers[month]?.rising || []).slice(0, 2).map((r) => short(r.name));
   const turnTxt = turn == null ? '' : `入れ替わりは ${pct(turn)} と${turn < 0.03 ? '小さく、上位の顔ぶれは固まりつつある' : '大きく、環境が動いている'}。`;
-  $('summary').innerHTML = `${home ? `<img src="${esc(home)}" width="140" height="140" alt="">` : ''}`
+  $('summary').innerHTML = `${home ? `<img src="${esc(home)}" data-sprite-fallback="${esc(home.replace(/other\/official-artwork\//, ''))}" width="140" height="140" alt="">` : ''}`
     + `<div class="k">今月の総評 · ${+m}月 · ${esc(label)}</div>`
     + `<h2><span>${esc(short(top))}</span>が使用率1位</h2>`
     + `<p>${turnTxt}${risers.length ? `${risers.map(esc).join('と')}が大きく伸びた。` : 'ポケモンを押すと、型や一緒に使われる並びを確認できます。'}</p>`
@@ -787,11 +794,11 @@ function renderPoke(g) {
   const forms = detail ? Object.keys(detail.pokemon).filter((k) => groupOf(k) === g).sort((a, b) => detail.pokemon[b].usage - detail.pokemon[a].usage) : [];
   // タイプと種族値は元の姿のもの（メガの値は姿ごとの見出しで分かる）
   const info = poke(g).base_stats ? poke(g) : poke(forms.find((k) => !poke(k).mega) || forms[0] || g);
-  const home = spriteUrl(forms[0] || g, 'home');
+  const home = spriteUrl(forms[0] || g, 'artwork');
   const types = (info.types || []).map((t) => `<span class="type t-${t.toLowerCase()}">${TYPE_JA[t] || t}</span>`).join(' ');
   const prev = rows[idx - 1];
   const next = rows[idx + 1];
-  $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" width="84" height="84" alt="">` : icon(g, 64)}`
+  $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" data-sprite-fallback="${esc(home.replace(/other\/official-artwork\//, ''))}" width="84" height="84" alt="">` : icon(g, 64)}`
     + `<div><h1 class="nm">${esc(ja(g))}</h1><div class="meta">${types}`
     + `${row ? dots(`${row.rank}位`, pct(row.usage), esc(formatLabel(f))) : dots('圏外', esc(formatLabel(f)))}</div></div>`
     + `<div class="nav">${prev ? `<a href="${linkTo({ p: prev.k })}">‹ <span class="lbl">${esc(short(prev.k))}</span></a>` : ''}`
@@ -1086,7 +1093,7 @@ async function spdOpenShare(S, k) {
   dialog.showModal();
   try {
     const blob = await window.SpeedShare.render({ name: ja(k), signLabel: SIGN_JA[state.sign], points: state.sp,
-      sprite: spriteUrl(k, 'home'), spriteFallback: spriteUrl(k),
+      sprite: spriteUrl(k, 'artwork'), spriteFallback: spriteUrl(k),
       onImageError: () => { if (dialog.isConnected) dialog.querySelector('[data-share-status]').textContent = 'ポケモンの画像を読み込めなかったため、結果のみの画像を作成しました。'; },
       bare, effective: spdMineAt(e, state.sp), scarf: state.scarf, tw: state.tw, ...p,
       format: formatLabel(view.f), month: S.month, cutoff: S.cutoff, url });

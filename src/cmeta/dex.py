@@ -162,13 +162,13 @@ class Showdown:
 def sprite_urls(pid: int | str | None) -> dict | None:
     """PokeAPI の画像（PokeAPI/sprites リポジトリ）を CDN 経由で。ファイルはこちらに複製しない。
 
-    front: 96px のドット絵（約 1.4KB。一覧向け）、home: HOME の立体画像（約 110KB。大きく見せる所だけ）。
+    front: 一覧向けのドット絵、artwork: 大きく見せる所の公式イラスト。
     """
     if not pid:
         return None
-    # 見た目だけの姿（'1013-masterpiece' など）は HOME の画像が無い
-    home = None if isinstance(pid, str) else f"{SPRITE_BASE}/pokemon/other/home/{pid}.png"
-    return {"front": f"{SPRITE_BASE}/pokemon/{pid}.png", "home": home}
+    # 見た目だけの姿（'1013-masterpiece' など）は公式イラストが無い。
+    artwork = None if isinstance(pid, str) else f"{SPRITE_BASE}/pokemon/other/official-artwork/{pid}.png"
+    return {"front": f"{SPRITE_BASE}/pokemon/{pid}.png", "artwork": artwork}
 
 
 def compose_ja(species: str | None, form: str | None) -> str | None:

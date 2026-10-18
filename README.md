@@ -76,7 +76,7 @@ python -m pytest -q
 - PokeAPI（BSD-3-Clause）— https://pokeapi.co/ 。取ったものは `data/dex/` に控え、同じものを取りに行かない。
 - 書体: Macの日本語はヒラギノを優先し、それ以外ではZen Kaku Gothic New（400・500・700）を使用。英数はInter（いずれもSIL Open Font License 1.1、google/fonts）。公開用（`python -m cmeta dist`）では、
   使う文字だけに絞って自前で配る（`src/cmeta/fonts.py`。書体の中の著作権表示と`site/font-licenses/`のライセンスを同梱）。元の書体は `.cache/fonts/` に控える。
-- ポケモンの画像は PokeAPI の画像（PokeAPI/sprites）を CDN（jsDelivr）から表示する。ファイルはこのリポジトリに複製しない。画像の権利は任天堂などにある。
+- ポケモンの画像は PokeAPI の画像（PokeAPI/sprites）を CDN（jsDelivr）から表示する。大きな画像と共有画像は `official-artwork` のイラスト、一覧はドット絵を使う。イラストがない姿はドット絵に戻し、HOMEの立体画像は使わない。ファイルはこのリポジトリに複製しない。画像の権利は任天堂などにある。
 
 
 ### すばやさ調整の共有
