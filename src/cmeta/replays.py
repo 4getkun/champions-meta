@@ -6,7 +6,9 @@
 import gzip
 import hashlib
 import json
+import os
 import re
+import tempfile
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -289,14 +291,35 @@ def _load_state() -> dict:
 
 def _save_state(state: dict) -> None:
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=1, sort_keys=True), "utf-8")
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=STATE_PATH.parent,
+                                         prefix=f"{STATE_PATH.name}.", suffix=".tmp", delete=False) as f:
+            tmp_path = f.name
+            f.write(json.dumps(state, indent=1, sort_keys=True))
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, STATE_PATH)
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def _candidate_rows(rows: list[dict]) -> list[dict]:
+    """一覧候補をIDで一意化し、stateへ置ける項目だけを残す。"""
+    unique = {}
+    for row in rows:
+        unique.setdefault(row["id"], {k: row[k] for k in ("id", "uploadtime", "rating") if k in row})
+    return list(unique.values())
 
 
 # ── 取得 ──────────────────────────────────────────────────────
 
 
-def _list_batch(fmt: str, since: int, before: int | None, max_pages: int) -> tuple[list[dict], int | None, bool, int | None]:
-    """一覧を最大 max_pages ページ読み、次の before と走査完了を返す。"""
+def _list_batch(fmt: str, since: int, before: int | None, max_pages: int,
+                progress=None) -> tuple[list[dict], int | None, bool, int | None]:
+    """一覧を最大 max_pages ページ読み、次の before と走査完了を返す。
+    progress があれば、各ページ取得後に累積候補とカーソルを通知する。"""
     out, cursor, done, highwater = [], before, False, None
     for _ in range(max_pages):
         url = f"{REPLAY_BASE}/search.json?format={fmt}" + (f"&before={cursor}" if cursor else "")
@@ -318,11 +341,17 @@ def _list_batch(fmt: str, since: int, before: int | None, max_pages: int) -> tup
         oldest = min(r["uploadtime"] for r in page)
         if stop or not more:
             cursor, done = oldest, True
+            if progress:
+                progress(out, cursor, done, highwater)
             break
         if cursor is not None and oldest >= cursor:
             done = False  # 秒単位カーソルが進まない境界では last を進めず、欠落を避ける
+            if progress:
+                progress(out, cursor, done, highwater)
             break
         cursor = oldest
+        if progress:
+            progress(out, cursor, done, highwater)
     out.sort(key=lambda r: (r["uploadtime"], r["id"]))
     return out, cursor, done, highwater
 
@@ -350,23 +379,33 @@ def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print, sample: bool = F
     progress = state.get(fmt, {})
     pending = progress.get("pending", [])
     before = progress.get("before")
-    if progress.get("done"):
+    # 一覧区間は詳細取得とサンプル抽出を終えるまで固定し、再開時に再走査しない。
+    if pending:
+        batch, done, batch_highwater = [], progress.get("done", False), None
+    elif progress.get("done"):
         batch, done, batch_highwater = [], True, None
     else:
         requested_before = before
-        batch, before, done, batch_highwater = _list_batch(fmt, since, before, REPLAY_LIST_MAX_PAGES)
+        def checkpoint(rows, cursor, finished, raw_highwater):
+            safe_rows = _candidate_rows(rows)
+            state[fmt] = {"last": since, "before": cursor,
+                          "highwater": max(since, progress.get("highwater", since), raw_highwater or since),
+                          "pending": safe_rows, "done": finished}
+            _save_state(state)
+
+        batch, before, done, batch_highwater = _list_batch(
+            fmt, since, before, REPLAY_LIST_MAX_PAGES, checkpoint)
         if before == requested_before and not done:
             log(f"replays {fmt}: uploadtime が同秒のページ境界で停止。last を維持して次回再試行")
     highwater = max(since, progress.get("highwater", since), batch_highwater or since)
-    seen = {r["id"] for r in pending}
-    pending.extend({k: r[k] for k in ("id", "uploadtime", "rating") if k in r} for r in batch if r["id"] not in seen)
+    pending = _candidate_rows([*pending, *batch])
     pending.sort(key=lambda r: (r["uploadtime"], r["id"]))
-    new = batch if sample else pending
+    new = pending
     todo = new[:max_n]
-    if sample and len(batch) > max_n:
+    if sample and len(new) > max_n:
         step = len(new) / max_n
         todo = [new[int(i * step)] for i in range(max_n)]
-        log(f"replays {fmt}: 今回の一覧区間 {len(batch)} 件から等間隔に {max_n} 件を抜き取る")
+        log(f"replays {fmt}: 今回の一覧区間 {len(new)} 件から等間隔に {max_n} 件を抜き取る")
     elif len(new) > max_n:
         log(f"replays {fmt}: 新しいものが {len(new)} 件。古い順に {max_n} 件だけ取り、残りは次回")
     if not todo:

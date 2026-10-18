@@ -34,9 +34,16 @@ def test_replay_crawl_page_limit_persists_cursor_and_pending(tmp_path, monkeypat
     assert all(set(row) <= {"id", "uploadtime", "rating"} for row in state["fmt"]["pending"])
     assert len(list((tmp_path / "replays" / "fmt").glob("*.jsonl.gz"))) == 1
     assert replays.crawl("fmt", max_n=2, sample=False, log=lambda _: None) == 2
-    assert sum("/search.json" in url for url in calls) == 2
+    assert sum("/search.json" in url for url in calls) == 1
     state = json.loads((tmp_path / "state.json").read_text())
-    assert len(state["fmt"]["pending"]) == 96
+    assert state["fmt"]["before"] == 151
+    assert len(state["fmt"]["pending"]) == 46
+    assert replays.crawl("fmt", max_n=46, sample=False, log=lambda _: None) == 46
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert state["fmt"]["pending"] == []
+    assert sum("/search.json" in url for url in calls) == 1
+    assert replays.crawl("fmt", max_n=1, sample=False, log=lambda _: None) == 1
+    assert sum("/search.json" in url for url in calls) == 2
 
 
 def test_sample_each_bounded_interval_then_resumes(tmp_path, monkeypatch):
@@ -75,6 +82,96 @@ def test_sample_each_bounded_interval_then_resumes(tmp_path, monkeypatch):
     assert replays.crawl("fmt", max_n=2, sample=True, log=lambda _: None) == 0
     state = json.loads((tmp_path / "state.json").read_text())
     assert state["fmt"]["last"] == 200
+
+
+def test_list_failure_checkpoints_candidates_and_resumes_cursor(tmp_path, monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(replays, "STATE_PATH", tmp_path / "state.json")
+    monkeypatch.setattr(replays, "REPLAY_DIR", tmp_path / "replays")
+    monkeypatch.setattr(replays, "REPLAY_LIST_MAX_PAGES", 2)
+    monkeypatch.setattr(replays.time, "time", lambda: 1000)
+    (tmp_path / "state.json").write_text(json.dumps({"fmt": {"last": 100}}))
+    page = [_row(i, 200 - i) for i in range(51)]
+    listing_calls = []
+    detail_calls = []
+
+    def get_json(url):
+        if "/search.json" in url:
+            listing_calls.append(url)
+            if len(listing_calls) == 1:
+                return page
+            if len(listing_calls) == 2:
+                raise ConnectionResetError("second page unavailable")
+            return [_row(51 + i, 150 - i) for i in range(50)]
+        detail_calls.append(url)
+        return {"log": "ok"}
+
+    monkeypatch.setattr(replays.http, "get_json", get_json)
+    monkeypatch.setattr(replays, "parse_log", lambda _: {"parsed": True})
+    with pytest.raises(ConnectionResetError):
+        replays.crawl("fmt", max_n=50, sample=True, log=lambda _: None)
+
+    state = json.loads((tmp_path / "state.json").read_text())["fmt"]
+    assert state["before"] == 151
+    assert state["done"] is False
+    assert len(state["pending"]) == 50
+    assert all(set(row) <= {"id", "uploadtime", "rating"} for row in state["pending"])
+
+    assert replays.crawl("fmt", max_n=50, sample=True, log=lambda _: None) == 50
+    assert len(listing_calls) == 2  # 1ページ目の再取得なし
+    assert len(detail_calls) == 50
+    state = json.loads((tmp_path / "state.json").read_text())["fmt"]
+    assert state["before"] == 151
+    assert state["pending"] == []
+
+    assert replays.crawl("fmt", max_n=1, sample=True, log=lambda _: None) == 1
+    assert len(listing_calls) == 3
+    assert listing_calls[-1].endswith("before=151")
+
+
+def test_duplicate_listing_ids_do_not_consume_sample_slots(tmp_path, monkeypatch):
+    monkeypatch.setattr(replays, "STATE_PATH", tmp_path / "state.json")
+    monkeypatch.setattr(replays, "REPLAY_DIR", tmp_path / "replays")
+    (tmp_path / "state.json").write_text(json.dumps({"fmt": {"last": 100}}))
+    rows = [_row(1, 103), _row(1, 103), _row(2, 102), _row(3, 101)]
+    details = []
+
+    def get_json(url):
+        if "/search.json" in url:
+            return rows
+        details.append(url.rsplit("/", 1)[-1].removesuffix(".json"))
+        return {"log": "ok"}
+
+    monkeypatch.setattr(replays.http, "get_json", get_json)
+    monkeypatch.setattr(replays, "parse_log", lambda _: {"parsed": True})
+    saved = []
+    save_state = replays._save_state
+    monkeypatch.setattr(replays, "_save_state", lambda state: (saved.append(json.loads(json.dumps(state))), save_state(state))[1])
+
+    assert replays.crawl("fmt", max_n=2, sample=True, log=lambda _: None) == 2
+    assert details == ["r3", "r2"]
+    checkpoint_rows = saved[0]["fmt"]["pending"]
+    assert [r["id"] for r in checkpoint_rows] == ["r1", "r2", "r3"]
+    assert all(set(row) <= {"id", "uploadtime", "rating"} for row in checkpoint_rows)
+
+
+def test_state_replace_failure_preserves_previous_file(tmp_path, monkeypatch):
+    import pytest
+
+    path = tmp_path / "state.json"
+    monkeypatch.setattr(replays, "STATE_PATH", path)
+    original = '{"fmt":{"last":100}}'
+    path.write_text(original, "utf-8")
+
+    def fail_replace(*_args):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(replays.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="replace failed"):
+        replays._save_state({"fmt": {"last": 200}})
+    assert path.read_text("utf-8") == original
+    assert list(tmp_path.glob("state.json.*.tmp")) == []
 
 
 def test_http_retries_connection_reset(monkeypatch):

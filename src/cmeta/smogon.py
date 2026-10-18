@@ -6,7 +6,10 @@ w_a / usage_a（どのポケモンでも同じ）。usage は 6 匹の枠に占�
 
 import gzip
 import json
+import os
 import re
+import tempfile
+import time
 from datetime import datetime
 
 from . import http
@@ -41,6 +44,42 @@ def list_files(month: str) -> list[tuple[str, int]]:
         if parse_format(fid) and int(cut) in CUTOFFS:
             out.append((fid, int(cut)))
     return sorted(set(out))
+
+
+def _cached_list_files(month: str, bypass: bool = False) -> list[tuple[str, int]]:
+    """月一覧を短期キャッシュする。元の list_files は常にAPIを直接読む。"""
+    cache_path = CACHE / "smogon" / "index" / f"{month}.json"
+    now = int(time.time())
+    if not bypass and cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text("utf-8"))
+            checked_at = cached["checked_at"]
+            pairs = cached["files"]
+            if (type(checked_at) is int and isinstance(pairs, list)
+                    and all(isinstance(p, list) and len(p) == 2 and isinstance(p[0], str)
+                            and type(p[1]) is int for p in pairs)):
+                age = now - checked_at
+                ttl = 30 * 60 if not pairs else (6 * 3600 if month == last_complete_month() else 7 * 86400)
+                if 0 <= age < ttl:
+                    return [(fid, cut) for fid, cut in pairs]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+
+    files = list_files(month)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps({"checked_at": now, "files": [[fid, cut] for fid, cut in files]},
+                         separators=(",", ":"))
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=cache_path.parent,
+                                         prefix=f"{cache_path.name}.", suffix=".tmp", delete=False) as f:
+            tmp_path = f.name
+            f.write(payload)
+        os.replace(tmp_path, cache_path)
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+    return files
 
 
 SPEED_UP = {"Timid", "Jolly", "Hasty", "Naive"}
@@ -121,7 +160,7 @@ def sync(months: list[str] | None = None, log=print, recondense: bool = False) -
     months = months or month_range(FIRST_MONTH, last_complete_month())
     got = []
     for month in months:
-        files = list_files(month)
+        files = _cached_list_files(month, bypass=recondense)
         if not files:
             log(f"smogon {month}: まだ公開されていない")
             continue

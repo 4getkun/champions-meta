@@ -22,17 +22,18 @@ python -m cmeta build               # out/ を作り直す（--no-names で Poke
 python -m cmeta all                 # 上の四つ
 python -m pytest -q
 ```
-定期実行は `.github/workflows/update.yml`（3 日に 1 回と毎月 3 日）。GitHub Actions の使用時間を抑えるため、リプレイを取るのは今のレギュレーションだけ
+定期実行は Windows タスク `ChampionsMeta-Update`（3 日に 1 回と毎月 3 日）。GitHub Actions の定期取得は停止している。取得先への負荷を抑えるため、リプレイを取るのは今のレギュレーションだけ
 （`config.EXTRA_REPLAY_FORMATS`。ダブルは `REPLAY_CAP` を超えたら抜き取り）、ランキング表は週 1 回、リプレイも月次も変わっていないルールの計算は飛ばす（`out/build_inputs.json`）。
 一覧の走査も1ルール200ページまでに制限し、残りは次回に続ける。抜き取りは今回走査した区間ごとに等間隔で行う。
 上位者のリプレイは1ルール25人ずつ巡回し、詳細取得は150件まで。上位500人のランキング自体は毎回すべて記録する。
+一覧はページごとに再開位置を保存し、保留候補がある間は再走査しない。Smogonの月一覧は最新月6時間・過去月7日・空一覧30分キャッシュする。
+再計算の判定には入力内容を使い、同じ件数・時刻のデータ修正も検知する。CLIや通信だけの変更では予測モデルを再学習しない。
 
 ## 公開
 - 公開先: https://champions.fourgetkun.com/ （Cloudflare Pages のプロジェクト `champions-meta` に割り当てたサブドメイン）。
   fourgetkun.com のハブ（fourgetkun-hub）には、トップのカード用の名札 `public/champions-meta/` だけを置いている。
 - `python -m cmeta dist` で `dist/`（`site/` の中身 + `out/` を `data/` として + `sitemap.xml`）を作り、
-  `.github/workflows/deploy.yml` が Direct Upload する。リポジトリの公開設定に依存せず配信できる。
-  定期データ更新の成功後・`site/` か `out/` を push したとき・手で起動したときに動く。
+  Windowsの更新タスクが検証後にDirect Uploadする。GitHubの `.github/workflows/deploy.yml` もコード・画面のpushと手動公開用に残す。
 - 必要なリポジトリの secrets: `CLOUDFLARE_API_TOKEN`（Account > Cloudflare Pages > Edit）と `CLOUDFLARE_ACCOUNT_ID`。
   無いあいだはデプロイだけ飛ばす。
 
@@ -40,7 +41,8 @@ python -m pytest -q
 
 - 更新は3日に1回と毎月3日。画面の最終更新日が7日以上前なら、集計が古いことを表示する。
 - 通信に失敗した更新でも、取得済みデータと再開位置は保存する。失敗した実行からは公開しない。
-  次の定期実行、または Actions の `update data` の手動実行で再開する。取得状態のファイルを消さない。
+  次の定期実行、または `Start-ScheduledTask -TaskName ChampionsMeta-Update` で再開する。取得状態のファイルを消さない。
+  Actionsの取得を復旧用に使う場合はローカルタスクを停止・無効化してから `update data` を有効化する。
 - 手元の確認は `pip install -e ".[dev]"` → `python -m pytest -q` → `python -m cmeta dist`。
   フロントの非同期処理と予測計算の一致は `node --test tests/ui_async_race.mjs tests/ui_prediction.mjs` で確認する。
   `dist/` を localhost で開き、環境・ランキング・選出予想・チーム診断・すばやさを確認する。
@@ -49,6 +51,14 @@ python -m pytest -q
   データの誤りを直す場合は原因の変更を修正し、再集計・確認してから公開する。
 - 手元で公開用のものを見る: `python -m cmeta dist` のあと `python -m http.server 8788 --bind 127.0.0.1 --directory dist`。
   `site/` のまま見るときは、リポジトリ直下で `python -m http.server --bind 127.0.0.1` を立てて `/site/?data=../out/`。
+- Windows で定期更新する場合は `pwsh -File scripts/register-task.ps1 -WhatIf` で内容を検証し、`pwsh -File scripts/register-task.ps1` で `ChampionsMeta-Update` を登録する。
+  JST 04:00 の3日間隔と毎月3日 05:30 に実行し、Python テスト・画面 JavaScript の構文確認・取得と集計・`dist/` 作成・Cloudflare Pages 公開を順に行う。
+  `python.exe` が複数ある環境では `-PythonExe "C:\path\python.exe"` で指定する。実行ログはルートの `logs/` に保存する（Git 管理外）。
+  登録内容だけを確認する `-WhatIf`、取得を省く `scripts/run-update.ps1 -SkipFetch`、公開を省く `-SkipDeploy` を利用できる。
+  PCの電源が入り、登録したユーザーがログインしている間に実行する。未実行分は実行可能になったときに開始する。
+  取得→集計→検証→公開は順序依存のため直列実行し、同時実行はタスク設定とmutexで防ぐ。
+  通常の詳細取得上限は1ルール300件（ルール別上限が小さい場合はそちら）。`-MaxReplays`で変更できる。
+  OAuthはハブの既存Wranglerを利用する。更新タスクはGit操作をせず、取得済みデータをこのPCに保存して公開する。
 
 ## 手で直すファイル
 - `data/name_overrides.json`: 名前の対応が取れないとき。キーは次のとおり。

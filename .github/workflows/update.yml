@@ -1,11 +1,7 @@
 name: update data
 
 on:
-  schedule:
-    # 3 日に 1 回 JST 04:00: リプレイの取得と再計算。GitHub Actions の使用時間（アカウント全体で月 2,000 分）を抑えるため、
-    # 取るのは今のレギュレーションだけ・ダブルは抜き取り・ランキング表は週 1 回・変わっていないルールの計算は飛ばす（config.py・export.py）
-    - cron: "0 19 */3 * *"
-    - cron: "30 20 3 * *"  # 毎月 3 日 JST 05:30: Smogon の前月分（1〜2 日に出る）
+  # 定期実行は Windows タスク ChampionsMeta-Update へ移管。Actions は手動の復旧用だけ残す。
   workflow_dispatch:
 
 permissions:

@@ -25,20 +25,30 @@ def _write(rel: str, obj) -> None:
 
 
 # ── 変わっていないルールの計算を飛ばす（GitHub Actions の使用時間を抑えるため） ─────────────
-# リプレイから作る結果（週次・選出予想・誘導・上位・見本など）は、リプレイの件数と最後の時刻・月次の月・解析のコードが
-# 前回と同じなら、書き出し済みのものをそのまま使う。コードを変えたら、全部のルールを計算し直す。
+# リプレイ・月次・ランキングの入力内容と解析コードが前回と同じなら、書き出し済みの結果を再利用する。
+# 通信やCLI・配布だけの変更は予測モデルの再学習を必要としない。
 INPUTS_PATH = OUT / "build_inputs.json"
 
 
-def _code_hash() -> str:
+def _code_hash(source_root: Path | None = None) -> str:
+    root = source_root or Path(__file__).parent
     h = hashlib.sha256()
-    for p in sorted(Path(__file__).parent.rglob("*.py")):
+    # CLI・通信・配布だけの変更で、変更のない予測モデルまで再学習しない。
+    paths = list((root / "analysis").rglob("*.py"))
+    paths.extend(root / name for name in ("export.py", "dex.py", "formats.py", "config.py", "smogon.py", "ladder.py"))
+    for p in sorted(p for p in paths if p.exists()):
+        h.update(p.relative_to(root).as_posix().encode())
         h.update(p.read_bytes())
     return h.hexdigest()[:12]
 
 
-def _replay_sig(rows: list[dict], mo: dict | None, code: str) -> str:
-    return f"{len(rows)}:{max(r['t'] for r in rows)}:{','.join(mo['months']) if mo else '-'}:{code}"
+def _replay_sig(rows: list[dict], mo: dict | None, code: str, snapshots=None) -> str:
+    # 件数と最新時刻だけでは、過去の試合の修正や同じ月の型・ランキング変更を見逃す。
+    h = hashlib.sha256()
+    for value in (rows, mo, snapshots):
+        h.update(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode())
+        h.update(b"\0")
+    return f"{code}:{h.hexdigest()[:20]}"
 
 
 def _month_of(ts: int) -> str:
@@ -193,7 +203,7 @@ def build(fetch_names: bool = True, log=print) -> dict:
         rows = load_rows(fid) if (REPLAY_DIR / fid).exists() else []
         if rows:
             entry["replay_days"] = len({jst_day(r["t"]) for r in rows})
-            inputs[fid] = _replay_sig(rows, mo, code)
+            inputs[fid] = _replay_sig(rows, mo, code, ladder.load_snapshots(fid))
             if prev_inputs.get(fid) == inputs[fid] and (OUT / f"weekly/{fid}.json").exists():
                 if not mo and f["team_select"]:
                     entry["started"] = early.started(rows)
