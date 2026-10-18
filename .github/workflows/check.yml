@@ -27,4 +27,4 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: python -m pytest -q
       - run: node --check site/app.js
-      - run: node --test tests/ui_async_race.mjs tests/ui_prediction.mjs
+      - run: node --test tests/ui_async_race.mjs tests/ui_prediction.mjs tests/ui_speed.mjs

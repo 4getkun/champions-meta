@@ -468,6 +468,11 @@ async function onRoute() {
     if (!found) { route.p = null; route.v = 'rank'; }
   }
   document.querySelectorAll('#formats .pill').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === route.f)));
+  const formatNav = $('formats');
+  const chosenFormat = formatNav?.querySelector('[aria-pressed="true"]');
+  if (chosenFormat && formatNav.scrollWidth > formatNav.clientWidth) {
+    formatNav.scrollLeft = Math.max(0, chosenFormat.offsetLeft - formatNav.offsetLeft - (formatNav.clientWidth - chosenFormat.offsetWidth) / 2);
+  }
   const shown = route.v === 'poke' && !route.p ? 'rank' : route.v;
   document.querySelectorAll('[data-view-panel]').forEach((m) => { m.hidden = m.dataset.viewPanel !== shown; });
   document.querySelectorAll('.views a, .tabbar a[data-view]').forEach((a) => {
@@ -592,7 +597,7 @@ function renderEarlyPoke(g) {
   const types = (poke(g).types || []).map((t) => `<span class="type t-${t.toLowerCase()}">${TYPE_JA[t] || t}</span>`).join(' ');
   const home = spriteUrl(g, 'home');
   $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" width="84" height="84" alt="">` : icon(g, 64)}`
-    + `<div><div class="nm">${esc(ja(g))}</div><div class="meta">${types}${dots(esc(formatLabel(view.f)), '開始直後')}</div></div><div class="nav"></div>`;
+    + `<div><h1 class="nm">${esc(ja(g))}</h1><div class="meta">${types}${dots(esc(formatLabel(view.f)), '開始直後')}</div></div><div class="nav"></div>`;
   const cards = [];
   cards.push(`<section class="card c12"><h2>いまの数字 <span class="chip warn">開始直後</span></h2>${e ? `<div class="kv">`
     + `<div><span class="k">使用率（チーム）</span><b>${pct(e.usage, 0)}</b><small class="note">${pct(e.usage_ci[0], 0)}〜${pct(e.usage_ci[1], 0)}・${e.teams} チーム</small></div>`
@@ -761,7 +766,7 @@ function renderPoke(g) {
   const prev = rows[idx - 1];
   const next = rows[idx + 1];
   $('poke-bar').innerHTML = `${home ? `<img class="home" src="${esc(home)}" width="84" height="84" alt="">` : icon(g, 64)}`
-    + `<div><div class="nm">${esc(ja(g))}</div><div class="meta">${types}`
+    + `<div><h1 class="nm">${esc(ja(g))}</h1><div class="meta">${types}`
     + `${row ? dots(`${row.rank}位`, pct(row.usage), esc(formatLabel(f))) : dots('圏外', esc(formatLabel(f)))}</div></div>`
     + `<div class="nav">${prev ? `<a href="${linkTo({ p: prev.k })}">‹ <span class="lbl">${esc(short(prev.k))}</span></a>` : ''}`
     + `${next ? `<a href="${linkTo({ p: next.k })}"><span class="lbl">${esc(short(next.k))}</span> ›</a>` : ''}</div>`;
@@ -824,6 +829,62 @@ const spdScarf = (v) => Math.floor((v * 6144 + 2047) / 4096); // Showdown の丸
 // 実数値 v が、分布の相手より先に動く確率（同速は 1/2）
 const spdFaster = (v, dist) => dist.reduce((a, [x, s]) => a + (x < v ? s : x === v ? s / 2 : 0), 0);
 const spdSlower = (v, dist) => dist.reduce((a, [x, s]) => a + (x > v ? s : x === v ? s / 2 : 0), 0);
+// ミラーでは厳密な大小と同速を分ける。公開JSONの丸め誤差は合計で正規化する。
+function spdMirrorSplit(v, dist) {
+  let faster = 0, tie = 0, slower = 0;
+  for (const [x, weight] of dist) {
+    if (!Number.isFinite(x) || !Number.isFinite(weight) || weight <= 0) continue;
+    if (x < v) faster += weight;
+    else if (x === v) tie += weight;
+    else slower += weight;
+  }
+  const total = faster + tie + slower;
+  if (!total) return { faster: 0, tie: 0, slower: 0, first: 0, available: false };
+  faster /= total; tie /= total; slower /= total;
+  return { faster, tie, slower, first: faster + tie / 2, available: true };
+}
+
+function spdDistribution(e, mine, width = 680) {
+  const W = Math.max(280, Math.min(680, width)), H = 180, L = 30, R = 16, T = 34, B = 32;
+  const values = e.dist.filter(([, weight]) => weight > 0);
+  if (!values.length) return '';
+  const low = Math.min(mine, ...values.map(([v]) => v)) - 2;
+  const high = Math.max(mine, ...values.map(([v]) => v)) + 2;
+  const x = (v) => L + (v - low) / (high - low) * (W - L - R);
+  const max = Math.max(...values.map(([, p]) => p));
+  const bw = Math.max(3, Math.min(22, (W - L - R) / (high - low) * .75));
+  const bars = values.map(([v, p]) => {
+    const h = p / max * (H - T - B);
+    return `<rect class="${v < mine ? 'faster' : v === mine ? 'tie' : 'slower'}" x="${x(v) - bw / 2}" y="${H - B - h}" width="${bw}" height="${h}"><title>実数値 ${v}: ${pct(p, 1)}</title></rect>`;
+  }).join('');
+  const ticks = [...new Set([Math.min(...values.map(([v]) => v)), spdMode(e), Math.max(...values.map(([v]) => v))])].sort((a, b) => a - b);
+  return `<svg class="mirror-distribution" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ja(e.name || ''))}相手のすばやさ分布。自分の実数値 ${mine}。棒の高さは各配分の割合">`
+    + `<line class="mirror-axis" x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}"/>${bars}`
+    + `<line class="mirror-mine" x1="${x(mine)}" y1="24" x2="${x(mine)}" y2="${H - B}"/>`
+    + `<text class="mirror-mine-label" x="${Math.max(72, Math.min(W - 72, x(mine)))}" y="17" text-anchor="middle">あなた ${mine}</text>`
+    + ticks.map((v) => `<text x="${x(v)}" y="${H - 11}" text-anchor="middle">${v}</text>`).join('') + '</svg>';
+}
+
+function spdMirrorSummary(e, k, bare) {
+  const p = spdMirrorSplit(bare, e.dist);
+  if (!p.available) return '<p class="empty">ミラーの分布データがありません。</p>';
+  const mode = spdMode(e);
+  const next = [...e.dist].filter(([v, weight]) => weight > 0 && v >= bare)
+    .map(([v]) => ({ value: v, need: Array.from({ length: 33 }, (_, i) => i).find((i) => spdStat(e.base, i, spdState.sign) > v) }))
+    .filter((x) => x.need != null && x.need > spdState.sp).sort((a, b) => a.need - b.need)[0];
+  const segment = (key, label) => `<span class="${key}" style="width:${p[key] * 100}%" title="${label} ${pct(p[key], 1)}"></span>`;
+  const legend = (key, label) => `<div class="${key}"><b>${pct(p[key], 1)}</b><span>${label}</span></div>`;
+  const gain = next ? spdMirrorSplit(spdStat(e.base, next.need, spdState.sign), e.dist).first - p.first : 0;
+  return `<div class="mirror-head"><div><h2>${esc(ja(k))}同士のミラー</h2><p class="note">同じポケモン・同じ姿の、実際に使われている配分と比較</p></div>`
+    + `<div class="mirror-verdict" role="status"><b>${pct(p.first, 1)}</b><small>先に動く見込み<br>同速は半分として計算</small></div></div>`
+    + `<div class="mirror-matchup"><div class="mirror-side">${icon(k, 56)}<div><span class="k">あなたの素の実数値</span><strong>${bare}</strong><small>${esc(SIGN_JA[spdState.sign])}・${spdState.sp}ポイント</small></div></div>`
+    + `<div class="mirror-side">${icon(k, 56)}<div><span class="k">相手にいちばん多い実数値</span><strong>${mode}</strong><small>1つの型に固定せず、分布全体と比較</small></div></div></div>`
+    + `<div class="mirror-meter" role="img" aria-label="自分が速い ${pct(p.faster, 1)}、同速 ${pct(p.tie, 1)}、相手が速い ${pct(p.slower, 1)}">${segment('faster', '自分が速い')}${segment('tie', '同速')}${segment('slower', '相手が速い')}</div>`
+    + `<div class="mirror-legend">${legend('faster', '自分が速い')}${legend('tie', '同速：行動順は半々')}${legend('slower', '相手が速い')}</div>`
+    + `<h3>相手のすばやさは、どこに集まっている？</h3>${spdDistribution(e, bare, $('speed-out').clientWidth - 40)}<p class="note">横軸は実数値、棒の高さはその配分の割合。縦線があなたの位置です。</p>`
+    + `<div class="mirror-actions">${next ? `<p>あと<strong> ${next.need - spdState.sp}ポイント</strong>で実数値${next.value}の相手を抜けます。先に動く見込みは<strong> +${(gain * 100).toFixed(1)}pt</strong>。</p><button type="button" class="pill" data-mirror-sp="${next.need}" data-mirror-sign="${spdState.sign}">${next.need}ポイントを試す</button>` : '<p>この性格では、追加のポイントで抜ける相手の配分はありません。</p>'}</div>`
+    + '<p class="note">ミラーはお互いの補正条件が同じ場合の比較です。下の環境ラインに使うスカーフ・おいかぜの自分だけの補正は、ここには加えていません。先制技・トリックルーム・特性などは含みません。</p>';
+}
 // 環境全体（姿ごと、使用率で重み付け）に対して
 function spdVsMeta(S, v, exclude) {
   let f = 0, sl = 0, u = 0;
@@ -919,7 +980,7 @@ function spdFormOf(S, g) {
 }
 
 // ── すばやさ調整（ミラー）: 何ポイント振れば、同じポケモンどうしで先に動けるか ─────────
-const SPD_THRESH = [[0.5, '5割'], [0.8, '8割'], [0.9, '9割'], [1, '確実']];
+const SPD_THRESH = [[0.5, '5割'], [0.8, '8割'], [0.9, '9割'], [1, '統計上100%']];
 // 振る数 0〜32 のうち、ミラーで先に動く確率が thr 以上になる最小の振る数（届かなければ null）
 function spdNeed(e, dist, sign, thr) {
   for (let sp = 0; sp <= 32; sp++) {
@@ -1024,18 +1085,19 @@ async function renderSpeedView(revision = routeRevision) {
   const input = '<section class="card c12"><div class="spd-form">'
     + `<div class="spd-who">${icon(k, 56)}<div><h2 style="margin:0">${esc(ja(k))}</h2><div class="note">種族値 ${e.base}・使用率 ${pct(e.usage, 1)}</div></div></div>`
     + `<div class="spd-ctl"><div><span class="k">性格</span> <div class="seg" role="group" aria-label="性格">${signBtn('+', '上昇')}${signBtn('=', '無補正')}${signBtn('-', '下降')}</div></div>`
-    + `<label class="spd-sp"><span class="k">すばやさのポイント</span> <input type="range" min="0" max="32" step="1" value="${spdState.sp}" data-sp> <b data-sp-out>${spdState.sp}</b></label>`
+    + `<div class="spd-sp"><label for="spd-points" class="k">すばやさのポイント</label><input id="spd-points" type="range" min="0" max="32" step="1" value="${spdState.sp}" data-sp><input aria-label="すばやさのポイント（数値入力）" type="number" min="0" max="32" step="1" value="${spdState.sp}" data-sp-number><output data-sp-out hidden>${spdState.sp}</output></div>`
     + `<div class="spd-chk"><label class="chk"><input type="checkbox" data-scarf ${spdState.scarf ? 'checked' : ''}> こだわりスカーフ</label>`
     + (doubles ? `<label class="chk"><input type="checkbox" data-tw ${spdState.tw ? 'checked' : ''}> おいかぜ（自分だけ 2 倍）</label>` : '')
     + '</div></div><div class="spd-stat"><span class="k">実数値</span><b data-stat></b></div></div>'
-    + '<p class="note" style="margin:8px 0 0">最初は、このポケモンでいちばん多い配分にしてあります。</p></section>';
+    + `<div class="spd-presets" role="group" aria-label="よく使う配分"><button class="pill" type="button" data-sp-preset="0" data-sign-preset="=">無振り</button><button class="pill" type="button" data-sp-preset="32" data-sign-preset="=">準速</button><button class="pill" type="button" data-sp-preset="32" data-sign-preset="+">最速</button><button class="pill" type="button" data-sp-preset="${spdDefault(e).sp}" data-sign-preset="${spdDefault(e).sign}">いちばん多い配分</button></div>`
+    + '<p class="note" style="margin:8px 0 0">0〜32ポイントで調整。最初は、このポケモンにいちばん多い実数値です。</p></section>';
   // ②③ は入力のたびに描き直す
-  const result = '<section class="card c12" data-spd-result></section><section class="card c12" data-spd-lines></section>';
+  const result = '<section class="card c12 mirror-summary" data-spd-mirror></section><section class="card c12" data-spd-result></section><section class="card c12" data-spd-lines></section>';
 
   // ④ ミラー
   const needTxt = (dist, sign) => SPD_THRESH.map(([thr, lab]) => {
     const sp = spdNeed(e, dist, sign, thr);
-    const why = sp == null ? (thr >= 1 ? '最速どうしは同速（1/2）' : '届かない') : `実数値 ${spdStat(e.base, sp, sign)}`;
+    const why = sp == null ? 'この性格では届かない' : `実数値 ${spdStat(e.base, sp, sign)}`;
     return `<div><span class="k">${lab}</span><b>${sp == null ? '—' : sp}</b><small class="note">${why}</small></div>`;
   }).join('');
   const creep = e.prev_dist ? ['=', '+'].map((sign) => {
@@ -1047,12 +1109,12 @@ async function renderSpeedView(revision = routeRevision) {
     return `<tr><td><a class="plain" href="${linkTo({ v: 'speed', p: n })}">${icon(n, 28)} ${esc(short(n))}</a></td><td>${x.base}</td><td>${pct(x.usage, 1)}</td>`
       + `<td>${a == null ? '届かない' : a}</td><td>${b == null ? '届かない' : b}</td></tr>`;
   }).join('');
-  const mirror = `<section class="card c12"><h2>ミラー（${esc(ja(k))}どうし）で先に動くには</h2>`
+  const mirror = `<section class="card c12"><details class="mirror-details"><summary>もっと調べる：性格ごとの必要ポイントと先月との比較</summary><h2>ミラーの調整早見表</h2>`
     + `<div class="spd-mirror"><div><div class="k">無補正の性格: 必要なポイント</div><div class="kv kv4">${needTxt(e.dist, '=')}</div>`
     + `<div class="k" style="margin-top:10px">すばやさ上昇の性格: 必要なポイント</div><div class="kv kv4">${needTxt(e.dist, '+')}</div>`
     + (creep ? `<p class="note">先月からの変化: ${creep}</p>` : '') + `</div><div>${spdMirrorChart(e, 560)}</div></div>`
     + '<details class="table"><summary>ほかのポケモンのミラー（9 割で先に動くのに必要なポイント）</summary>'
-    + `<table class="tt"><thead><tr><th>ポケモン</th><th>種族値</th><th>使用率</th><th>無補正</th><th>上昇</th></tr></thead><tbody>${others}</tbody></table></details></section>`;
+    + `<table class="tt"><thead><tr><th>ポケモン</th><th>種族値</th><th>使用率</th><th>無補正</th><th>上昇</th></tr></thead><tbody>${others}</tbody></table></details></details></section>`;
 
   // ⑤ 注意
   const prio = Object.entries(e.priority || {}).map(([m, s]) => `${esc(nameIn('moves')(m))}（${pct(s, 0)}）`).join('・');
@@ -1070,7 +1132,20 @@ async function renderSpeedView(revision = routeRevision) {
     out.querySelectorAll('[data-sign]').forEach((x) => x.setAttribute('aria-pressed', x === b));
     redraw();
   }));
-  out.querySelector('[data-sp]').addEventListener('input', (ev) => { spdState.sp = +ev.target.value; redraw(); });
+  const setPoints = (value, sign = spdState.sign) => {
+    spdState.sp = Math.max(0, Math.min(32, Math.trunc(Number(value) || 0)));
+    spdState.sign = sign;
+    out.querySelector('[data-sp]').value = spdState.sp;
+    out.querySelector('[data-sp-number]').value = spdState.sp;
+    out.querySelectorAll('[data-sign]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.sign === sign));
+    redraw();
+  };
+  out.querySelector('[data-sp]').addEventListener('input', (ev) => setPoints(ev.target.value));
+  out.querySelector('[data-sp-number]').addEventListener('input', (ev) => {
+    if (ev.target.value !== '' && !ev.target.validity.badInput) setPoints(ev.target.value);
+  });
+  out.querySelector('[data-sp-number]').addEventListener('change', (ev) => setPoints(ev.target.value));
+  out.querySelectorAll('[data-sp-preset]').forEach((b) => b.addEventListener('click', () => setPoints(b.dataset.spPreset, b.dataset.signPreset)));
   out.querySelector('[data-scarf]').addEventListener('change', (ev) => { spdState.scarf = ev.target.checked; redraw(); });
   out.querySelector('[data-tw]')?.addEventListener('change', (ev) => { spdState.tw = ev.target.checked; redraw(); });
   redraw();
@@ -1082,20 +1157,26 @@ function spdRedraw(S, k) {
   const bare = spdStat(e.base, spdState.sp, spdState.sign);
   const out = $('speed-out');
   out.querySelector('[data-sp-out]').textContent = spdState.sp;
+  out.querySelector('[data-sp-number]').value = spdState.sp;
   out.querySelector('[data-stat]').innerHTML = `${v}${v !== bare ? ` <small class="note">（素の値 ${bare}）</small>` : ''}`;
   const m = spdVsMeta(S, v, null);
   // ミラーは素の値どうしで比べる（相手も同じ条件とは限らないので、スカーフ・おいかぜは足さない）
-  const mir = spdFaster(bare, e.dist);
-  const mirPrev = e.prev_dist ? spdFaster(bare, e.prev_dist) : null;
+  out.querySelector('[data-spd-mirror]').innerHTML = spdMirrorSummary(e, k, bare);
+  out.querySelectorAll('[data-mirror-sp]').forEach((b) => b.addEventListener('click', () => {
+    spdState.sp = +b.dataset.mirrorSp;
+    spdState.sign = b.dataset.mirrorSign;
+    out.querySelector('[data-sp]').value = spdState.sp;
+    out.querySelectorAll('[data-sign]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.sign === spdState.sign));
+    spdRedraw(S, k);
+  }));
   const rows = spdRows(S).filter((r) => r.name !== k || r.scarf);
   // 次に抜けるライン: 自分以上の値のうち、少ないポイントで抜けるもの（同じなら環境での重みが大きいもの）
   const ahead = rows.filter((r) => r.value >= v).map((r) => ({ ...r, need: spdToPass(e, r.value) })).filter((r) => r.need != null && r.need > spdState.sp);
   const next = ahead.sort((a, b) => a.need - b.need || b.weight - a.weight)[0];
   const lineName = (r) => `${esc(short(r.name))}（${r.scarf ? 'スカーフ・' : ''}${r.kind}）`;
-  out.querySelector('[data-spd-result]').innerHTML = '<h2>あなたの配分だと</h2><div class="kv kv3">'
+  out.querySelector('[data-spd-result]').innerHTML = '<h2>ほかのポケモンも含めた、環境での位置</h2><div class="kv">'
     + `<div><span class="k">環境の相手より先に動く</span><b>${pct(m.faster, 0)}</b><small class="note">同速は半分として数える</small></div>`
-    + `<div><span class="k">環境の相手に先に動かれる</span><b>${pct(m.slower, 0)}</b><small class="note">&nbsp;</small></div>`
-    + `<div><span class="k">ミラーで先に動く</span><b>${pct(mir, 0)}</b><small class="note">${mirPrev != null ? `先月 ${pct(mirPrev, 0)}` : '&nbsp;'}</small></div></div>`
+    + `<div><span class="k">環境の相手に先に動かれる</span><b>${pct(m.slower, 0)}</b><small class="note">スカーフ・おいかぜの設定を反映</small></div></div>`
     + (next ? `<p class="spd-next">あと <b>${next.need - spdState.sp}</b> ポイント（計 ${next.need}）で、${icon(next.name, 28)} ${lineName(next)} の実数値 ${next.value} を抜けます。<small class="note">その姿の ${pct(next.share, 0)} がこの値</small></p>`
       : '<p class="spd-next note">この性格では、この先に抜けるラインはありません。</p>');
   // ③ ライン表
@@ -1171,16 +1252,19 @@ function renderTopCard() {
   const rows = Object.entries(T.pokemon).filter(([, v]) => v.bring && v.bring.players >= 10)
     .map(([k, v]) => ({ k, d: v.bring.est - v.bring.other, v: v.bring }));
   const nClear = rows.filter((r) => r.v.clear).length;
-  const li = (r) => `<li><a class="plain" href="${linkTo({ v: 'poke', p: r.k })}"><span>${icon(r.k, 28)}${esc(short(r.k))}</span></a>`
-    + `<span><b>${pct(r.v.est, 0)}</b> <small class="note">${pct(r.v.ci[0], 0)}〜${pct(r.v.ci[1], 0)}・ほかの人 ${pct(r.v.other, 0)}・${r.v.players}人${r.v.clear ? '・はっきり' : ''}</small></span></li>`;
+  const li = (r) => `<li class="top-player-row"><a class="plain top-player-name" href="${linkTo({ v: 'poke', p: r.k })}">${icon(r.k, 36)}<span>${esc(short(r.k))}</span></a>`
+    + `<div class="top-player-metric"><div class="top-player-values"><b>${pct(r.v.est, 0)}</b><small>ほかの人 ${pct(r.v.other, 0)}</small></div>`
+    + `<div class="top-player-track" role="img" aria-label="上位の人 ${pct(r.v.est, 0)}、ほかの人 ${pct(r.v.other, 0)}"><span class="top-player-fill" style="width:${r.v.est * 100}%"></span><i class="top-player-other" style="left:${r.v.other * 100}%"></i></div>`
+    + `<small class="top-player-meta">95%範囲 ${pct(r.v.ci[0], 0)}〜${pct(r.v.ci[1], 0)} · ${r.v.players}人${r.v.clear ? ' · 差が明確' : ''}</small></div></li>`;
   const more = rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
   const less = rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
-  $('top-out').innerHTML = (nClear ? '' : '<p class="note" style="margin-top:0"><b>今のデータでは、上位の人とほかの人の選出率に、はっきりした差のあるポケモンはありません。</b>下は差の大きい順で、95% 範囲がほかの人の値をまたいでいるものは、偶然の揺れの範囲です。</p>')
-    + `<div class="grid" style="margin-top:0;gap:12px"><div class="c6"><div class="k">上位の人のほうが選出が多い</div><ul class="mu">${more.map(li).join('')}</ul></div>`
-    + `<div class="c6"><div class="k">上位の人のほうが選出が少ない</div><ul class="mu">${less.map(li).join('')}</ul></div></div>`
-    + `<p class="note">ランキング表の上位 500 人（記録 ${T.ladder_days} 日ぶん）が選んだ ${T.samples_top.toLocaleString()} 回（10 人以上から来ているポケモンだけ）と、ほかの ${T.samples_other.toLocaleString()} 回の比較（公開リプレイ）。`
+  $('top-out').innerHTML = (nClear ? '' : '<p class="top-note">今のデータでは、上位の人との<strong>明確な差は確認されていません。</strong>下の違いは参考として見てください。</p>')
+    + '<p class="note top-key">棒：上位の人の選出率 ／ 縦の印：ほかの人の選出率</p>'
+    + `<div class="top-compare"><section><h3>上位の人が、より選んでいる</h3><ul class="top-player-list">${more.map(li).join('') || '<li class="empty">比較できるデータがありません。</li>'}</ul></section>`
+    + `<section><h3>上位の人が、あまり選んでいない</h3><ul class="top-player-list">${less.map(li).join('') || '<li class="empty">比較できるデータがありません。</li>'}</ul></section></div>`
+    + `<details class="top-method"><summary>データの件数と、比較の読み方</summary><p class="note">ランキング表の上位 500 人（記録 ${T.ladder_days} 日ぶん）が選んだ ${T.samples_top.toLocaleString()} 回（10 人以上から来ているポケモンだけ）と、ほかの ${T.samples_other.toLocaleString()} 回の比較（公開リプレイ）。`
     + ` 同じ人の選び方は似るので（似かた ${T.icc_bring}）、その分だけ件数を割り引き、ほかの人の選出率に寄せて推定した値と 95% 範囲です。`
-    + `人で半分に分けて確かめると、95% のつもりの範囲に実際に ${pct(T.coverage_bring, 0)} が入りました。偶然の差を除く補正（FDR 5%）もかけています。上位かどうかは今のランキング表で決めています。</p>`;
+    + `人で半分に分けて確かめると、95% のつもりの範囲に実際に ${pct(T.coverage_bring, 0)} が入りました。偶然の差を除く補正（FDR 5%）もかけています。上位かどうかは今のランキング表で決めています。</p></details>`;
 }
 
 // ── 選出誘導（src/cmeta/analysis/induce.py） ───────────────────────
@@ -1800,7 +1884,12 @@ async function main() {
     if (window.innerWidth === lastW) return; // スマホのアドレスバーの出入りでは描き直さない
     lastW = window.innerWidth;
     clearTimeout(t);
-    t = setTimeout(() => { drawCharts(); if (route.v === 'poke' && route.p) renderPoke(route.p); }, 150);
+    t = setTimeout(() => {
+      drawCharts();
+      if (route.v === 'poke' && route.p) renderPoke(route.p);
+      const speedKey = spdState.k?.split(':')[1];
+      if (route.v === 'speed' && view.speed?.pokemon[speedKey]) spdRedraw(view.speed, speedKey);
+    }, 150);
   });
 }
 

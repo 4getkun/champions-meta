@@ -62,7 +62,7 @@ try {
         Write-RunLog 'SkipFetch が指定されたため取得と集計を省略します。'
     }
 
-    Invoke-Logged $node @('--test', 'tests/ui_async_race.mjs', 'tests/ui_prediction.mjs') '画面と予測の回帰確認'
+    Invoke-Logged $node @('--test', 'tests/ui_async_race.mjs', 'tests/ui_prediction.mjs', 'tests/ui_speed.mjs') '画面と予測の回帰確認'
     Invoke-Logged $PythonExe @('-m', 'cmeta', 'dist') '公開ファイル作成'
     if (-not $SkipDeploy) {
         $wrangler = 'C:\Github\fourgetkun-hub\node_modules\.bin\wrangler.cmd'

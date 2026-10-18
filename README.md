@@ -44,7 +44,7 @@ python -m pytest -q
   次の定期実行、または `Start-ScheduledTask -TaskName ChampionsMeta-Update` で再開する。取得状態のファイルを消さない。
   Actionsの取得を復旧用に使う場合はローカルタスクを停止・無効化してから `update data` を有効化する。
 - 手元の確認は `pip install -e ".[dev]"` → `python -m pytest -q` → `python -m cmeta dist`。
-  フロントの非同期処理と予測計算の一致は `node --test tests/ui_async_race.mjs tests/ui_prediction.mjs` で確認する。
+  フロントの非同期処理・選出予測・ミラーの行動順は `node --test tests/ui_async_race.mjs tests/ui_prediction.mjs tests/ui_speed.mjs` で確認する。
   `dist/` を localhost で開き、環境・ランキング・選出予想・チーム診断・すばやさを確認する。
   予想の成績表は保存時刻以後の試合だけを使い、同日の保存済み予想は変更しない。
 - 公開版を戻す場合は Cloudflare Pages の直前の正常なデプロイへロールバックする。
