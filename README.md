@@ -24,17 +24,31 @@ python -m pytest -q
 ```
 定期実行は `.github/workflows/update.yml`（3 日に 1 回と毎月 3 日）。GitHub Actions の使用時間を抑えるため、リプレイを取るのは今のレギュレーションだけ
 （`config.EXTRA_REPLAY_FORMATS`。ダブルは `REPLAY_CAP` を超えたら抜き取り）、ランキング表は週 1 回、リプレイも月次も変わっていないルールの計算は飛ばす（`out/build_inputs.json`）。
+一覧の走査も1ルール200ページまでに制限し、残りは次回に続ける。抜き取りは今回走査した区間ごとに等間隔で行う。
+上位者のリプレイは1ルール25人ずつ巡回し、詳細取得は150件まで。上位500人のランキング自体は毎回すべて記録する。
 
 ## 公開
 - 公開先: https://champions.fourgetkun.com/ （Cloudflare Pages のプロジェクト `champions-meta` に割り当てたサブドメイン）。
   fourgetkun.com のハブ（fourgetkun-hub）には、トップのカード用の名札 `public/champions-meta/` だけを置いている。
 - `python -m cmeta dist` で `dist/`（`site/` の中身 + `out/` を `data/` として + `sitemap.xml`）を作り、
-  `.github/workflows/deploy.yml` が Direct Upload する。リポジトリは private のまま。
-  毎日のデータ更新のあと・`site/` か `out/` を push したとき・手で起動したときに動く。
+  `.github/workflows/deploy.yml` が Direct Upload する。リポジトリの公開設定に依存せず配信できる。
+  定期データ更新の成功後・`site/` か `out/` を push したとき・手で起動したときに動く。
 - 必要なリポジトリの secrets: `CLOUDFLARE_API_TOKEN`（Account > Cloudflare Pages > Edit）と `CLOUDFLARE_ACCOUNT_ID`。
   無いあいだはデプロイだけ飛ばす。
-- 手元で公開用のものを見る: `python -m cmeta dist` のあと `python -m http.server 8788 --directory dist`。
-  `site/` のまま見るときは、リポジトリ直下で `python -m http.server` を立てて `/site/?data=../out/`。
+
+## 運用と復旧
+
+- 更新は3日に1回と毎月3日。画面の最終更新日が7日以上前なら、集計が古いことを表示する。
+- 通信に失敗した更新でも、取得済みデータと再開位置は保存する。失敗した実行からは公開しない。
+  次の定期実行、または Actions の `update data` の手動実行で再開する。取得状態のファイルを消さない。
+- 手元の確認は `pip install -e ".[dev]"` → `python -m pytest -q` → `python -m cmeta dist`。
+  フロントの非同期処理と予測計算の一致は `node --test tests/ui_async_race.mjs tests/ui_prediction.mjs` で確認する。
+  `dist/` を localhost で開き、環境・ランキング・選出予想・チーム診断・すばやさを確認する。
+  予想の成績表は保存時刻以後の試合だけを使い、同日の保存済み予想は変更しない。
+- 公開版を戻す場合は Cloudflare Pages の直前の正常なデプロイへロールバックする。
+  データの誤りを直す場合は原因の変更を修正し、再集計・確認してから公開する。
+- 手元で公開用のものを見る: `python -m cmeta dist` のあと `python -m http.server 8788 --bind 127.0.0.1 --directory dist`。
+  `site/` のまま見るときは、リポジトリ直下で `python -m http.server --bind 127.0.0.1` を立てて `/site/?data=../out/`。
 
 ## 手で直すファイル
 - `data/name_overrides.json`: 名前の対応が取れないとき。キーは次のとおり。

@@ -1,7 +1,7 @@
 name: deploy site
 
 # 公開: Cloudflare Pages のプロジェクト champions-meta（https://champions.fourgetkun.com/ を割り当てる）。
-# site/ と out/ を dist/ にまとめて（python -m cmeta dist）Direct Upload する。リポジトリは private のまま。
+# site/ と out/ を dist/ にまとめて（python -m cmeta dist）Direct Upload する。
 # いつ動くか:
 #   - 毎日のデータ更新（update data）が終わったあと。あちらの push は GITHUB_TOKEN なので push では起動しない
 #   - 画面（site/）や out/ を手元から push したとき
@@ -14,7 +14,7 @@ on:
     types: [completed]
   push:
     branches: [main]
-    paths: ["site/**", "out/**", "src/cmeta/dist.py"]
+    paths: ["site/**", "out/**", "src/cmeta/**", "pyproject.toml"]
   workflow_dispatch:
 
 permissions:

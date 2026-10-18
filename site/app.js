@@ -7,6 +7,13 @@ const BASE = ((d) => (d && /^\.{0,2}\/?[\w./-]*\/$/.test(d) && !d.includes('//')
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pct = (v, d = 1) => (v == null ? '—' : `${(v * 100).toFixed(d)}%`);
+function updateStatus(compact = false) {
+  const date = new Date(META.generated_at);
+  const stamp = Number.isNaN(date.getTime()) ? META.generated_at : date.toLocaleString('ja-JP');
+  const age = Number.isNaN(date.getTime()) ? 0 : Math.floor((Date.now() - date.getTime()) / 86400000);
+  const status = age >= 7 ? `更新が遅れています。以下は${stamp}時点の集計です。` : `最終更新: ${stamp}`;
+  return compact ? status : `${status} 通常は3日に1回更新。Smogon の月次統計は毎月 3 日ごろ。`;
+}
 // 初期表示はシングル（ゲーム内のランクバトルと同じルールの BSS）。Smogon 独自のルールは後ろ
 const FAMILY_ORDER = ['bss', 'vgc', 'ou', 'uu', '4v4doublesuu'];
 
@@ -344,8 +351,11 @@ function bumpChart(el, track, width) {
 
 // ── 画面の切り替え（URL の # に f=ルール&v=画面&p=ポケモン） ──────────
 const route = { f: null, v: 'env', p: null };
+let routeRevision = 0;
 function readHash() {
-  const h = decodeURIComponent(location.hash.slice(1));
+  const raw = location.hash.slice(1);
+  let h;
+  try { h = decodeURIComponent(raw); } catch (e) { h = raw; }
   if (h && !h.includes('=')) return { f: h, v: 'env', p: null }; // 以前の #<ルール> の形
   const q = new URLSearchParams(h);
   return { f: q.get('f'), v: q.get('v') || 'env', p: q.get('p') };
@@ -373,6 +383,7 @@ function renderPills() {
     if (b) go({ f: b.dataset.fmt });
   });
   document.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-retry-route]')) { view = null; onRoute(); return; }
     const a = ev.target.closest('[data-view]');
     if (a) {
       ev.preventDefault();
@@ -392,7 +403,7 @@ function renderPills() {
   });
 }
 
-async function load(fid) {
+async function load(fid, revision = routeRevision) {
   const f = META.formats.find((x) => x.id === fid) || currentFormats()[0];
   if (view && view.f.id === f.id) return;
   if (f.early) {
@@ -401,7 +412,10 @@ async function load(fid) {
       f.replay_days ? getJSON(`weekly/${f.id}.json`).catch(() => null) : Promise.resolve(null),
       getJSON(`top/${f.id}.json`).catch(() => null),
     ]);
+    if (!early) throw new Error(`early/${f.id}.json が取得できません`);
+    if (revision !== routeRevision) return;
     view = { f, mo: null, early, weekly, top, trend: 'usage' };
+    document.querySelectorAll('.cut').forEach((el) => { el.textContent = META.default_cutoff; });
     renderEnv();
     renderRank();
     fillDatalist();
@@ -418,6 +432,7 @@ async function load(fid) {
     f.team_select && f.replay_days ? getJSON(`top/${f.id}.json`).catch(() => null) : Promise.resolve(null),
     getJSON(`sets/${f.id}.json`).catch(() => null),
   ]);
+  if (revision !== routeRevision) return;
   view = { f, mo, track, cores, weekly, detail, top, sets, trend: view ? view.trend : 'usage' };
   renderEnv();
   renderRank();
@@ -427,11 +442,31 @@ async function load(fid) {
 }
 
 async function onRoute() {
+  const revision = ++routeRevision;
   const r = readHash();
   route.f = r.f && META.formats.some((x) => x.id === r.f) ? r.f : currentFormats()[0].id;
   route.v = ['env', 'rank', 'poke', 'select', 'diag', 'speed'].includes(r.v) ? r.v : 'env';
   route.p = r.p;
-  await load(route.f);
+  try {
+    await load(route.f, revision);
+  } catch (e) {
+    if (revision !== routeRevision) return;
+    document.querySelectorAll('[data-view-panel]').forEach((el) => { el.hidden = el.dataset.viewPanel !== route.v; });
+    const panel = document.querySelector(`[data-view-panel="${route.v}"]`);
+    if (panel) {
+      panel.querySelectorAll('.route-error').forEach((el) => el.remove());
+      panel.insertAdjacentHTML('afterbegin', `<p class="empty route-error" role="alert">データを読めませんでした（${esc(e.message)}）。<button type="button" data-retry-route>再読み込み</button></p>`);
+    }
+    return;
+  }
+  if (revision !== routeRevision) return;
+  document.querySelectorAll('.route-error').forEach((el) => el.remove());
+  if (route.v === 'poke') {
+    const found = view.early
+      ? !!view.early.pokemon?.[route.p]
+      : rankRows().some((row) => row.k === route.p) || Object.keys(view.detail?.pokemon || {}).some((k) => groupOf(k) === route.p);
+    if (!found) { route.p = null; route.v = 'rank'; }
+  }
   document.querySelectorAll('#formats .pill').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.fmt === route.f)));
   const shown = route.v === 'poke' && !route.p ? 'rank' : route.v;
   document.querySelectorAll('[data-view-panel]').forEach((m) => { m.hidden = m.dataset.viewPanel !== shown; });
@@ -441,9 +476,10 @@ async function onRoute() {
   });
   if (shown === 'poke') renderPoke(route.p);
   if (shown === 'env') drawCharts();
-  if (shown === 'select') await renderSelect();
-  if (shown === 'diag') await renderDiag();
-  if (shown === 'speed') await renderSpeedView();
+  if (shown === 'select') await renderSelect(revision);
+  if (shown === 'diag') await renderDiag(revision);
+  if (shown === 'speed') await renderSpeedView(revision);
+  if (revision !== routeRevision) return;
   phrase(document.querySelector(`[data-view-panel="${shown}"]`));
   const label = formatLabel(view.f);
   document.title = {
@@ -512,7 +548,9 @@ function renderEarlyEnv() {
     + '<p class="note">使用率の順位は、ゲーム内や既存のサイトで、ゲーム内のデータを使って見られます。このサイトでは、上の「実際に出すか」を中心に見てください。勝率は、使う人の腕前の差が混ざるので出していません。</p></section>'
     + '</div>';
   // 選出誘導のはっきりした変化（全ポケモンから、●の付いたものを変化の大きい順に）
+  const targetView = view;
   loadInduce().then((ind) => {
+    if (view !== targetView || route.f !== f.id) return;
     const el = $('early-induce');
     if (!el) return;
     const rows = [];
@@ -528,12 +566,13 @@ function renderEarlyEnv() {
       + '<p class="note">相手の見せ合いにそのポケモンがいたとき、こちらの選出率がどれだけ変わったか。偶然の揺れを超え、しかもタイプ相性どおりの向きのものだけ。詳しくは各ポケモンのページ。</p>';
   });
   getJSON(`select/${f.id}.json`).then((S) => {
+    if (view !== targetView || route.f !== f.id) return;
     const el = $('early-select-note');
     if (!el) return;
     if (!S?.available) { el.textContent = `いまは試合が足りず、全体の選出率から計算します（${S?.reason || ''}）。`; return; }
     const ev = S.eval;
     el.textContent = `答え合わせ（${ev.test.toLocaleString()} 試合）: 確率の当てはまりは全体の率だけより ${ev.loglik.diff >= 0 ? '+' : ''}${ev.loglik.diff.toFixed(3)}`
-      + `（${ev.loglik.ci[0] > 0 ? 'はっきり良い' : '差ははっきりしない'}）。${S.track?.available ? `前向きの成績表: ${S.track.n} 試合。` : '前向きの成績表は、今日から記録しています。'}`;
+      + `（${ev.loglik.ci[0] > 0 ? 'はっきり良い' : '差ははっきりしない'}）。${S.track?.available ? `前向きの成績表: ${S.track.n} 試合。` : '前向きの成績表は、集計開始時点から記録しています。'}`;
   }).catch(() => {});
 }
 function renderEarlyRank() {
@@ -543,7 +582,9 @@ function renderEarlyRank() {
   if (!E || !E.available) { $('rank-grid').innerHTML = '<li class="empty">まだ集計できる試合がありません。</li>'; return; }
   const list = Object.entries(E.pokemon).filter(([k]) => !q || norm(ja(k)).includes(q) || norm(k).includes(q));
   const maxU = Math.max(...list.map(([, e]) => e.usage), 0.01);
-  $('rank-grid').innerHTML = list.map(([k, e], i) => `<li class="early-rank"><span class="no">${i + 1}</span>${earlyRow(k, e, maxU).replace(/^<li>|<\/li>$/g, '')}</li>`).join('');
+  $('rank-grid').innerHTML = list.length
+    ? list.map(([k, e], i) => `<li class="early-rank"><span class="no">${i + 1}</span>${earlyRow(k, e, maxU).replace(/^<li>|<\/li>$/g, '')}</li>`).join('')
+    : '<li class="empty">条件に合うデータがありません。</li>';
 }
 function renderEarlyPoke(g) {
   const E = view.early;
@@ -560,7 +601,7 @@ function renderEarlyPoke(g) {
     + '<p class="note">同じ人の同じ 6 匹は 1 つと数えています。技・持ち物・すばやさは、月次統計が出てから（月が終わったあと）表示します。</p></section>');
   if (view.f.team_select) cards.push('<section class="card c8" id="p-induce"><h2>選出誘導 <span class="chip warn">参考値</span></h2><p class="empty">読み込み中…</p></section>');
   $('poke-body').innerHTML = cards.join('');
-  if ($('p-induce')) loadInduce().then((ind) => { if ($('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); });
+  if ($('p-induce')) { const target = view; loadInduce().then((ind) => { if (view === target && $('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); }); }
 }
 
 // ── 環境 ────────────────────────────────────────────────
@@ -583,9 +624,7 @@ function renderEnv() {
   const battles = mo.battles['0'] ? mo.battles['0'][i] : null;
   const label = formatLabel(f);
   const [y, m] = month.split('-');
-  const updated = META.generated_at.slice(5, 16).replace('-', '/').replace('T', ' ');
-
-  $('asof').innerHTML = dots(`${y}年${+m}月`, esc(label), 'Showdown', `レート${cut}以上`, `更新 ${updated}`);
+  $('asof').innerHTML = dots(`${y}年${+m}月`, esc(label), 'Showdown', `レート${cut}以上`);
   document.querySelectorAll('.cut').forEach((e) => { e.textContent = cut; });
 
   $('t-div').innerHTML = `<div class="k">実効的なポケモン数</div><div class="big">${div ? div.q1.toFixed(1) : '—'}</div>`
@@ -628,7 +667,7 @@ function renderEnv() {
     : '';
 
   $('sources').innerHTML = '出典: ' + META.sources.map((s) => `<a href="${esc(s.url)}">${esc(s.name)}</a>`).join(' / ');
-  $('generated').textContent = `更新: ${META.generated_at.replace('T', ' ').slice(0, 16)}（毎日更新。Smogon の月次統計は毎月 3 日ごろ）`;
+  $('generated').textContent = updateStatus();
 }
 
 function drawCharts() {
@@ -770,14 +809,15 @@ function renderPoke(g) {
   $('poke-body').innerHTML = cards.join('');
   if (series) trendChart($('p-trend'), { ...track, usage_grouped: { [g]: series } }, $('p-trend').clientWidth || 600);
   if (document.querySelector('[data-spd-slot]')) fillSpeedCards();
-  if ($('p-induce')) loadInduce().then((ind) => { if ($('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); });
+  if ($('p-induce')) { const target = view; loadInduce().then((ind) => { if (view === target && $('p-induce') && route.p === g) $('p-induce').innerHTML = induceCard(ind, g); }); }
 }
 
 // ── すばやさ（src/cmeta/analysis/speed.py） ─────────────────────────
 // 実数値 = trunc((種族値 + 能力ポイント + 20) × 性格補正)。レベル 50・個体値 31 固定
 async function loadSpeed() {
-  if (view.speed === undefined) view.speed = await getJSON(`speed/${view.f.id}.json`).catch(() => null);
-  return view.speed;
+  const target = view;
+  if (target.speed === undefined) target.speed = await getJSON(`speed/${target.f.id}.json`).catch(() => null);
+  return target.speed;
 }
 const spdStat = (b, pts, sign) => { const v = b + pts + 20; return sign === '+' ? Math.floor(v * 110 / 100) : sign === '-' ? Math.floor(v * 90 / 100) : v; };
 const spdScarf = (v) => Math.floor((v * 6144 + 2047) / 4096); // Showdown の丸め
@@ -948,8 +988,9 @@ function spdToPass(e, x) {
   return null;
 }
 
-async function renderSpeedView() {
+async function renderSpeedView(revision = routeRevision) {
   const S = await loadSpeed();
+  if (revision !== routeRevision) return;
   const out = $('speed-out');
   const label = formatLabel(view.f);
   if (!S) {
@@ -1144,8 +1185,9 @@ function renderTopCard() {
 
 // ── 選出誘導（src/cmeta/analysis/induce.py） ───────────────────────
 async function loadInduce() {
-  if (view.induce === undefined) view.induce = await getJSON(`induce/${view.f.id}.json`).catch(() => null);
-  return view.induce;
+  const target = view;
+  if (target.induce === undefined) target.induce = await getJSON(`induce/${target.f.id}.json`).catch(() => null);
+  return target.induce;
 }
 function induceRow(r, which) {
   const [p, q] = r[which];
@@ -1401,11 +1443,13 @@ function selSelfCheck() {
 }
 
 async function loadToolData() {
-  const f = view.f;
+  const target = view;
+  const f = target.f;
   if (!DEX) DEX = await getJSON('dex.json');
-  if (!view.sel) view.sel = f.replay_days ? await getJSON(`select/${f.id}.json`).catch(() => null) : null;
-  if (view.diag === undefined) view.diag = view.mo ? await getJSON(`diag/${f.id}.json`).catch(() => null) : null; // 月次の無いルールには無い
-  if (view.samples === undefined) view.samples = f.team_select ? await getJSON(`samples/${f.id}.json`).catch(() => null) : null;
+  if (!target.sel) target.sel = f.replay_days ? await getJSON(`select/${f.id}.json`).catch(() => null) : null;
+  if (target.diag === undefined) target.diag = target.mo ? await getJSON(`diag/${f.id}.json`).catch(() => null) : null; // 月次の無いルールには無い
+  if (target.samples === undefined) target.samples = f.team_select ? await getJSON(`samples/${f.id}.json`).catch(() => null) : null;
+  return target;
 }
 
 // ── 見本のチーム（samples/<ルール>.json: 3 人以上がまったく同じ 6 匹を使っていたもの） ─────────
@@ -1443,23 +1487,32 @@ let SEL_RUN = null; // 解析した時点のルールとチーム（変わった
 const selSig = () => `${view.f.id}|${TEAM.opp.join(',')}|${TEAM.mine.join(',')}`;
 const SEL_STEPS = ['見せ合いの実績を読み込んでいます', '相手の 6 匹から選出の組み合わせを数えています', 'あなたのチームを見たときの傾向を足しています', '確率をまとめています'];
 async function runSelect() {
+  const revision = routeRevision;
+  const target = view;
+  const signature = selSig();
+  const isCurrent = () => revision === routeRevision && view === target && selSig() === signature;
   const out = $('select-out');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   out.innerHTML = `<div class="sel-scan" aria-live="polite"><div class="bar"><i></i></div><ol>${SEL_STEPS.map((t) => `<li>${t}</li>`).join('')}</ol></div>`;
   const items = out.querySelectorAll('.sel-scan li');
   for (let i = 0; i < items.length; i++) {
+    if (!isCurrent()) return;
     items[i].classList.add('on');
     if (!reduce) await new Promise((r) => setTimeout(r, 280));
+    if (!isCurrent()) return;
     items[i].classList.add('done');
   }
-  SEL_RUN = selSig();
-  await renderSelect();
+  if (!isCurrent()) return;
+  SEL_RUN = signature;
+  await renderSelect(revision);
+  if (!isCurrent()) return;
   out.classList.remove('sel-in');
   void out.offsetWidth; // 結果を出すたびに動きを最初から
   out.classList.add('sel-in');
 }
-async function renderSelect() {
+async function renderSelect(revision = routeRevision) {
   await loadToolData();
+  if (revision !== routeRevision) return;
   SEL = view.sel;
   applySamples(['opp', 'mine']);
   $('select-samples').innerHTML = sampleCard(['mine', 'opp']);
@@ -1526,7 +1579,7 @@ async function renderSelect() {
   const n2 = (x, k) => (x * k).toFixed(2);
   const pt = (d) => `${d >= 0 ? '+' : ''}${(d * 100).toFixed(1)}`;
   const sig = (c) => (c.ci[0] > 0 ? '（はっきり良い）' : c.ci[1] < 0 ? '（はっきり悪い）' : '（差ははっきりしない）');
-  const evalTxt = `<b>答え合わせ</b>（${day(ev.test_from)} 以降の ${ev.test.toLocaleString()} 試合を ${ev.blocks || 1} 区間に分け、それぞれ直前 ${ev.train_days || 30} 日の試合だけで学んだ予想で確かめたもの）<br>`
+  const evalTxt = `<b>答え合わせ</b>（${day(ev.test_from)} 以降の ${ev.test.toLocaleString()} 試合を ${ev.blocks || 1} 区間に分け、それぞれ直前 ${ev.train_days || 30} 日の試合で学んだ予想で確かめたもの）<br>月次の型・使用率は集計時点の統計を使った過去の答え合わせです。保存後の試合に対する成績は、下の成績表で確認できます。<br>`
     + `・選出: 予想の上位 ${kb} 匹のうち実際に出たのは平均 <b>${n2(ev.bring.model, kb)} 匹</b>（全体の選出率だけ ${n2(ev.bring.baseline, kb)} 匹、でたらめ ${n2(ev.bring.random, kb)} 匹）${sig(ev.bring)}<br>`
     + `・先発: 上位 ${kl} 匹のうち平均 ${n2(ev.lead.model, kl)} 匹（全体だけ ${n2(ev.lead.baseline, kl)} 匹）${sig(ev.lead)}<br>`
     + `・先発を見たあとの残り: 上位 ${kb - kl} 匹のうち平均 ${n2(ev.back.model, kb - kl)} 匹（全体だけ ${n2(ev.back.baseline, kb - kl)} 匹）${sig(ev.back)}<br>`
@@ -1582,13 +1635,14 @@ function trackCard(T, kb, kl) {
 }
 
 // ── チーム診断 ───────────────────────────────────────────
-async function renderDiag() {
+async function renderDiag(revision = routeRevision) {
   if (!view.mo) {
     $('diag-asof').innerHTML = dots(esc(formatLabel(view.f)), '開始直後');
     $('diag-out').innerHTML = '<section class="card c12"><p class="empty">チーム診断は、月次統計（よく使われる技・すばやさ）が出てから使えます。このルールは始まったばかりで、月次統計は月が終わってから公開されます。それまでは、ひとつ前のレギュレーションを選ぶと診断できます。</p></section>';
     return;
   }
   await loadToolData();
+  if (revision !== routeRevision) return;
   const D = view.diag;
   const label = formatLabel(view.f);
   $('diag-asof').innerHTML = dots(esc(label), `レート${view.mo.default_cutoff}以上の月次統計`, 'Showdown の公開リプレイ');
@@ -1724,7 +1778,8 @@ async function main() {
   try {
     [META, NAMES] = await Promise.all([getJSON('meta.json'), getJSON('names.json')]);
   } catch (e) {
-    document.querySelector('.grid').innerHTML = `<p class="empty">データを読めませんでした（${esc(e.message)}）。</p>`;
+    document.querySelector('.grid').innerHTML = `<p class="empty" role="alert">データを読めませんでした（${esc(e.message)}）。<button type="button" id="retry-main">再読み込み</button></p>`;
+    $('retry-main').addEventListener('click', () => location.reload());
     return;
   }
   renderPills();
@@ -1732,6 +1787,9 @@ async function main() {
   normalizeTeams();
   renderTeamInputs();
   phrase($('sec-about'));
+  $('generated').textContent = updateStatus();
+  $('data-status').textContent = updateStatus(true);
+  $('data-status').classList.toggle('stale', Date.now() - new Date(META.generated_at).getTime() >= 7 * 86400000);
   document.querySelectorAll('[data-trend]').forEach((b) => b.addEventListener('click', () => { view.trend = b.dataset.trend; drawCharts(); }));
   $('q').addEventListener('input', () => renderRank());
   window.addEventListener('hashchange', onRoute);

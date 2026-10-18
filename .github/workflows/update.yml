@@ -30,6 +30,8 @@ jobs:
       # Smogon は毎回見に行くが、持っている月は取らない（新しい月が出たときだけ増える）
       - run: python -m cmeta all
       - name: commit
+        # 通信失敗でも取得済みデータと再開カーソルは残す。失敗した更新の公開は deploy 側で止める。
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

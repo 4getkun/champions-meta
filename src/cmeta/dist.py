@@ -18,7 +18,8 @@ def build(log=print) -> None:
     if DIST.exists():
         shutil.rmtree(DIST)
     shutil.copytree(SITE, DIST)
-    shutil.copytree(OUT, DIST / "data")
+    # build_inputs.json は解析の再利用用キャッシュで、サイトから参照しない内部データ。
+    shutil.copytree(OUT, DIST / "data", ignore=shutil.ignore_patterns("build_inputs.json"))
     html = _self_host_fonts((DIST / "index.html").read_text("utf-8"), log)
     (DIST / "index.html").write_text(html, "utf-8")
     # 画面の JS・CSS は中身ごとに URL を変える（?v=<中身のハッシュ>）。更新したらすぐ新しいものが読まれる

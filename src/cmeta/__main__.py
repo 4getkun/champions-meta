@@ -7,7 +7,7 @@
     python -m cmeta build [--no-names]    out/ を作り直す（--no-names: PokeAPI に問い合わせない）
     python -m cmeta seed-predlog [--format ID …] [--start YYYY-MM-DD]
                                           成績表を始める前の日の予想を、その日までのデータだけで作り直して保存する
-    python -m cmeta all                   上の三つを順に
+    python -m cmeta all                   取得の三つと build を順に
     python -m cmeta dist                  公開用の dist/ を作る（site/ + out/ を data/ として）
 """
 
@@ -96,7 +96,7 @@ def _run(args) -> None:
             elif getattr(args, "backfill", None):
                 replays.backfill(fid, args.backfill, max_n=args.max)
             elif args.cmd == "all" and fid in REPLAY_CAP:
-                replays.crawl(fid, max_n=REPLAY_CAP[fid], sample=True)  # 毎日の実行: 上限を超えたら抜き取り
+                replays.crawl(fid, max_n=min(args.max, REPLAY_CAP[fid]), sample=True)  # 指定上限とルール別上限の小さい方
             else:
                 replays.crawl(fid, max_n=args.max)
     if args.cmd in ("fetch-ladder", "all"):

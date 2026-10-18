@@ -11,6 +11,7 @@
 import gzip
 import json
 import math
+import time
 from collections import defaultdict
 from datetime import datetime
 
@@ -33,10 +34,21 @@ def _path(fmt: str, day: str):
 def save(fmt: str, pub: dict, day: str | None = None, seeded: bool = False) -> None:
     if not pub.get("available") or pub.get("model") != "joint":
         return
-    day = day or datetime.fromtimestamp(pub["trained"]["to"], JST).strftime("%Y-%m-%d")
+    published_at = int(time.time())
+    if seeded:
+        day = day or datetime.fromtimestamp(pub["trained"]["to"], JST).strftime("%Y-%m-%d")
+    else:
+        day = datetime.fromtimestamp(published_at, JST).strftime("%Y-%m-%d")
     obj = {k: pub[k] for k in KEEP if k in pub}
     obj.update({"day": day, "seeded": seeded})
+    if not seeded:
+        obj["published_at"] = published_at
     p = _path(fmt, day)
+    if p.exists():
+        with gzip.open(p, "rt", encoding="utf-8") as f:
+            existing = json.load(f)
+        if not seeded or not existing.get("seeded"):
+            return  # 再構築の操作でも、通常の保存済み予想は変更しない
     p.parent.mkdir(parents=True, exist_ok=True)
     body = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     with open(p, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as f:
@@ -48,7 +60,15 @@ def load(fmt: str) -> list[dict]:
     for p in sorted((PREDLOG / fmt).glob("*.json.gz")):
         with gzip.open(p, "rt", encoding="utf-8") as f:
             out.append(json.load(f))
-    return sorted(out, key=lambda s: s["trained"]["to"])
+    return sorted(out, key=lambda s: _application_start(s) if _application_start(s) is not None else float("-inf"))
+
+
+def _application_start(snap: dict) -> int | None:
+    trained_to = snap["trained"]["to"]
+    if snap.get("seeded"):
+        return trained_to
+    published_at = snap.get("published_at")
+    return max(trained_to, published_at) if published_at is not None else None
 
 
 def _featurizer(snap: dict, sd) -> Featurizer:
@@ -58,7 +78,7 @@ def _featurizer(snap: dict, sd) -> Featurizer:
 
 
 def evaluate(fmt: str, rows: list[dict], group_of, sd) -> dict:
-    snaps = load(fmt)
+    snaps = [s for s in load(fmt) if _application_start(s) is not None]
     if not snaps:
         return {"available": False, "reason": "保存した予想がまだ無い"}
     kb, kl = snaps[0]["k_bring"], snaps[0]["k_lead"]
@@ -70,9 +90,9 @@ def evaluate(fmt: str, rows: list[dict], group_of, sd) -> dict:
     cal = defaultdict(lambda: [0.0, 0.0, 0])
     si = -1
     for x in xs:
-        while si + 1 < len(snaps) and snaps[si + 1]["trained"]["to"] < x["t"]:
+        while si + 1 < len(snaps) and _application_start(snaps[si + 1]) < x["t"]:
             si += 1
-        if si < 0 or x["t"] - snaps[si]["trained"]["to"] > MAX_AGE_DAYS * 86400:
+        if si < 0 or x["t"] - _application_start(snaps[si]) > MAX_AGE_DAYS * 86400:
             continue
         snap = snaps[si]
         if snap["day"] not in feats:

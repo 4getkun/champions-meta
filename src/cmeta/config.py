@@ -30,15 +30,18 @@ DEFAULT_CUTOFF = 1630
 
 # リプレイ
 REPLAY_MAX_PER_RUN = 1500  # 1 ルール・1 回の実行で取る上限
+REPLAY_LIST_MAX_PAGES = 200  # 1 ルール最大 1 万候補。VGC 約 2,000 件/日を数日内に走査するため
 REPLAY_BACKFILL_DAYS = 14  # 初回にさかのぼる日数
 SERIES_GAP_SEC = 3 * 3600  # これより離れていれば別のシリーズ
 # リプレイを取るルール（今のレギュレーションだけ。終わったレギュレーションや OU・UU は取らない。月次統計は別に取る）
 # GitHub Actions の使用時間を抑えるため（2026-09-26: 取りこぼしを追う取得で 1 回 60〜120 分かかり、月 2,000 分の枠を超える）
 EXTRA_REPLAY_FORMATS: tuple[str, ...] = ("gen9championsbssregmc", "gen9championsvgc2026regmc", "gen9championsvgc2026regmcbo3")
-# 1 回の実行で取る上限（ルールごと）。超えたら期間全体から等間隔に抜き取り、残りは取らない（次回に持ち越さない）。
+# 1 回の詳細取得上限（ルールごと）。走査済み区間内から等間隔に抜き取り、未走査区間は次回へ続ける。
 # シングルは少ない（1 日 70 件ほど）ので全部、ダブルは多い（1 日 300〜500 件）ので抜き取り
 REPLAY_CAP = {"gen9championsbssregmc": 1500, "gen9championsvgc2026regmc": 250, "gen9championsvgc2026regmcbo3": 150}
 LADDER_EVERY_DAYS = 7  # 上位 500 人のランキング表の記録と、上位の人のリプレイ取得の間隔
+LADDER_USERS_PER_RUN = 25  # 定期取得で検索する人数。続きは次回へ回す
+LADDER_REPLAYS_PER_RUN = 150  # 定期取得で詳細を取る上限
 
 # 解析
 MONTHLY_TOP_SETS = 6  # 持ち物・技などを何位まで出すか

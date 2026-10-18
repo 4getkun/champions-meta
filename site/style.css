@@ -132,6 +132,9 @@ a { color: inherit; }
 .theme { width: 40px; padding: 8px 0; }
 
 /* 見出し */
+.data-status { color: var(--sub); font-size: 12px; margin: -6px 0 18px; }
+.data-status:empty { display: none; }
+.data-status.stale { padding: 10px 14px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-ink); }
 .k { font-size: 12px; color: var(--muted); letter-spacing: .08em; }
 .hero h1 {
   font-family: var(--f-head);

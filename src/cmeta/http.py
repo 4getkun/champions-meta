@@ -41,7 +41,7 @@ def get_bytes(url: str, retries: int = 3, timeout: float = 60) -> bytes:
                 raise NotFound(url) from e
             if attempt == retries - 1 or e.code < 500 and e.code != 429:
                 raise
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
             if attempt == retries - 1:
                 raise
         time.sleep(5 * (attempt + 1))

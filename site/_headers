@@ -1,4 +1,4 @@
-# Cloudflare Pages の応答ヘッダー。データは毎日入れ替わるので、控えは短く（画面は cache: 'no-cache' で読み直す）
+# Cloudflare Pages の応答ヘッダー。データは定期更新するので、控えは短く（画面は cache: 'no-cache' で読み直す）
 /data/*
   Cache-Control: public, max-age=300
 /*.js

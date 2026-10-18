@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from . import http
-from .config import DATA, JST, REPLAY_BACKFILL_DAYS, REPLAY_BASE, REPLAY_MAX_PER_RUN
+from .config import DATA, JST, REPLAY_BACKFILL_DAYS, REPLAY_BASE, REPLAY_LIST_MAX_PAGES, REPLAY_MAX_PER_RUN
 from .dex import to_id
 
 REPLAY_DIR = DATA / "replays"
@@ -295,67 +295,121 @@ def _save_state(state: dict) -> None:
 # ── 取得 ──────────────────────────────────────────────────────
 
 
-def list_new(fmt: str, since: int) -> list[dict]:
-    """since より新しい公開リプレイの一覧（新しい順に取って、古い順に並べ直して返す）。"""
-    out, before = [], None
-    while True:
-        url = f"{REPLAY_BASE}/search.json?format={fmt}" + (f"&before={before}" if before else "")
+def _list_batch(fmt: str, since: int, before: int | None, max_pages: int) -> tuple[list[dict], int | None, bool, int | None]:
+    """一覧を最大 max_pages ページ読み、次の before と走査完了を返す。"""
+    out, cursor, done, highwater = [], before, False, None
+    for _ in range(max_pages):
+        url = f"{REPLAY_BASE}/search.json?format={fmt}" + (f"&before={cursor}" if cursor else "")
         page = http.get_json(url)
         more = len(page) > 50
         page = page[:50]
-        done = False
+        if not page:
+            done = True
+            break
+        page_highwater = max(r["uploadtime"] for r in page)
+        highwater = page_highwater if highwater is None else max(highwater, page_highwater)
+        stop = False
         for r in page:
             if r["uploadtime"] <= since:
-                done = True
+                stop = True
                 break
             if not r.get("private") and not r.get("password") and not is_bot(r.get("players", [])):
                 out.append(r)
-        if done or not more or not page:
+        oldest = min(r["uploadtime"] for r in page)
+        if stop or not more:
+            cursor, done = oldest, True
             break
-        before = page[-1]["uploadtime"]
+        if cursor is not None and oldest >= cursor:
+            done = False  # 秒単位カーソルが進まない境界では last を進めず、欠落を避ける
+            break
+        cursor = oldest
+    out.sort(key=lambda r: (r["uploadtime"], r["id"]))
+    return out, cursor, done, highwater
+
+
+def list_new(fmt: str, since: int) -> list[dict]:
+    """since より新しい公開リプレイを全件返す（互換用。定期 crawl は上限付き走査を使う）。"""
+    out, before = [], None
+    while True:
+        rows, next_before, done, _ = _list_batch(fmt, since, before, 1000)
+        out.extend(rows)
+        if done or next_before == before:
+            break
+        before = next_before
     out.sort(key=lambda r: (r["uploadtime"], r["id"]))
     return out
 
 
 def crawl(fmt: str, max_n: int = REPLAY_MAX_PER_RUN, log=print, sample: bool = False) -> int:
     """新しいリプレイを古い順に max_n 件まで取り、日ごとのファイルに足す。取った件数を返す。
-    sample=True: max_n を超えたら、期間全体から等間隔に max_n 件を抜き取り、残りは取らない（次回に持ち越さない）。"""
+    sample=True: 今回走査した一覧区間から等間隔に max_n 件を抜き取る。残りは取らず、before で次区間へ進む。"""
+    if max_n <= 0:
+        raise ValueError("max_n must be positive")
     state = _load_state()
     since = state.get(fmt, {}).get("last", int(time.time()) - REPLAY_BACKFILL_DAYS * 86400)
-    new = list_new(fmt, since)
+    progress = state.get(fmt, {})
+    pending = progress.get("pending", [])
+    before = progress.get("before")
+    if progress.get("done"):
+        batch, done, batch_highwater = [], True, None
+    else:
+        requested_before = before
+        batch, before, done, batch_highwater = _list_batch(fmt, since, before, REPLAY_LIST_MAX_PAGES)
+        if before == requested_before and not done:
+            log(f"replays {fmt}: uploadtime が同秒のページ境界で停止。last を維持して次回再試行")
+    highwater = max(since, progress.get("highwater", since), batch_highwater or since)
+    seen = {r["id"] for r in pending}
+    pending.extend({k: r[k] for k in ("id", "uploadtime", "rating") if k in r} for r in batch if r["id"] not in seen)
+    pending.sort(key=lambda r: (r["uploadtime"], r["id"]))
+    new = batch if sample else pending
     todo = new[:max_n]
-    if len(new) > max_n and sample:
+    if sample and len(batch) > max_n:
         step = len(new) / max_n
         todo = [new[int(i * step)] for i in range(max_n)]
-        log(f"replays {fmt}: 新しいものが {len(new)} 件。等間隔に {max_n} 件を抜き取る")
+        log(f"replays {fmt}: 今回の一覧区間 {len(batch)} 件から等間隔に {max_n} 件を抜き取る")
     elif len(new) > max_n:
         log(f"replays {fmt}: 新しいものが {len(new)} 件。古い順に {max_n} 件だけ取り、残りは次回")
     if not todo:
+        state[fmt] = ({"last": highwater} if done else
+                      {"last": since, "before": before, "highwater": highwater,
+                       "pending": [] if sample else pending, "done": done})
+        _save_state(state)
         log(f"replays {fmt}: 新しいものなし")
         return 0
     by_day: dict[str, list[dict]] = defaultdict(list)
+    existing_by_day: dict[str, list[dict]] = {}
+    known_by_day: dict[str, set[str]] = {}
     last, skipped = since, 0
-    for r in todo:
-        try:
-            body = http.get_json(f"{REPLAY_BASE}/{r['id']}.json")
-        except http.NotFound:
-            skipped += 1
+    try:
+        for r in todo:
+            day = jst_day(r["uploadtime"])
+            if day not in known_by_day:
+                existing_by_day[day] = read_day(fmt, day)
+                known_by_day[day] = {x["id"] for x in existing_by_day[day]}
+            if r["id"] in known_by_day[day]:
+                last = r["uploadtime"]
+                continue
+            try:
+                body = http.get_json(f"{REPLAY_BASE}/{r['id']}.json")
+            except http.NotFound:
+                skipped += 1
+                last = r["uploadtime"]
+                continue
+            rec = parse_log(body.get("log", ""))
             last = r["uploadtime"]
-            continue
-        rec = parse_log(body.get("log", ""))
-        last = r["uploadtime"]
-        if rec is None:
-            skipped += 1
-            continue
-        rec.update({"id": r["id"], "t": r["uploadtime"], "rating": r.get("rating")})
-        by_day[jst_day(r["uploadtime"])].append(rec)
-    for day, rows in by_day.items():
-        existing = read_day(fmt, day)
-        seen = {x["id"] for x in existing}
-        write_day(fmt, day, existing + [x for x in rows if x["id"] not in seen])
-    if sample and len(new) > max_n:
-        last = max(last, new[-1]["uploadtime"])  # 抜き取らなかったものは取らない
-    state[fmt] = {"last": last}
+            if rec is None:
+                skipped += 1
+                continue
+            rec.update({"id": r["id"], "t": r["uploadtime"], "rating": r.get("rating")})
+            by_day[day].append(rec)
+            known_by_day[day].add(r["id"])
+    finally:
+        for day, rows in by_day.items():
+            write_day(fmt, day, existing_by_day[day] + rows)
+    remaining = [] if sample else new[len(todo):]
+    state[fmt] = ({"last": highwater} if done and not remaining else
+                  {"last": since, "before": before, "highwater": highwater,
+                   "pending": remaining, "done": done})
     _save_state(state)
     n = sum(len(v) for v in by_day.values())
     log(f"replays {fmt}: {n} 件（読めなかったもの {skipped}）")
