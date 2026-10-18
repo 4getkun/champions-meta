@@ -11,13 +11,14 @@ def test_build_copies_public_inputs_and_versions_assets(tmp_path, monkeypatch):
     (site / "index.html").write_text(
         '<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="dashboard.css">'
         '<script src="vendor/chart.umd.min.js"></script><script src="charts.js"></script>'
-        '<script src="app.js"></script>',
+        '<script src="speed-share.js"></script><script src="app.js"></script>',
         encoding="utf-8",
     )
     (site / "style.css").write_text("body { color: red; }", encoding="utf-8")
     (site / "app.js").write_text("console.log('ok');", encoding="utf-8")
     (site / "dashboard.css").write_text("body { color: blue; }", encoding="utf-8")
     (site / "charts.js").write_text("window.MetaCharts = {};", encoding="utf-8")
+    (site / "speed-share.js").write_text("window.SpeedShare = {};", encoding="utf-8")
     (site / "vendor").mkdir()
     (site / "vendor/chart.umd.min.js").write_text("window.Chart = {};", encoding="utf-8")
 
@@ -37,7 +38,7 @@ def test_build_copies_public_inputs_and_versions_assets(tmp_path, monkeypatch):
 
     published = dist.DIST
     html = (published / "index.html").read_text(encoding="utf-8")
-    for name in ("app.js", "style.css", "dashboard.css", "charts.js", "vendor/chart.umd.min.js"):
+    for name in ("app.js", "style.css", "dashboard.css", "charts.js", "speed-share.js", "vendor/chart.umd.min.js"):
         digest = hashlib.sha256((published / name).read_bytes()).hexdigest()[:10]
         assert f'"{name}?v={digest}"' in html
     assert (published / "data" / "meta-public.json").exists()

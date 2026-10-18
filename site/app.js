@@ -901,15 +901,14 @@ function spdMirrorSummary(e, k, bare) {
   const segment = (key, label) => `<span class="${key}" style="width:${p[key] * 100}%" title="${label} ${pct(p[key], 1)}"></span>`;
   const legend = (key, label) => `<div class="${key}"><b>${pct(p[key], 1)}</b><span>${label}</span></div>`;
   const gain = next ? spdMirrorSplit(spdStat(e.base, next.need, spdState.sign), e.dist).first - p.first : 0;
-  return `<div class="mirror-head"><div><h2>${esc(ja(k))}同士のミラー</h2><p class="note">同じポケモン・同じ姿の、実際に使われている配分と比較</p></div>`
-    + `<div class="mirror-verdict" role="status"><b>${pct(p.first, 1)}</b><small>先に動く見込み<br>同速は半分として計算</small></div></div>`
-    + `<div class="mirror-matchup"><div class="mirror-side">${icon(k, 56)}<div><span class="k">あなたの素の実数値</span><strong>${bare}</strong><small>${esc(SIGN_JA[spdState.sign])}・${spdState.sp}ポイント</small></div></div>`
-    + `<div class="mirror-side">${icon(k, 56)}<div><span class="k">相手にいちばん多い実数値</span><strong>${mode}</strong><small>1つの型に固定せず、分布全体と比較</small></div></div></div>`
+  return `<div class="mirror-head"><div><h2>ミラーで先に動く見込み</h2><p class="note">${esc(ja(k))}同士・お互いの補正条件が同じ場合</p></div>`
+    + `<div class="mirror-verdict" role="status"><b>${pct(p.first, 1)}</b><small>同速は半分として計算</small></div></div>`
+    + `<p class="mirror-context">相手に多い実数値 <strong>${mode}</strong> と、配分全体を比較</p>`
     + `<div class="mirror-meter" role="img" aria-label="自分が速い ${pct(p.faster, 1)}、同速 ${pct(p.tie, 1)}、相手が速い ${pct(p.slower, 1)}">${segment('faster', '自分が速い')}${segment('tie', '同速')}${segment('slower', '相手が速い')}</div>`
-    + `<div class="mirror-legend">${legend('faster', '自分が速い')}${legend('tie', '同速：行動順は半々')}${legend('slower', '相手が速い')}</div>`
-    + `<h3>相手のすばやさは、どこに集まっている？</h3>${spdDistribution(e, bare, $('speed-out').clientWidth - 40)}<p class="note">横軸は実数値、棒の高さはその配分の割合。縦線があなたの位置です。</p>`
-    + `<div class="mirror-actions">${next ? `<p>あと<strong> ${next.need - spdState.sp}ポイント</strong>で実数値${next.value}の相手を抜けます。先に動く見込みは<strong> +${(gain * 100).toFixed(1)}pt</strong>。</p><button type="button" class="pill" data-mirror-sp="${next.need}" data-mirror-sign="${spdState.sign}">${next.need}ポイントを試す</button>` : '<p>この性格では、追加のポイントで抜ける相手の配分はありません。</p>'}</div>`
-    + '<p class="note">ミラーはお互いの補正条件が同じ場合の比較です。下の環境ラインに使うスカーフ・おいかぜの自分だけの補正は、ここには加えていません。先制技・トリックルーム・特性などは含みません。</p>';
+    + `<div class="mirror-legend">${legend('faster', '自分が速い')}${legend('tie', '同速')}${legend('slower', '相手が速い')}</div>`
+    + `<div class="mirror-actions">${next ? `<p>あと<strong> ${next.need - spdState.sp}ポイント</strong>で実数値${next.value}を抜けます。<br>先に動く見込み <strong>+${(gain * 100).toFixed(1)}pt</strong></p><button type="button" class="pill" data-mirror-sp="${next.need}" data-mirror-sign="${spdState.sign}">${next.need}ポイントを試す</button>` : '<p>この性格では、追加のポイントで抜ける配分はありません。</p>'}</div>`
+    + `<details class="speed-distribution"><summary>相手の配分をグラフで見る</summary>${spdDistribution(e, bare, Math.min(720, $('speed-out').clientWidth - 40))}<p class="note">横軸は実数値、棒は配分の割合。縦線があなたです。</p></details>`;
+
 }
 // 環境全体（姿ごと、使用率で重み付け）に対して
 function spdVsMeta(S, v, exclude) {
@@ -1042,6 +1041,73 @@ const SPD_NEAR = 15;
 const spdState = { k: null, sign: '=', sp: 0, scarf: false, tw: false, all: false };
 const SIGN_JA = { '+': 'すばやさ上昇の性格', '=': '無補正の性格', '-': 'すばやさ下降の性格' };
 
+// 共有URLは調整条件だけを記録。データ自体は公開時点の統計を使う。
+function spdReadShared(hash, doubles) {
+  const q = new URLSearchParams(hash.replace(/^#/, ''));
+  const sp = q.get('sp'), sign = { up: '+', neutral: '=', down: '-' }[q.get('nature')];
+  if (!sign || sp == null || !/^\d+$/.test(sp) || +sp > 32) return {};
+  return { sp: +sp, sign, scarf: q.get('scarf') === '1', tw: doubles && q.get('tw') === '1' };
+}
+function spdShareURL(k, state = spdState) {
+  const url = new URL(location.href);
+  url.search = ''; // ローカル確認用のdata指定などは共有しない。
+  const q = new URLSearchParams({ f: view.f.id, v: 'speed', p: k,
+    sp: String(state.sp), nature: { '+': 'up', '=': 'neutral', '-': 'down' }[state.sign] });
+  if (state.scarf) q.set('scarf', '1');
+  if (state.tw) q.set('tw', '1');
+  url.hash = q.toString();
+  return url.href;
+}
+async function spdOpenShare(S, k) {
+  document.querySelector('#speed-share-dialog')?.close();
+  const e = S.pokemon[k], state = { ...spdState };
+  const bare = spdStat(e.base, state.sp, state.sign);
+  const p = spdMirrorSplit(bare, e.dist), url = spdShareURL(k, state);
+  const text = `${ja(k)}のすばやさ調整\n${SIGN_JA[state.sign]}・${state.sp}ポイント / 素の実数値 ${bare}\n同条件ミラーで先に動く見込み ${pct(p.first, 1)}（同速は半分）\n#チャンピオンズメタ`;
+  const intent = new URL('https://x.com/intent/post');
+  intent.search = new URLSearchParams({ text, url }).toString();
+  const dialog = document.createElement('dialog');
+  dialog.id = 'speed-share-dialog';
+  dialog.className = 'speed-share-dialog';
+  dialog.setAttribute('aria-labelledby', 'speed-share-title');
+  dialog.innerHTML = `<div class="speed-share-heading"><h2 id="speed-share-title">調整結果を共有</h2><button type="button" class="pill" data-close aria-label="共有画面を閉じる">閉じる</button></div>`
+    + '<p class="note">画像を保存して、Xの投稿画面に添付できます。対応する端末では画像を直接共有できます。</p><div class="speed-share-preview"><p>結果画像を作成中…</p></div>'
+    + `<div class="speed-share-actions"><a class="btn" data-save hidden>画像を保存</a><button type="button" class="pill" data-native hidden>画像を共有</button><a class="btn" href="${esc(intent.href)}" target="_blank" rel="noopener noreferrer">Xで投稿を作成</a></div>`
+    + `<label class="k" for="speed-share-url">同じ調整を開くリンク</label><div class="speed-share-link"><input id="speed-share-url" type="text" readonly value="${esc(url)}"><button type="button" class="pill" data-copy>コピー</button></div><p class="note">リンク先の結果は、統計の更新によって変わる場合があります。</p><p class="note" role="status" data-share-status></p>`;
+  document.body.append(dialog);
+  let objectURL;
+  dialog.addEventListener('close', () => { if (objectURL) URL.revokeObjectURL(objectURL); dialog.remove(); }, { once: true });
+  dialog.querySelector('[data-close]').onclick = () => dialog.close();
+  dialog.querySelector('[data-copy]').onclick = async () => {
+    const status = dialog.querySelector('[data-share-status]');
+    try { await navigator.clipboard.writeText(url); status.textContent = '調整リンクをコピーしました。'; }
+    catch { dialog.querySelector('input').select(); status.textContent = 'リンクを選択しました。コピーして共有してください。'; }
+  };
+  dialog.showModal();
+  try {
+    const blob = await window.SpeedShare.render({ name: ja(k), signLabel: SIGN_JA[state.sign], points: state.sp,
+      bare, effective: spdMineAt(e, state.sp), scarf: state.scarf, tw: state.tw, ...p,
+      format: formatLabel(view.f), month: S.month, cutoff: S.cutoff, url });
+    if (!dialog.isConnected) return;
+    objectURL = URL.createObjectURL(blob);
+    const image = new Image(); image.src = objectURL; image.alt = `${ja(k)}の調整結果。実数値${bare}、同条件ミラー先手率${pct(p.first, 1)}`;
+    dialog.querySelector('.speed-share-preview').replaceChildren(image);
+    const save = dialog.querySelector('[data-save]');
+    const filename = `speed-${k.replace(/[^a-z0-9-]/gi, '-')}-${state.sp}.png`;
+    save.href = objectURL; save.download = filename; save.hidden = false;
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      const native = dialog.querySelector('[data-native]'); native.hidden = false;
+      native.onclick = async () => {
+        try { await navigator.share({ files: [file], title: `${ja(k)}のすばやさ調整`, text: `${text}\n${url}` }); }
+        catch (error) { if (error.name !== 'AbortError') dialog.querySelector('[data-share-status]').textContent = '直接共有できませんでした。「画像を保存」して添付してください。'; }
+      };
+    }
+  } catch {
+    if (dialog.isConnected) dialog.querySelector('.speed-share-preview').textContent = '画像を作成できませんでした。調整リンクまたはXの投稿ボタンをご利用ください。';
+  }
+}
+
 // いちばん多い実数値になる配分（無補正 → 上昇 → 下降の順に、少ない振り数から探す）
 function spdDefault(e) {
   const mode = spdMode(e);
@@ -1088,6 +1154,7 @@ async function renderSpeedView(revision = routeRevision) {
   $('speed-asof').innerHTML = dots(esc(label), `Smogon の月次統計 ${esc(S.month)}${S.prev_month ? `（先月 ${esc(S.prev_month)}）` : ''}`, `レート ${S.cutoff} 以上`);
   const forms = Object.entries(S.pokemon).sort((a, b) => b[1].usage - a[1].usage);
   const inp = $('spd-q');
+  const picker = inp.closest('.search');
   $('spd-names').innerHTML = forms.map(([k]) => `<option value="${esc(ja(k))}"></option>`).join('');
   if (!inp.dataset.bound) {
     inp.dataset.bound = '1';
@@ -1105,20 +1172,22 @@ async function renderSpeedView(revision = routeRevision) {
   const key = `${view.f.id}:${k}`;
   if (spdState.k !== key) Object.assign(spdState, { k: key, scarf: false, tw: false, all: false }, spdDefault(e));
   const doubles = view.f.game_type === 'doubles';
+  Object.assign(spdState, spdReadShared(location.hash, doubles));
 
   // ① 入力
   const signBtn = (s, t) => `<button type="button" data-sign="${s}" aria-pressed="${spdState.sign === s}">${t}</button>`;
-  const input = '<section class="card c12"><div class="spd-form">'
-    + `<div class="spd-who">${icon(k, 56)}<div><h2 style="margin:0">${esc(ja(k))}</h2><div class="note">種族値 ${e.base}・使用率 ${pct(e.usage, 1)}</div></div></div>`
+  const input = '<section class="card c12 speed-workspace"><div class="speed-editor"><div class="spd-form">'
+    + `<div class="spd-who">${icon(k, 56)}<div class="speed-picker"><label for="spd-q" class="k">調整するポケモン</label><div data-spd-picker></div><div class="note">種族値 ${e.base}・使用率 ${pct(e.usage, 1)}</div></div></div>`
     + `<div class="spd-ctl"><div><span class="k">性格</span> <div class="seg" role="group" aria-label="性格">${signBtn('+', '上昇')}${signBtn('=', '無補正')}${signBtn('-', '下降')}</div></div>`
     + `<div class="spd-sp"><label for="spd-points" class="k">すばやさのポイント</label><input id="spd-points" type="range" min="0" max="32" step="1" value="${spdState.sp}" data-sp><input aria-label="すばやさのポイント（数値入力）" type="number" min="0" max="32" step="1" value="${spdState.sp}" data-sp-number><output data-sp-out hidden>${spdState.sp}</output></div>`
-    + `<div class="spd-chk"><label class="chk"><input type="checkbox" data-scarf ${spdState.scarf ? 'checked' : ''}> こだわりスカーフ</label>`
+    + `<div class="spd-chk" hidden><label class="chk"><input type="checkbox" data-scarf ${spdState.scarf ? 'checked' : ''}> こだわりスカーフ</label>`
     + (doubles ? `<label class="chk"><input type="checkbox" data-tw ${spdState.tw ? 'checked' : ''}> おいかぜ（自分だけ 2 倍）</label>` : '')
-    + '</div></div><div class="spd-stat"><span class="k">実数値</span><b data-stat></b></div></div>'
+    + '</div></div><div class="spd-stat"><span class="k">あなたの実数値</span><b data-stat></b></div></div>'
     + `<div class="spd-presets" role="group" aria-label="よく使う配分"><button class="pill" type="button" data-sp-preset="0" data-sign-preset="=">無振り</button><button class="pill" type="button" data-sp-preset="32" data-sign-preset="=">準速</button><button class="pill" type="button" data-sp-preset="32" data-sign-preset="+">最速</button><button class="pill" type="button" data-sp-preset="${spdDefault(e).sp}" data-sign-preset="${spdDefault(e).sign}">いちばん多い配分</button></div>`
-    + '<p class="note" style="margin:8px 0 0">0〜32ポイントで調整。最初は、このポケモンにいちばん多い実数値です。</p></section>';
+    + '<p class="note speed-input-hint">0〜32ポイントで調整。プリセットからも選べます。</p></div>';
   // ②③ は入力のたびに描き直す
-  const result = '<section class="card c12 mirror-summary" data-spd-mirror></section><section class="card c12" data-spd-result></section><section class="card c12" data-spd-lines></section>';
+  const result = '<div class="speed-result mirror-summary" data-spd-mirror></div><div class="speed-share-bar"><p>この調整を保存・共有</p><button type="button" class="btn" data-speed-share>結果画像・Xで共有</button></div></section>'
+    + '<section class="card c12 speed-environment"><details><summary>環境全体と比べる・抜ける相手を調べる</summary><p class="note">ここだけにスカーフ・おいかぜを適用します。上のミラー比較は同条件のままです。</p><div data-speed-modifiers></div><div data-spd-result></div><div data-spd-lines></div></details></section>';
 
   // ④ ミラー
   const needTxt = (dist, sign) => SPD_THRESH.map(([thr, lab]) => {
@@ -1144,14 +1213,19 @@ async function renderSpeedView(revision = routeRevision) {
 
   // ⑤ 注意
   const prio = Object.entries(e.priority || {}).map(([m, s]) => `${esc(nameIn('moves')(m))}（${pct(s, 0)}）`).join('・');
-  const notes = '<section class="card c12"><p class="note" style="margin:0">'
+  const notes = '<section class="card c12 speed-method"><details><summary>計算条件・データについて</summary><p class="note">'
     + (prio ? `${esc(ja(k))}の先制技: ${prio}。先制技は、すばやさに関係なく先に動きます。<br>` : '')
     + (e.spread ? `${esc(ja(k))}の実数値は、9 割が ${e.spread.p05}〜${e.spread.p95} の間にあります。<br>` : '')
     + `数字は Smogon の月次統計（Pokémon Showdown の対戦・レート ${S.cutoff} 以上）の振り方から計算した、環境の中での割合です。環境の割合は、姿ごとに使用率で重み付けしています。`
     + ' 実数値 = trunc((種族値 + ポイント + 20) × 性格補正)、レベル 50。相手のこだわりスカーフは、スカーフを持つ割合が高い姿の「最速・準速のスカーフ」だけを線にしています（持ち物と振り方の組み合わせは統計に無いため）。'
-    + ' トリックルーム・まひ・ランク変化・特性（すいすい など）は含みません。メガシンカする場合は、メガの姿を選んでください。</p></section>';
+    + ' トリックルーム・まひ・ランク変化・特性（すいすい など）は含みません。メガシンカする場合は、メガの姿を選んでください。</p></details></section>';
 
   out.innerHTML = input + result + mirror + notes;
+  out.querySelector('[data-spd-picker]').append(picker);
+  const modifiers = out.querySelector('.spd-chk');
+  modifiers.hidden = false;
+  out.querySelector('[data-speed-modifiers]').append(modifiers);
+  out.querySelector('[data-speed-share]').addEventListener('click', () => spdOpenShare(S, k));
   const redraw = () => spdRedraw(S, k);
   out.querySelectorAll('[data-sign]').forEach((b) => b.addEventListener('click', () => {
     spdState.sign = b.dataset.sign;
@@ -1184,7 +1258,7 @@ function spdRedraw(S, k) {
   const out = $('speed-out');
   out.querySelector('[data-sp-out]').textContent = spdState.sp;
   out.querySelector('[data-sp-number]').value = spdState.sp;
-  out.querySelector('[data-stat]').innerHTML = `${v}${v !== bare ? ` <small class="note">（素の値 ${bare}）</small>` : ''}`;
+  out.querySelector('[data-stat]').textContent = bare;
   const m = spdVsMeta(S, v, null);
   // ミラーは素の値どうしで比べる（相手も同じ条件とは限らないので、スカーフ・おいかぜは足さない）
   out.querySelector('[data-spd-mirror]').innerHTML = spdMirrorSummary(e, k, bare);
@@ -1200,9 +1274,9 @@ function spdRedraw(S, k) {
   const ahead = rows.filter((r) => r.value >= v).map((r) => ({ ...r, need: spdToPass(e, r.value) })).filter((r) => r.need != null && r.need > spdState.sp);
   const next = ahead.sort((a, b) => a.need - b.need || b.weight - a.weight)[0];
   const lineName = (r) => `${esc(short(r.name))}（${r.scarf ? 'スカーフ・' : ''}${r.kind}）`;
-  out.querySelector('[data-spd-result]').innerHTML = '<h2>ほかのポケモンも含めた、環境での位置</h2><div class="kv">'
+  out.querySelector('[data-spd-result]').innerHTML = `<h2>環境での位置 <span class="chip">条件反映後の実数値 ${v}</span></h2><div class="kv">`
     + `<div><span class="k">環境の相手より先に動く</span><b>${pct(m.faster, 0)}</b><small class="note">同速は半分として数える</small></div>`
-    + `<div><span class="k">環境の相手に先に動かれる</span><b>${pct(m.slower, 0)}</b><small class="note">スカーフ・おいかぜの設定を反映</small></div></div>`
+    + '</div>'
     + (next ? `<p class="spd-next">あと <b>${next.need - spdState.sp}</b> ポイント（計 ${next.need}）で、${icon(next.name, 28)} ${lineName(next)} の実数値 ${next.value} を抜けます。<small class="note">その姿の ${pct(next.share, 0)} がこの値</small></p>`
       : '<p class="spd-next note">この性格では、この先に抜けるラインはありません。</p>');
   // ③ ライン表

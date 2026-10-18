@@ -1,4 +1,4 @@
-/* 対戦データを読み比べるための共通ダッシュボード。構造と操作は既存UIを引き継ぐ。 */
+/* 対戦データを読み比べるための共通ダッシュボード。 */
 :root {
   --bg: #f5f7fb;
   --card: #ffffff;
@@ -307,4 +307,68 @@ h3 { font-size: 14px; font-weight: 700; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
+/* 設定とミラー結果をひと続きにし、詳しい比較は開いて読む。 */
+.speed-workspace.card { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); padding: 0; gap: 0; overflow: hidden; }
+.speed-editor { padding: 24px; border-right: 1px solid var(--line); }
+.speed-workspace .spd-form { display: flex; flex-direction: column; align-items: stretch; gap: 20px; }
+.speed-workspace .spd-who { grid-column: 1 / -1; }
+.speed-picker { flex: 1; min-width: 0; }
+.speed-picker .search { width: 100%; max-width: 320px; margin: 4px 0; }
+.speed-picker input { width: 100%; min-width: 0; font-weight: 700; }
+.speed-workspace .spd-ctl { grid-column: 1 / -1; gap: 18px; }
+.speed-workspace .spd-ctl > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.speed-workspace .spd-ctl .k { min-width: 0; }
+.speed-workspace .spd-sp { display: grid; grid-template-columns: minmax(0, 1fr) 65px; gap: 8px; }
+.speed-workspace .spd-sp label { grid-column: 1 / -1; }
+.speed-workspace .spd-sp input[type=range] { width: 100%; max-width: none; min-width: 0; }
+.speed-workspace .spd-sp input[type=number] { width: 65px; padding: 7px; border: 1px solid var(--edge); border-radius: 6px; background: var(--card); color: var(--ink); font: 600 16px var(--f-num); }
+.speed-workspace .spd-stat { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; text-align: left; border-top: 1px solid var(--line); padding-top: 12px; }
+.speed-workspace .spd-stat b { font-size: 34px; color: var(--ink); }
+.speed-workspace .spd-stat small { font-size: 11px; }
+.speed-workspace .spd-presets { margin-top: 18px; }
+.speed-input-hint { margin: 8px 0 0; }
+.speed-result { min-width: 0; padding: 24px; }
+.speed-result.mirror-summary { border: 0; }
+.speed-result .mirror-head { align-items: flex-start; }
+.speed-result .mirror-head h2 { font-size: 16px; }
+.speed-result .mirror-verdict { margin: 0; text-align: right; }
+.speed-result .mirror-verdict b { font-size: 34px; }
+.speed-result .mirror-context { font-size: 12px; color: var(--sub); margin: 16px 0 0; }
+.speed-result .mirror-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.speed-result .mirror-legend > div { display: flex; flex-direction: column; gap: 0; }
+.speed-result .mirror-legend > div:last-child { text-align: right; align-items: flex-end; }
+.speed-result .mirror-legend > div:nth-child(2) { text-align: center; align-items: center; }
+.speed-result .mirror-actions { font-size: 12px; padding-top: 18px; }
+.speed-distribution { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; }
+.speed-distribution summary, .speed-environment summary, .speed-method summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+.speed-distribution summary { font-size: 12px; }
+.speed-share-bar { grid-column: 1 / -1; border-top: 1px solid var(--line); padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--accent-soft); }
+.speed-share-bar p { margin: 0; font-size: 13px; font-weight: 600; }
+.speed-share-bar .btn { background: var(--accent); color: #fff; }
+.speed-environment [data-spd-result], .speed-environment [data-spd-lines] { margin-top: 24px; }
+.speed-environment .spd-chk { margin-top: 16px; }
+.speed-method p { margin: 12px 0 0; }
+.speed-share-dialog { width: min(720px, calc(100% - 24px)); max-height: calc(100dvh - 32px); box-sizing: border-box; padding: 24px; border: 1px solid var(--edge); border-radius: 14px; background: var(--card); color: var(--ink); box-shadow: 0 20px 80px #0004; }
+.speed-share-dialog::backdrop { background: #0f172a99; }
+.speed-share-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.speed-share-heading h2 { margin: 0; font-size: 18px; }
+.speed-share-preview { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 16px 0; }
+.speed-share-preview img { display: block; width: 100%; height: auto; }
+.speed-share-preview p { padding: 30px; }
+.speed-share-actions, .speed-share-link { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.speed-share-link { flex-wrap: nowrap; }
+.speed-share-link input { min-width: 0; flex: 1; width: 0; border: 1px solid var(--edge); padding: 8px; border-radius: 6px; color: var(--ink); background: var(--bg); font: inherit; font-size: 12px; }
+.speed-share-actions [hidden] { display: none; }
+.speed-share-actions .btn, .speed-share-actions .pill { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; min-height: 44px; box-sizing: border-box; }
+@media (max-width: 760px) {
+  .speed-workspace.card { grid-template-columns: minmax(0, 1fr); }
+  .speed-editor { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; }
+  .speed-result { padding: 18px; }
+  .speed-result .mirror-head { display: flex; }
+  .speed-result .mirror-verdict b { font-size: 30px; }
+  .speed-result .mirror-head h2 { font-size: 14px; }
+  .speed-share-bar { padding: 14px 18px; }
+  .speed-share-dialog { padding: 16px; }
 }
