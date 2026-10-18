@@ -83,10 +83,10 @@
 }
 
 * { box-sizing: border-box; margin: 0; }
-/* 英数はInter、日本語はMacのヒラギノを優先し、それ以外ではZen Kaku Gothic Newを配る。
+/* 英数はInter、日本語はMacのヒラギノを優先し、それ以外ではNoto Sans JPを配る。
    見出し・本文・数字の日本語書体を統一し、数字は桁をそろえる。 */
 :root {
-  --f-body: 'Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Zen Kaku Gothic New', 'Yu Gothic', Meiryo, sans-serif;
+  --f-body: 'Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', Meiryo, sans-serif;
   --f-head: var(--f-body);
   --f-num: var(--f-body);
 }
@@ -99,9 +99,7 @@ body {
   font-family: var(--f-body);
   font-weight: 400;
   line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: auto;
   color: var(--ink);
   background:
     radial-gradient(900px 600px at 8% -10%, var(--glow1) 0, transparent 60%),

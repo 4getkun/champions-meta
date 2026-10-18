@@ -2,7 +2,7 @@
 (() => {
   const WIDTH = 1200;
   const HEIGHT = 675;
-  const FONT = '"Hiragino Kaku Gothic ProN", "Zen Kaku Gothic New", "Yu Gothic", Meiryo, sans-serif';
+  const FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif';
   const C = { ink: '#172b4d', muted: '#526176', blue: '#2563eb', teal: '#0f9f9a', amber: '#d97706', pale: '#eff6ff', edge: '#dbe5f2', white: '#ffffff', slate: '#64748b' };
   const clamp = (n) => Math.max(0, Math.min(1, Number.isFinite(Number(n)) ? Number(n) : 0));
   const pct = (n) => `${(clamp(n) * 100).toFixed(1)}%`;

@@ -56,9 +56,8 @@
   --chart-7: #67e8f9; --chart-8: #fdba74; --chart-9: #bef264; --chart-10: #f0abfc;
   --shadow: 0 1px 2px rgba(0, 0, 0, .1);
 }
-body { background: var(--bg); font-size: 14px; line-height: 1.8; letter-spacing: .015em; }
+body { background: var(--bg); font-size: 14px; line-height: 1.8; letter-spacing: normal; font-weight: 450; font-synthesis: none; }
 /* 小さな文字はサイズを維持し、濃さと線の太さで読みやすくする。 */
-body { -webkit-font-smoothing: auto; -moz-osx-font-smoothing: auto; }
 .note, .k, .chart-note, .team-caption, .team-count, .rank-count,
 .data-status, .foot .src, .mirror-verdict small, .mirror-side small,
 .top-player-meta, .top-player-values small { font-weight: 500; }

@@ -4,7 +4,7 @@ Google Fonts から読むと、日本語の書体は 100 前後の断片に分�
 そこで、公開する文字（site/ と out/ に出てくる文字）だけに絞った書体を、公開先から配る。
 - 元の書体: google/fonts リポジトリの可変／静的書体（OFL）。.cache/fonts/ に置き、無ければ取りに行く。
 - 太さの軸は使う範囲だけに絞る（instancer）。Inter の opsz は本文向けの 14 に固定する。
-- 英数の書体（Inter）は U+2000 未満の文字、日本語の書体（Zen Kaku Gothic New）はそれ以外の文字
+- 英数の書体（Inter）は U+2000 未満の文字、日本語の書体（Noto Sans JP）はそれ以外の文字
   （かなは全部）を持つ。画面の CSS は英数の書体を先に書いているので、日本語の書体が英数を持つ必要はない。
 - 入力欄などで、絞った書体に無い文字が出たときは、system-ui などの後ろの書体で表示される。
 fonttools と brotli が無い、または元の書体を取れないときは None を返し、dist は Google Fonts のまま出す。
@@ -21,9 +21,7 @@ SRC = "https://raw.githubusercontent.com/google/fonts/main/ofl"
 FONTS = [
     # family, 元のファイル, 太さの範囲, 固定する軸, 英数か
     ("Inter", "inter/Inter[opsz,wght].ttf", (400, 700), {"opsz": 14}, True),
-    ("Zen Kaku Gothic New", "zenkakugothicnew/ZenKakuGothicNew-Regular.ttf", (400, 400), {}, False),
-    ("Zen Kaku Gothic New", "zenkakugothicnew/ZenKakuGothicNew-Medium.ttf", (500, 500), {}, False),
-    ("Zen Kaku Gothic New", "zenkakugothicnew/ZenKakuGothicNew-Bold.ttf", (700, 700), {}, False),
+    ("Noto Sans JP", "notosansjp/NotoSansJP[wght].ttf", (400, 700), {}, False),
 ]
 PRELOAD = ("Inter",)  # 日本語はMacのヒラギノ優先。未使用のWebフォントを先読みしない。
 KANA = set(range(0x3000, 0x3100)) | set(range(0x30A0, 0x3100)) | set(range(0xFF00, 0xFFF0))
