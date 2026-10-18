@@ -56,15 +56,15 @@
   --chart-7: #67e8f9; --chart-8: #fdba74; --chart-9: #bef264; --chart-10: #f0abfc;
   --shadow: 0 1px 2px rgba(0, 0, 0, .1);
 }
-body { background: var(--bg); font-size: 14px; line-height: 1.7; }
+body { background: var(--bg); font-size: 14px; line-height: 1.8; letter-spacing: .015em; }
 .page { max-width: 1440px; padding: 24px 36px 48px; }
 h1, h2, h3, .h1 { font-family: var(--f-body); font-feature-settings: normal; }
-h1, .h1 { font-size: 28px; line-height: 1.45; letter-spacing: -.025em; font-weight: 750; }
+h1, .h1 { font-size: 28px; line-height: 1.5; letter-spacing: .015em; font-weight: 700; }
 h2 { font-size: 16px; line-height: 1.5; font-weight: 700; letter-spacing: 0; margin-bottom: 16px; }
 h3 { font-size: 14px; font-weight: 700; }
 .k { font-size: 12px; letter-spacing: 0; line-height: 1.8; color: var(--muted); }
-.lead { max-width: 780px; font-size: 14px; line-height: 1.8; margin-top: 7px; }
-.note { color: var(--muted); font-size: 12px; line-height: 1.75; }
+.lead { max-width: 780px; font-size: 15px; line-height: 1.9; margin-top: 7px; }
+.note { color: var(--muted); font-size: 12px; line-height: 1.85; }
 .top { background: var(--card); border: 1px solid var(--edge); border-radius: 12px; padding: 0 20px; gap: 0 28px; margin-bottom: 14px; box-shadow: var(--shadow); }
 .logo { display: inline-flex; align-items: center; min-height: 72px; gap: 9px; font-size: 20px; font-weight: 750; }
 .logo b { margin-left: -9px; font-weight: 750; }
@@ -84,7 +84,7 @@ h3 { font-size: 14px; font-weight: 700; }
 .theme { width: 36px; min-height: 36px; padding: 0; }
 .data-status { text-align: right; font-size: 11px; margin: 0 2px 22px; }
 .hero { padding: 0; margin: 0 0 18px; }
-.hero h1 { font-size: 28px; line-height: 1.45; font-weight: 750; margin: 5px 0; letter-spacing: -.025em; }
+.hero h1 { font-size: 28px; line-height: 1.5; font-weight: 700; margin: 5px 0; letter-spacing: .015em; }
 .hero h1 br { display: none; }
 .summary { display: block; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--edge)); padding: 15px 20px; border-radius: 10px; margin-bottom: 18px; }
 .summary h2 { font-size: 18px; margin: 2px 0; max-width: calc(100% - 80px); }
@@ -118,7 +118,7 @@ h3 { font-size: 14px; font-weight: 700; }
 .meta-chart-legend-item { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 6px; border: 1px solid var(--edge); border-left: 3px solid var(--series-color); border-radius: 9px; padding: 8px 9px; min-height: 52px; background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background-color .15s; }
 .meta-chart-legend-item:hover { background: var(--accent-soft); border-top-color: var(--series-color); border-right-color: var(--series-color); border-bottom-color: var(--series-color); }
 .meta-chart-legend-item img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
-.meta-chart-legend-name { min-width: 0; font-size: 11px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.meta-chart-legend-name { min-width: 0; font-size: 11px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
 .meta-chart-legend-value { font: 700 15px/1.4 var(--f-num); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .meta-chart-legend-item[aria-pressed="false"] { opacity: .5; background: var(--bg); border-left-color: var(--context); }
 .meta-chart-legend-item[aria-pressed="false"] .meta-chart-legend-name { text-decoration: line-through; }

@@ -1923,6 +1923,12 @@ async function main() {
   $('q').addEventListener('input', () => renderRank());
   window.addEventListener('hashchange', onRoute);
   await onRoute();
+  // Webフォントの読み込み後は、Canvas内の日本語も同じ書体で描き直す。
+  const refreshChartFonts = () => document.querySelectorAll('canvas').forEach((canvas) => {
+    window.Chart?.getChart(canvas)?.update('none');
+  });
+  document.fonts?.ready.then(refreshChartFonts);
+  document.fonts?.addEventListener('loadingdone', refreshChartFonts);
   let t = 0;
   let lastW = window.innerWidth;
   window.addEventListener('resize', () => {

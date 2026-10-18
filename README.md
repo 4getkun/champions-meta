@@ -74,6 +74,6 @@ python -m pytest -q
 - グラフ: Chart.js 4.5.1（MIT、`site/vendor/Chart.js-LICENSE.md`）。推移・散布図に使用し、同一ドメインから配信する。
 - Pokémon Showdown（データとリプレイ、コードは MIT）— https://github.com/smogon/pokemon-showdown
 - PokeAPI（BSD-3-Clause）— https://pokeapi.co/ 。取ったものは `data/dex/` に控え、同じものを取りに行かない。
-- 書体: Inter・Inter Tight・Noto Sans JP・M PLUS 2（いずれも SIL Open Font License 1.1、google/fonts）。公開用（`python -m cmeta dist`）では、
-  使う文字だけに絞って自前で配る（`src/cmeta/fonts.py`。書体の中の著作権・ライセンスの表示は残す）。元の書体は `.cache/fonts/` に控える。
+- 書体: Macの日本語はヒラギノを優先し、それ以外ではZen Kaku Gothic New（400・500・700）を使用。英数はInter（いずれもSIL Open Font License 1.1、google/fonts）。公開用（`python -m cmeta dist`）では、
+  使う文字だけに絞って自前で配る（`src/cmeta/fonts.py`。書体の中の著作権表示と`site/font-licenses/`のライセンスを同梱）。元の書体は `.cache/fonts/` に控える。
 - ポケモンの画像は PokeAPI の画像（PokeAPI/sprites）を CDN（jsDelivr）から表示する。ファイルはこのリポジトリに複製しない。画像の権利は任天堂などにある。

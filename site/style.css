@@ -83,12 +83,12 @@
 }
 
 * { box-sizing: border-box; margin: 0; }
-/* 書体（Google Fonts）: 本文は英数を Inter・日本語を Noto Sans JP、見出しは英数を Inter Tight・日本語を M PLUS 2、
-   数字は Inter Tight（桁をそろえる）。英数の書体を先に書くと、日本語の書体は日本語の文字にだけ使われる */
+/* 英数はInter、日本語はMacのヒラギノを優先し、それ以外ではZen Kaku Gothic Newを配る。
+   見出し・本文・数字の日本語書体を統一し、数字は桁をそろえる。 */
 :root {
-  --f-body: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
-  --f-head: 'Inter Tight', 'M PLUS 2', 'Noto Sans JP', sans-serif;
-  --f-num: 'Inter Tight', 'Noto Sans JP', sans-serif;
+  --f-body: 'Inter', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Zen Kaku Gothic New', 'Yu Gothic', Meiryo, sans-serif;
+  --f-head: var(--f-body);
+  --f-num: var(--f-body);
 }
 /* 日本語の改行: 文節で折り返す（Chrome・Edge）。効かないブラウザでは app.js が BudouX で同じことをする */
 body { word-break: auto-phrase; line-break: strict; }

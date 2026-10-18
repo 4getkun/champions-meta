@@ -49,6 +49,7 @@
 
   function chartBase(el) {
     const ink = color(el, '--ink', '#211d32');
+    if (Chart.defaults?.font) Chart.defaults.font.family = color(el, '--f-body', 'system-ui, sans-serif');
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -117,7 +118,7 @@
         ctx.fillStyle = color(el, '--sub', '#504a63');
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.font = '11px system-ui, sans-serif';
+        ctx.font = `11px ${color(el, '--f-body', 'system-ui, sans-serif')}`;
         for (const cut of cuts) {
           const left = x.getPixelForTick(cut - 1), right = x.getPixelForTick(cut);
           const at = (left + right) / 2;
@@ -212,7 +213,7 @@
           if (previous?.label === label) previous.end = index;
           else groups.push({ label, start: index, end: index });
         });
-        ctx.save(); ctx.font = '600 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+        ctx.save(); ctx.font = `500 10px ${color(el, '--f-body', 'system-ui, sans-serif')}`; ctx.textBaseline = 'middle';
         for (const group of groups) {
           const left = group.start === 0 ? chartArea.left : (x.getPixelForTick(group.start - 1) + x.getPixelForTick(group.start)) / 2;
           const right = group.end === months.length - 1 ? chartArea.right : (x.getPixelForTick(group.end) + x.getPixelForTick(group.end + 1)) / 2;
@@ -245,7 +246,7 @@
           labels.forEach((label, i) => { label.target = Math.max(area.top + 10, label.y, i ? labels[i - 1].target + 21 : 0); });
           for (let i = labels.length - 1; i >= 0; i--) labels[i].target = Math.min(labels[i].target, i === labels.length - 1 ? area.bottom - 10 : labels[i + 1].target - 21);
           const ctx = chart.ctx;
-          ctx.save(); ctx.font = '600 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.save(); ctx.font = `500 11px ${color(el, '--f-body', 'system-ui, sans-serif')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           for (const label of labels) {
             const left = area.right + 9;
             ctx.strokeStyle = rgba(label.ink, .38); ctx.lineWidth = 1;
@@ -319,7 +320,7 @@
         const occupied = [];
         ctx.save();
         ctx.beginPath(); ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top); ctx.clip();
-        ctx.font = '12px system-ui, sans-serif';
+        ctx.font = `12px ${color(el, '--f-body', 'system-ui, sans-serif')}`;
         ctx.textBaseline = 'middle';
         for (let i = 0; i < Math.min(6, points.length); i++) {
           const element = meta.data[i];
