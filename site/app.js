@@ -1071,8 +1071,8 @@ async function renderSpeedView(revision = routeRevision) {
       if (hit) go({ v: 'speed', p: hit });
     });
   }
-  // 最初に開くポケモン: M-B はアシレーヌ（ミラーのすばやさ調整が目立つ、見本向きの例）。ほかは使用率 1 位
-  const first = /regmb/.test(view.f.id) && S.pokemon.Primarina ? 'Primarina' : forms[0][0];
+  // 最初はミラーの調整に役立つアシレーヌ。データがないルールでは使用率 1 位。
+  const first = S.pokemon.Primarina ? 'Primarina' : forms[0][0];
   const k = route.p && S.pokemon[route.p] ? route.p : first;
   inp.value = ja(k);
   const e = S.pokemon[k];
