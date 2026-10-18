@@ -115,7 +115,7 @@ function breaks(segments) {
 
 function trendChart(el, track, width) {
   if (window.Chart && window.MetaCharts) {
-    return window.MetaCharts.trend(el, track, { name: ja, short });
+    return window.MetaCharts.trend(el, track, { name: ja, short, icon: (n) => icon(n, 22) });
   }
   const months = track.months;
   const usage = track.usage_grouped;
@@ -195,7 +195,10 @@ function trendChart(el, track, width) {
 
 function trendTable(el, track, top) {
   const head = track.months.map((m) => `<th>${+m.slice(5)}月</th>`).join('');
-  const rows = top.map((k) => `<tr><td>${esc(short(k))}</td>${track.usage_grouped[k].map((v) => `<td>${pct(v)}</td>`).join('')}</tr>`).join('');
+  const ranks = view?.trend === 'rank' ? track.months.map((_, i) => Object.fromEntries(Object.keys(track.usage_grouped)
+    .filter((k) => track.usage_grouped[k][i] != null && track.usage_grouped[k][i] > 0)
+    .sort((a, b) => track.usage_grouped[b][i] - track.usage_grouped[a][i]).map((k, index) => [k, index + 1]))) : null;
+  const rows = top.map((k) => `<tr><td>${esc(short(k))}</td>${track.months.map((_, i) => `<td>${ranks ? (ranks[i][k] ? `${ranks[i][k]}位` : '圏外') : pct(track.usage_grouped[k][i])}</td>`).join('')}</tr>`).join('');
   el.innerHTML = `<table><thead><tr><th>ポケモン</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -692,11 +695,13 @@ function drawCharts() {
   document.querySelectorAll('[data-trend]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.trend === view.trend)));
   $('sec-trend').querySelector('h2').firstChild.textContent = view.trend === 'rank' ? '順位の推移 ' : '使用率の推移 ';
   const top = view.trend === 'rank'
-    ? bumpChart($('trend'), track, $('trend').clientWidth || 700)
+    ? (window.Chart && window.MetaCharts
+      ? window.MetaCharts.trend($('trend'), track, { name: ja, short, icon: (n) => icon(n, 22), mode: 'rank' })
+      : bumpChart($('trend'), track, $('trend').clientWidth || 700))
     : trendChart($('trend'), track, $('trend').clientWidth || 700);
   trendTable($('trend-table'), track, top);
-  $('trend-table').closest('details').hidden = !!(window.Chart && window.MetaCharts && view.trend !== 'rank');
-  $('sec-trend').querySelector('.chart-note').hidden = !(window.Chart && window.MetaCharts && view.trend !== 'rank');
+  $('trend-table').closest('details').hidden = !!(window.Chart && window.MetaCharts);
+  $('sec-trend').querySelector('.chart-note').hidden = !(window.Chart && window.MetaCharts);
   const movers = mo.movers[month];
   $('sec-movers').querySelector('h2').textContent = movers ? '先月から伸びた・落ちた' : '今月の使用率トップ5';
   if (movers) moversChart($('movers'), movers, $('movers').clientWidth || 380);

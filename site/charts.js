@@ -4,8 +4,8 @@
 
   const instances = new WeakMap();
   const owners = new Set();
-  const palette = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5', '--chart-6'];
-  const colors = ['#2563eb', '#0d9488', '#d97706', '#8b5cf6', '#e11d48', '#64748b'];
+  const palette = Array.from({ length: 10 }, (_, i) => `--chart-${i + 1}`);
+  const colors = ['#2563eb', '#0d9488', '#d97706', '#8b5cf6', '#e11d48', '#64748b', '#0891b2', '#ea580c', '#65a30d', '#c026d3'];
 
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -26,6 +26,7 @@
     if (old) {
       old.chart?.destroy();
       old.wrapper.remove();
+      old.legend?.remove();
       instances.delete(el);
       owners.delete(el);
     }
@@ -47,6 +48,7 @@
   }
 
   function chartBase(el) {
+    const ink = color(el, '--ink', '#211d32');
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -55,31 +57,43 @@
       resizeDelay: 0,
       layout: { padding: { top: 4, right: 4, bottom: 0, left: 0 } },
       plugins: {
-        legend: { position: 'bottom', labels: { color: color(el, '--sub', '#504a63'), usePointStyle: true, boxWidth: 8, padding: 14 } },
+        legend: { display: false },
         tooltip: {
-          backgroundColor: color(el, '--card', '#fff'),
-          titleColor: color(el, '--ink', '#211d32'),
-          bodyColor: color(el, '--sub', '#504a63'),
-          borderColor: color(el, '--line', '#e7e3ef'), borderWidth: 1, padding: 10,
+          backgroundColor: ink,
+          titleColor: color(el, '--card', '#fff'),
+          bodyColor: color(el, '--card', '#fff'),
+          borderColor: ink, borderWidth: 1, padding: 10, displayColors: true,
         },
       },
       scales: {
-        x: { ticks: { color: color(el, '--sub', '#504a63'), maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
-        y: { ticks: { color: color(el, '--sub', '#504a63'), callback: (v) => pct(v, 0) }, grid: { color: color(el, '--line', '#e7e3ef') }, beginAtZero: true },
+        x: { ticks: { color: color(el, '--sub', '#504a63'), maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false }, border: { display: false } },
+        y: { ticks: { color: color(el, '--sub', '#504a63'), callback: (v) => pct(v, 0) }, grid: { color: color(el, '--line', '#e7e3ef'), drawTicks: false }, border: { display: false, dash: [3, 5] }, beginAtZero: true },
       },
     };
   }
 
-  function trend(el, track, { name = (id) => id, short = (id) => id } = {}) {
+  function rgba(hex, alpha) {
+    const match = /^#([\da-f]{6})$/i.exec(hex);
+    if (!match) return hex;
+    const n = Number.parseInt(match[1], 16);
+    return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${alpha})`;
+  }
+
+  function trend(el, track, { name = (id) => id, short = (id) => id, icon = () => '', mode = 'usage' } = {}) {
     if (!el || !track?.months || !track.usage_grouped) return [];
     const months = track.months;
     const usage = track.usage_grouped;
-    const latest = (key) => usage[key]?.[months.length - 1] ?? 0;
-    const top = Object.keys(usage).sort((a, b) => latest(b) - latest(a)).slice(0, 6);
-    const rows = top.map((key) => `<tr><th scope="row">${esc(name(key))}</th>${months.map((_, i) => `<td>${pct(usage[key]?.[i])}</td>`).join('')}</tr>`).join('');
+    const ranks = mode === 'rank' ? months.map((_, i) => Object.fromEntries(
+      Object.keys(usage).filter((key) => usage[key]?.[i] != null && usage[key][i] > 0)
+        .sort((a, b) => usage[b][i] - usage[a][i]).map((key, index) => [key, index + 1]),
+    )) : null;
+    const latest = (key) => mode === 'rank' ? (ranks.at(-1)?.[key] || Infinity) : (usage[key]?.[months.length - 1] ?? 0);
+    const top = Object.keys(usage).sort((a, b) => mode === 'rank' ? latest(a) - latest(b) : latest(b) - latest(a))
+      .filter((key) => mode !== 'rank' || latest(key) <= 10).slice(0, mode === 'rank' ? 10 : 6);
+    const rows = top.map((key) => `<tr><th scope="row">${esc(name(key))}</th>${months.map((_, i) => `<td>${mode === 'rank' ? (ranks[i][key] ? `${ranks[i][key]}位` : '圏外') : pct(usage[key]?.[i])}</td>`).join('')}</tr>`).join('');
     const head = months.map((m) => `<th scope="col">${esc(monthLabel(m))}</th>`).join('');
     const table = `<div class="meta-chart-table-wrap"><table class="meta-chart-table"><thead><tr><th>ポケモン</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
-    const { canvas, wrapper } = shell(el, '使用率の推移（最新月の上位6匹）', table);
+    const { canvas, wrapper } = shell(el, mode === 'rank' ? '順位の推移（最新月の上位10匹）' : '使用率の推移（最新月の上位6匹）', table);
 
     if (!months.length || !top.length) {
       wrapper.remove();
@@ -108,47 +122,160 @@
           const left = x.getPixelForTick(cut - 1), right = x.getPixelForTick(cut);
           const at = (left + right) / 2;
           ctx.beginPath(); ctx.moveTo(at, chartArea.top); ctx.lineTo(at, chartArea.bottom); ctx.stroke();
-          const before = track.segments[cut - 1]?.regulation || '';
-          const after = track.segments[cut]?.regulation || '';
-          ctx.setLineDash([]);
-          ctx.fillText(`${before} → ${after}`, Math.min(at + 4, chartArea.right - 90), chartArea.top + 12);
-          ctx.setLineDash([4, 4]);
         }
         ctx.restore();
       },
     };
     const base = chartBase(el);
+    base.layout.padding.top = 28;
+    if (mode !== 'rank') base.layout.padding.right = 60;
+    // 同じレギュレーション内に連続する値がある系列だけを面で強調する。
+    const focusIndex = top.findIndex((key) => months.some((_, i) => i > 0
+      && usage[key]?.[i] != null && usage[key]?.[i - 1] != null && !cuts.includes(i)));
     base.plugins.tooltip.callbacks = {
       title(items) {
         const i = items[0]?.dataIndex ?? 0;
         return `${monthLabel(months[i])}（${track.segments?.[i]?.regulation || 'レギュレーション不明'}）`;
       },
-      label(item) { return `${short(item.dataset.pokemon)}: ${pct(item.parsed.y)}`; },
+      label(item) {
+        const rank = ranks?.[item.dataIndex]?.[item.dataset.pokemon];
+        return `${short(item.dataset.pokemon)}: ${mode === 'rank' ? (rank ? `${rank}位${rank > 10 ? '（表示範囲外）' : ''}` : '圏外') : pct(item.parsed.y)}`;
+      },
     };
     base.scales.y.suggestedMax = Math.max(0.1, Math.ceil(Math.max(...top.flatMap((k) => usage[k] || []).map((v) => v || 0)) * 10) / 10);
-    const datasets = top.map((key, index) => ({
+    const datasets = top.map((key, index) => {
+      const seriesColor = color(el, palette[index % palette.length], colors[index % colors.length]);
+      const areaFill = (chart) => {
+        const area = chart.chartArea;
+        if (!area) return rgba(seriesColor, 0.12);
+        const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+        gradient.addColorStop(0, rgba(seriesColor, 0.26));
+        gradient.addColorStop(1, rgba(seriesColor, 0.015));
+        return gradient;
+      };
+      return ({
       label: name(key), pokemon: key,
-      data: months.map((_, i) => usage[key]?.[i] ?? null),
-      borderColor: color(el, palette[index], colors[index]),
-      backgroundColor: color(el, palette[index], colors[index]),
-      borderWidth: index === 0 ? 3 : 2,
-      pointRadius: months.length > 20 ? 0 : 2,
-      pointHoverRadius: 5,
+      data: months.map((_, i) => mode === 'rank' ? Math.min(11, ranks[i][key] || 11) : (usage[key]?.[i] ?? null)),
+      borderColor: seriesColor,
+      backgroundColor(context) {
+        if (index !== focusIndex || mode === 'rank') return rgba(seriesColor, 0.08);
+        return areaFill(context.chart);
+      },
+      fill: index === focusIndex && mode !== 'rank',
+      borderWidth: index === focusIndex ? 3 : 2,
+      pointRadius(context) { return context.dataIndex === months.length - 1 ? (index === 0 ? 5 : 4) : (months.length > 20 ? 0 : 2); },
+      pointHoverRadius: 6,
+      pointBackgroundColor: seriesColor,
+      pointBorderColor(context) { return context.dataIndex === months.length - 1 ? color(el, '--card', '#fff') : seriesColor; },
+      pointBorderWidth(context) { return context.dataIndex === months.length - 1 ? 3 : 0; },
       tension: 0.2,
       segment: {
+        backgroundColor(context) {
+          if (index !== focusIndex || mode === 'rank') return rgba(seriesColor, 0.08);
+          return cuts.includes(context.p1DataIndex) ? 'transparent' : areaFill(context.chart);
+        },
         borderColor(context) {
           const i = context.p1DataIndex;
-          return cuts.includes(i) ? 'transparent' : color(el, palette[index], colors[index]);
+          return cuts.includes(i) ? 'transparent' : seriesColor;
         },
       },
       spanGaps: false,
-    }));
+    }); });
+    if (mode === 'rank') {
+      base.scales.y = { ...base.scales.y, reverse: true, min: 1, max: 11, ticks: { ...base.scales.y.ticks, stepSize: 1, callback: (v) => v === 11 ? '圏外' : `${v}位` } };
+    }
+    const legend = document.createElement('div');
+    legend.className = 'meta-chart-legend';
+    legend.setAttribute('aria-label', mode === 'rank' ? '順位の系列を表示切り替え' : '使用率の系列を表示切り替え');
+    el.insertBefore(legend, el.children[1]);
+    const crosshair = {
+      id: 'metaChartCrosshair',
+      afterDraw(chart) {
+        const active = chart.tooltip?.getActiveElements?.()[0];
+        if (!active) return;
+        const x = active.element.x;
+        const { ctx, chartArea } = chart;
+        ctx.save(); ctx.strokeStyle = color(el, '--sub', '#504a63'); ctx.globalAlpha = 0.35;
+        ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke(); ctx.restore();
+      },
+    };
+    const regulationBand = {
+      id: 'metaRegulationBand',
+      afterDraw(chart) {
+        const { ctx, chartArea, scales: { x } } = chart;
+        if (!chartArea || !x || !months.length) return;
+        const segments = track.segments || [];
+        const groups = [];
+        months.forEach((_, index) => {
+          const label = segments[index]?.regulation || 'レギュレーション不明';
+          const previous = groups.at(-1);
+          if (previous?.label === label) previous.end = index;
+          else groups.push({ label, start: index, end: index });
+        });
+        ctx.save(); ctx.font = '600 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+        for (const group of groups) {
+          const left = group.start === 0 ? chartArea.left : (x.getPixelForTick(group.start - 1) + x.getPixelForTick(group.start)) / 2;
+          const right = group.end === months.length - 1 ? chartArea.right : (x.getPixelForTick(group.end) + x.getPixelForTick(group.end + 1)) / 2;
+          const textWidth = ctx.measureText(group.label).width;
+          const width = Math.min(right - left - 4, textWidth + 16);
+          const px = Math.max(left + 2, (left + right - width) / 2);
+          const py = Math.max(1, chartArea.top - 22);
+          ctx.fillStyle = color(el, '--accent-soft', '#eff6ff');
+          ctx.beginPath(); ctx.roundRect(px, py, width, 18, 9); ctx.fill();
+          ctx.fillStyle = color(el, '--sub', '#504a63'); ctx.textAlign = 'center';
+          ctx.fillText(group.label, px + width / 2, py + 9);
+        }
+        ctx.restore();
+      },
+    };
     const chart = new Chart(canvas.getContext('2d'), {
-      type: 'line', plugins: [boundaryPlugin],
-      data: { labels: months.map(monthLabel), datasets },
-      options: { ...base, interaction: { mode: 'index', intersect: false }, scales: { ...base.scales, y: { ...base.scales.y, min: 0, suggestedMax: base.scales.y.suggestedMax } } },
+      type: 'line', plugins: [boundaryPlugin, regulationBand, crosshair, {
+        id: 'metaLatestValues',
+        afterDatasetsDraw(chart) {
+          if (mode === 'rank') return;
+          const area = chart.chartArea;
+          if (!area) return;
+          const labels = top.flatMap((key, i) => {
+            if (!chart.isDatasetVisible(i)) return [];
+            const dot = chart.getDatasetMeta(i).data[months.length - 1];
+            const value = usage[key]?.at(-1);
+            return dot && value != null ? [{ x: dot.x, y: dot.y, target: dot.y, value,
+              ink: color(el, palette[i], colors[i]) }] : [];
+          }).sort((a, b) => a.y - b.y);
+          labels.forEach((label, i) => { label.target = Math.max(area.top + 10, label.y, i ? labels[i - 1].target + 21 : 0); });
+          for (let i = labels.length - 1; i >= 0; i--) labels[i].target = Math.min(labels[i].target, i === labels.length - 1 ? area.bottom - 10 : labels[i + 1].target - 21);
+          const ctx = chart.ctx;
+          ctx.save(); ctx.font = '600 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          for (const label of labels) {
+            const left = area.right + 9;
+            ctx.strokeStyle = rgba(label.ink, .38); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(label.x + 4, label.y); ctx.lineTo(left, label.target); ctx.stroke();
+            ctx.fillStyle = rgba(label.ink, .1); ctx.beginPath(); ctx.roundRect(left, label.target - 9, 48, 18, 6); ctx.fill();
+            ctx.fillStyle = label.ink; ctx.fillText(pct(label.value), left + 24, label.target);
+          }
+          ctx.restore();
+        },
+      }],
+      data: { labels: months.map((m) => `${+m.slice(5)}月`), datasets },
+      options: { ...base, interaction: { mode: 'index', intersect: false }, scales: { ...base.scales, y: { ...base.scales.y, ...(mode === 'rank' ? {} : { min: 0, suggestedMax: base.scales.y.suggestedMax }) } } },
     });
-    instances.set(el, { chart, wrapper });
+    datasets.forEach((_dataset, index) => {
+      const key = top[index];
+      const button = document.createElement('button');
+      const seriesColor = color(el, palette[index % palette.length], colors[index % colors.length]);
+      button.type = 'button'; button.className = 'meta-chart-legend-item'; button.style.setProperty('--series-color', seriesColor); button.setAttribute('aria-pressed', 'true');
+      const value = mode === 'rank' ? `${latest(key)}位` : pct(usage[key]?.at(-1));
+      button.innerHTML = `${icon(key, 32)}<span class="meta-chart-legend-name">${esc(short(key))}</span><span class="meta-chart-legend-value">${value}</span>`;
+      button.addEventListener('click', () => {
+        const meta = chart.getDatasetMeta(index);
+        const shown = meta.hidden === null ? chart.data.datasets[index].hidden !== true : !meta.hidden;
+        meta.hidden = shown;
+        button.setAttribute('aria-pressed', String(!shown));
+        chart.update('none');
+      });
+      legend.append(button);
+    });
+    instances.set(el, { chart, wrapper, legend });
     owners.add(el);
     return top;
   }
@@ -226,7 +353,8 @@
         data: points.map(([, v]) => ({ x: v.usage, y: v.bring })),
         backgroundColor: color(el, '--chart-1', colors[0]),
         borderColor: color(el, '--card', '#fff'), borderWidth: 2,
-        pointRadius: 6, pointHoverRadius: 9,
+        pointRadius: 6, pointHoverRadius: 10, pointHoverBorderWidth: 4,
+        pointHoverBorderColor: color(el, '--ink', '#172b4d'),
       }] },
       options: {
         ...base,

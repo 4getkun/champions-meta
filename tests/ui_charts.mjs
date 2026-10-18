@@ -3,10 +3,13 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 class Element {
-  constructor(tag = 'div') { this.tag = tag; this.children = []; this.attributes = {}; this.className = ''; this.innerHTML = ''; }
+  constructor(tag = 'div') { this.tag = tag; this.children = []; this.attributes = {}; this.className = ''; this.innerHTML = ''; this.style = { setProperty() {} }; }
   append(child) { this.children.push(child); }
+  insertBefore(child, reference) { this.children.splice(this.children.indexOf(reference), 0, child); }
   replaceChildren(...children) { this.children = children; }
   setAttribute(key, value) { this.attributes[key] = value; }
+  addEventListener(type, fn) { this.listeners ||= {}; this.listeners[type] = fn; }
+  click() { this.listeners?.click?.(); }
   getContext() { return {}; }
   remove() { this.removed = true; }
   querySelector(selector) { return selector === 'details' ? this.children.find((x) => x.tag === 'details') : null; }
@@ -18,10 +21,14 @@ class StubChart {
   constructor(ctx, config) {
     this.ctx = ctx;
     this.config = config;
+    this.data = config.data;
     this.destroyed = false;
+    this.metas = config.data.datasets.map(() => ({ hidden: null }));
     charts.push(this);
   }
   destroy() { this.destroyed = true; }
+  getDatasetMeta(index) { return this.metas[index]; }
+  update() { this.updated = true; }
 }
 
 const context = {
@@ -46,6 +53,33 @@ assert.equal(trendChart.config.data.datasets[0].segment.borderColor({ p1DataInde
 assert.equal(trendChart.config.data.datasets[0].segment.borderColor({ p1DataIndex: 3 }), '#2563eb');
 assert.equal(trendChart.config.options.animation, false);
 assert.equal(trendChart.config.options.resizeDelay, 0, 'destroy後に遅延更新を残さない');
+assert.equal(trendChart.config.options.plugins.legend.display, false, 'canvas legend is replaced by accessible HTML controls');
+const legend = trendEl.children[1];
+assert.equal(legend.children.length, 2);
+legend.children[0].click();
+assert.equal(legend.children[0].attributes['aria-pressed'], 'false');
+assert.equal(trendChart.metas[0].hidden, true);
+assert.equal(trendChart.updated, true);
+legend.children[0].click();
+assert.equal(legend.children[0].attributes['aria-pressed'], 'true');
+assert.equal(trendChart.metas[0].hidden, false, 'hidden series can be shown again');
+
+const rankEl = new Element();
+api.trend(rankEl, { ...track, usage_grouped: { ...track.usage_grouped, Gamma: [0.05, 0.25, 0.35, 0.1] } }, { mode: 'rank' });
+const rankChart = charts.at(-1);
+assert.deepEqual(Array.from(rankChart.config.data.datasets[0].data), [1, 2, 2, 1], 'rank mode computes monthly ranks from usage');
+assert.equal(rankChart.config.options.scales.y.reverse, true);
+assert.equal(rankChart.config.data.datasets[0].fill, false, 'rank series do not use area fill');
+api.destroy(rankEl);
+assert.equal(rankChart.destroyed, true, 'rank view releases its Chart instance');
+
+const sparseEl = new Element();
+api.trend(sparseEl, { months: ['2026-01', '2026-02', '2026-03'],
+  segments: [{ regulation: 'A' }, { regulation: 'A' }, { regulation: 'A' }],
+  usage_grouped: { Newcomer: [null, null, .4], Established: [.2, .25, .3] } });
+assert.equal(charts.at(-1).config.data.datasets[0].fill, false, 'one observation is not shown as a continuous area');
+assert.equal(charts.at(-1).config.data.datasets[1].fill, true, 'area emphasis uses a series with continuous observations');
+api.destroy(sparseEl);
 
 const weekly = { available: true, recent: { pokemon: {
   Alpha: { usage: 0.2, bring: 0.75, bring_ci: [0.7, 0.8], teams: 1234, games: 90, win_shrunk: 0.57 },

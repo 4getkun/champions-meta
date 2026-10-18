@@ -1,7 +1,10 @@
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <!-- 使用率の棒グラフ（ラベンダーの地に紫とライムの棒）。site/style.css の --accent / --lime と同じ色 -->
-  <rect width="64" height="64" rx="14" fill="#1d1a2e"/>
-  <rect x="12" y="30" width="10" height="22" rx="3" fill="#b9a8ff"/>
-  <rect x="27" y="14" width="10" height="38" rx="3" fill="#6d4df2"/>
-  <rect x="42" y="22" width="10" height="30" rx="3" fill="#c8f58f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>チャンピオンズ メタ</title>
+  <circle cx="32" cy="32" r="28" fill="#ffffff"/>
+  <path d="M4 32a28 28 0 0 1 56 0Z" fill="#ef4444"/>
+  <path d="M6 32h52" stroke="#172b4d" stroke-width="6"/>
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#172b4d" stroke-width="4"/>
+  <circle cx="32" cy="32" r="10" fill="#172b4d"/>
+  <circle cx="32" cy="32" r="6" fill="#ffffff"/>
+  <circle cx="32" cy="32" r="2.5" fill="#2563eb"/>
 </svg>
