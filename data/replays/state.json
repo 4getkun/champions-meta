@@ -2,6 +2,9 @@
  "gen9championsbssregmb": {
   "last": 1790279511
  },
+ "gen9championsbssregmc": {
+  "last": 1792288662
+ },
  "gen9championsou": {
   "last": 1789236098
  },
@@ -13,5 +16,19 @@
  },
  "gen9championsvgc2026regmbbo3": {
   "last": 1790285170
+ },
+ "gen9championsvgc2026regmc": {
+  "before": 1792058783,
+  "done": false,
+  "highwater": 1792290001,
+  "last": 1791080400,
+  "pending": []
+ },
+ "gen9championsvgc2026regmcbo3": {
+  "before": 1791886108,
+  "done": false,
+  "highwater": 1792290435,
+  "last": 1791080850,
+  "pending": []
  }
 }

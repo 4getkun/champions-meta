@@ -7,7 +7,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $runner = Join-Path $PSScriptRoot 'run-update.ps1'
-$pwsh = (Get-Command pwsh.exe -ErrorAction Stop).Source
+# Codex の一時ランタイムより、PC にインストールした PowerShell を優先する。
+$installedPwsh = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+$pwsh = if (Test-Path -LiteralPath $installedPwsh -PathType Leaf) {
+    $installedPwsh
+} else {
+    (Get-Command pwsh.exe -ErrorAction Stop).Source
+}
 
 if (-not $PythonExe) {
     $pyLauncher = Get-Command py.exe -ErrorAction Stop
