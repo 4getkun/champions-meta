@@ -1998,7 +1998,7 @@ async function renderDiag(revision = routeRevision) {
 }
 // ── テーマ ──────────────────────────────────────────────
 function setupTheme() {
-  const btn = $('cm-en-theme');
+  const btn = $('theme');
   const isDark = () => (document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
   const sync = () => { btn.textContent = isDark() ? '☀' : '◐'; btn.setAttribute('aria-label', isDark() ? 'Switch to light theme' : 'Switch to dark theme'); };
   const redraw = () => {
