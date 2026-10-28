@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Champions Meta — team selection trends, predictions and Speed</title>
+<meta name="description" content="Explore opponent selections in Pokémon Champions on Pokémon Showdown: selection trends, predictions, Speed distributions, usage and set trends from public replays and monthly Smogon statistics. Updated every 3 days. Unofficial fan tool.">
+<link rel="canonical" href="https://champions.fourgetkun.com/en/">
+<meta property="og:title" content="Champions Meta — selection trends, predictions and Speed">
+<meta property="og:description" content="What might your opponent bring? An unofficial Pokémon Champions data site using public replays and Smogon statistics, updated every 3 days.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://champions.fourgetkun.com/en/">
+<meta property="og:site_name" content="Champions Meta">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="../favicon.svg?v=ball-20261018" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico?v=ball-20261018" sizes="16x16 32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=ball-20261018">
+<link rel="manifest" href="site.webmanifest">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Champions Meta","alternateName":"Champions Meta","url":"https://champions.fourgetkun.com/en/","inLanguage":"en","description":"Unofficial selection trends, predictions, Speed and usage data for Pokémon Champions on Pokémon Showdown","publisher":{"@type":"Organization","name":"fourgetkun Workshop","url":"https://fourgetkun.com/"}}</script>
+<meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101827" media="(prefers-color-scheme: dark)">
+<script>
+  // 描画の前にテーマを当てる（英語専用 localStorage の "cm-en-theme"）。?theme=dark / light はその場だけ（確認用）
+  try { var t = new URLSearchParams(location.search).get('theme') || localStorage.getItem('cm-en-theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<!-- fonts:start 公開用（python -m cmeta dist）では、使う文字だけに絞って自前で配る書体に置き換わる（src/cmeta/fonts.py） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400..700&display=swap" rel="stylesheet">
+<!-- fonts:end -->
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../dashboard.css">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <a class="logo" href="#" data-view="env"><img class="brand-mark" src="../favicon.svg?v=ball-20261018" width="28" height="28" alt="">Champions<b>Meta</b></a>
+    <nav class="views" aria-label="Views">
+      <a href="#" data-view="env"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Metagame</a>
+      <a href="#" data-view="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 16V9h4v7M10 16V4h4v12M14 16v-4h4v4"/></svg>Rankings</a>
+      <a href="#" data-view="select"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>Selection predictions</a>
+      <a href="#" data-view="diag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>Team analysis</a>
+      <a href="#" data-view="speed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19a9 9 0 1 1 14 0M12 12l5-5"/><circle cx="12" cy="12" r="2"/></svg>Speed</a>
+    </nav>
+    <button class="pill theme" id="theme" type="button" aria-label="Toggle theme">◐</button>
+    <div class="format-bar"><span class="format-label">Format</span><nav class="formats" id="formats" aria-label="Format"></nav></div>
+  </header>
+  <p id="data-status" class="data-status" role="status"></p>
+
+  <!-- ═══ 環境 ═══ -->
+  <main id="view-env" data-view-panel="env">
+    <div id="early-env" hidden></div>
+    <section class="hero" id="sec-env">
+      <div class="k" id="asof"></div>
+      <h1>Metagame dashboard</h1>
+      <p class="lead">Explore usage, selection trends and common cores to plan your next team and battle selections. Pokémon names and generated analysis may remain in Japanese.</p>
+    </section>
+
+    <!-- スマホ: Monthly overview（A5） -->
+    <section class="card summary" id="summary" aria-label="Monthly overview"></section>
+
+    <div class="grid">
+      <a class="card c3 tile tile-top" id="t-top" href="#"></a>
+      <div class="card c3 tile ink" id="t-div"></div>
+      <div class="card c3 tile" id="t-battles"></div>
+      <div class="card c3 tile" id="t-turn"></div>
+
+      <section class="card c8" id="sec-trend">
+        <div class="head">
+          <h2>Usage trends <span class="chip">Top</span></h2>
+          <div class="seg" role="group" aria-label="Display mode">
+            <button type="button" data-trend="usage" aria-pressed="true">Usage</button>
+            <button type="button" data-trend="rank" aria-pressed="false">Rank</button>
+          </div>
+        </div>
+        <div class="chart" id="trend"></div>
+        <p class="chart-note">Toggle series using the legend. Dashed lines mark regulation changes.</p>
+        <details class="table"><summary>View table</summary><div id="trend-table"></div></details>
+      </section>
+      <section class="card c4" id="sec-movers">
+        <h2>Risers and fallers since last month</h2>
+        <div class="chart" id="movers"></div>
+      </section>
+
+      <section class="card c5" id="sec-cores">
+        <h2>Current cores</h2>
+        <div id="cores"></div>
+        <h2 class="sub">More common at higher ratings <span class="chip" id="gap-chip"></span></h2>
+        <ul class="gap" id="gap"></ul>
+      </section>
+      <section class="card c7" id="sec-bring">
+        <h2>Bring rate × Usage <span class="chip warn">Indicative only</span></h2>
+        <div class="chart" id="scatter"></div>
+        <p class="chart-note">Select a point for Pokémon details. See the table for exact values and 95% intervals.</p>
+        <p class="note" id="bring-note"></p>
+      </section>
+      <section class="card c12" id="sec-sets" hidden>
+        <h2>Set trends</h2>
+        <div id="sets-out"></div>
+      </section>
+      <section class="card c12" id="sec-top" hidden>
+        <h2>Selections by the top 500 players <span class="chip warn">Indicative only</span></h2>
+        <div id="top-out"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ═══ Rankings ═══ -->
+  <main id="view-rank" data-view-panel="rank" hidden>
+    <div class="rank-head">
+      <div>
+        <div class="k" id="rank-asof"></div>
+        <h1 class="h1">Usage rankings</h1>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span>
+        <input id="q" aria-label="Filter rankings by Pokémon name" type="search" placeholder="Filter by Pokémon name" autocomplete="off"></label>
+    </div>
+    <p class="rank-count" id="rank-count" aria-live="polite"></p>
+    <ol class="rank-grid" id="rank-grid"></ol>
+  </main>
+
+  <!-- ═══ Speed tuning（ミラー） ═══ -->
+  <main id="view-speed" data-view-panel="speed" hidden>
+    <div class="rank-head">
+      <div>
+        <div class="k" id="speed-asof"></div>
+        <h1 class="h1">Speed tuning</h1>
+        <p class="lead">Can you move first in a mirror match? Adjust nature and points to explore Speed-tie risk and which opponents you can outspeed.</p>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span>
+        <input id="spd-q" aria-label="Pokémon for Speed tuning" type="search" list="spd-names" placeholder="Choose a Pokémon" autocomplete="off"></label>
+    </div>
+    <div class="grid" id="speed-out"></div>
+    <datalist id="spd-names"></datalist>
+  </main>
+
+  <!-- ═══ Selection predictions ═══ -->
+  <main id="view-select" data-view-panel="select" hidden>
+    <div class="rank-head"><div>
+      <div class="k" id="select-asof"></div>
+      <h1 class="h1">Selection predictions</h1>
+      <p class="lead">Enter the opposing six to predict selections and leads. Add your own six to account for selection tendencies against your team.</p>
+    </div></div>
+    <div class="grid">
+      <section class="card c6"><h2>Your six <span class="chip">Optional</span></h2><p class="team-caption">Including your team adds the opponent’s selection tendencies against it.</p><div class="team-in" data-team="mine"></div></section>
+      <section class="card c6"><h2>Opposing six <span class="chip">Team to predict</span></h2><p class="team-caption">Enter the six shown at team preview to predict selections and leads.</p><div class="team-in" data-team="opp"></div></section>
+      <section class="card c12" id="select-out"></section>
+      <div class="c12" id="select-samples"></div>
+    </div>
+  </main>
+
+  <!-- ═══ teams診断 ═══ -->
+  <main id="view-diag" data-view-panel="diag" hidden>
+    <div class="rank-head"><div>
+      <div class="k" id="diag-asof"></div>
+      <h1 class="h1">Team analysis</h1>
+      <p class="lead">Enter your six to inspect weaknesses to common attacks, matchups against leading Pokémon (replay results), Speed and overlap with common cores.</p>
+    </div></div>
+    <div class="grid">
+      <section class="card c12"><h2>Your six</h2><p class="team-caption">Check weaknesses to common attacks, matchups and Speed.</p><div class="team-in" data-team="mine"></div></section>
+      <div class="c12 grid sub-grid" id="diag-out"></div>
+    </div>
+  </main>
+
+  <!-- ═══ ポケモン詳細 ═══ -->
+  <main id="view-poke" data-view-panel="poke" hidden>
+    <div class="poke-bar" id="poke-bar"></div>
+    <div class="grid" id="poke-body"></div>
+  </main>
+
+  <footer class="foot" id="sec-about">
+    <h2>How to read this data</h2>
+    <ul>
+      <li><b>Usage</b>: The percentage of teams containing that Pokémon (monthly Smogon statistics, rating <span class="cut"></span> or above). Lists and trends combine Mega Evolutions with their base forms.</li>
+      <li><b>Effective number of Pokémon</b>: The effective number of Pokémon after accounting for uneven usage (Hill number q=1). Higher means more diversity.</li>
+      <li><b>Turnover</b>: How much the usage distribution changed from the previous month (0% means unchanged).</li>
+      <li><b>Cores</b>: Groups of Pokémon often used on the same team.</li>
+      <li><b>Bring rate</b>: The share of team-preview appearances that resulted in entering battle. Based only on public Showdown replays, so it is <b>indicative only</b>.</li>
+      <li>Dotted lines mark regulation changes. Lines are not connected across different metagames.</li>
+      <li>These statistics cover battles on <b>Pokémon Showdown</b>, not in-game ranked battles.</li>
+    </ul>
+    <p class="src" id="sources"></p>
+    <p class="src">An unofficial fan tool, not affiliated with Nintendo, Creatures, GAME FREAK or The Pokémon Company.
+      Images: <a href="https://github.com/PokeAPI/sprites">PokeAPI</a> / © Nintendo・Creatures・GAME FREAK</p>
+    <p class="src" id="generated"></p>
+    <p class="src maker"><a href="https://fourgetkun.com/en/">fourgetkun Workshop</a></p>
+  </footer>
+</div>
+
+<nav class="tabbar" aria-label="Switch views">
+  <a href="#" data-view="env"><b>◎</b>Metagame</a>
+  <a href="#" data-view="rank"><b>≡</b>Rankings</a>
+  <a href="#" data-view="select"><b>⇄</b>Selection predictions</a>
+  <a href="#" data-view="diag"><b>✓</b>Analysis</a>
+  <a href="#" data-view="speed"><b>»</b>Speed</a>
+</nav>
+<datalist id="poke-names"></datalist>
+<div class="tip" id="tip" role="status" hidden></div>
+<script src="../vendor/chart.umd.min.js" defer></script>
+<script src="charts.js" defer></script>
+<script src="speed-share.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>

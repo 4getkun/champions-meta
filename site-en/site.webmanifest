@@ -1,0 +1,24 @@
+{
+  "name": "Champions Meta",
+  "short_name": "Champions Meta",
+  "description": "Unofficial selection trends, predictions, Speed and usage data for Pokémon Champions on Pokémon Showdown",
+  "start_url": "/en/",
+  "display": "browser",
+  "lang": "en",
+  "background_color": "#f5f7fb",
+  "theme_color": "#f5f7fb",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png?v=ball-20261018",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.svg?v=ball-20261018",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "scope": "/en/",
+  "id": "/en/"
+}
